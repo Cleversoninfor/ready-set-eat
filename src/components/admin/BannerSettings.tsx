@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Loader2, Image, Type, Move } from 'lucide-react';
+import { Loader2, Image, Type, Move, Monitor, Smartphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,6 +7,7 @@ import { Slider } from '@/components/ui/slider';
 import { ImageUpload } from '@/components/admin/ImageUpload';
 import { useStoreConfig, useUpdateStoreConfig } from '@/hooks/useStore';
 import { useToast } from '@/hooks/use-toast';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 interface BannerSettingsProps {
   className?: string;
@@ -16,6 +17,7 @@ export function BannerSettings({ className }: BannerSettingsProps) {
   const { data: store, isLoading } = useStoreConfig();
   const updateStore = useUpdateStoreConfig();
   const { toast } = useToast();
+  const [deviceMode, setDeviceMode] = useState<'desktop' | 'mobile'>('desktop');
 
   const [formData, setFormData] = useState({
     cover_url: '',
@@ -24,8 +26,14 @@ export function BannerSettings({ className }: BannerSettingsProps) {
     hero_text_3: 'Sabor Irresistível',
     hero_slogan: 'O segredo está no tempero',
     floating_image_url: '',
+    // Desktop settings
     floating_image_size: 100,
     floating_image_position: 50,
+    floating_image_vertical_position: 50,
+    // Mobile settings
+    floating_image_size_mobile: 100,
+    floating_image_position_mobile: 50,
+    floating_image_vertical_position_mobile: 70,
   });
 
   useEffect(() => {
@@ -39,6 +47,10 @@ export function BannerSettings({ className }: BannerSettingsProps) {
         floating_image_url: store.floating_image_url || '',
         floating_image_size: store.floating_image_size ?? 100,
         floating_image_position: store.floating_image_position ?? 50,
+        floating_image_vertical_position: (store as any).floating_image_vertical_position ?? 50,
+        floating_image_size_mobile: (store as any).floating_image_size_mobile ?? 100,
+        floating_image_position_mobile: (store as any).floating_image_position_mobile ?? 50,
+        floating_image_vertical_position_mobile: (store as any).floating_image_vertical_position_mobile ?? 70,
       });
     }
   }, [store]);
@@ -56,6 +68,10 @@ export function BannerSettings({ className }: BannerSettingsProps) {
         floating_image_url: formData.floating_image_url || null,
         floating_image_size: formData.floating_image_size,
         floating_image_position: formData.floating_image_position,
+        floating_image_vertical_position: formData.floating_image_vertical_position,
+        floating_image_size_mobile: formData.floating_image_size_mobile,
+        floating_image_position_mobile: formData.floating_image_position_mobile,
+        floating_image_vertical_position_mobile: formData.floating_image_vertical_position_mobile,
       };
       
       if (store?.id) {
@@ -66,6 +82,35 @@ export function BannerSettings({ className }: BannerSettingsProps) {
       toast({ title: 'Banner atualizado com sucesso!' });
     } catch (error: any) {
       toast({ title: 'Erro ao salvar', description: error.message, variant: 'destructive' });
+    }
+  };
+
+  // Get current values based on device mode
+  const getCurrentSize = () => deviceMode === 'desktop' ? formData.floating_image_size : formData.floating_image_size_mobile;
+  const getCurrentHorizontalPosition = () => deviceMode === 'desktop' ? formData.floating_image_position : formData.floating_image_position_mobile;
+  const getCurrentVerticalPosition = () => deviceMode === 'desktop' ? formData.floating_image_vertical_position : formData.floating_image_vertical_position_mobile;
+
+  const setCurrentSize = (value: number) => {
+    if (deviceMode === 'desktop') {
+      setFormData({ ...formData, floating_image_size: value });
+    } else {
+      setFormData({ ...formData, floating_image_size_mobile: value });
+    }
+  };
+
+  const setCurrentHorizontalPosition = (value: number) => {
+    if (deviceMode === 'desktop') {
+      setFormData({ ...formData, floating_image_position: value });
+    } else {
+      setFormData({ ...formData, floating_image_position_mobile: value });
+    }
+  };
+
+  const setCurrentVerticalPosition = (value: number) => {
+    if (deviceMode === 'desktop') {
+      setFormData({ ...formData, floating_image_vertical_position: value });
+    } else {
+      setFormData({ ...formData, floating_image_vertical_position_mobile: value });
     }
   };
 
@@ -161,18 +206,41 @@ export function BannerSettings({ className }: BannerSettingsProps) {
               Recomendado: imagem PNG com fundo transparente.
             </p>
 
+            {/* Device Mode Toggle */}
+            <div className="space-y-3 bg-muted/50 rounded-lg p-4">
+              <Label className="text-xs sm:text-sm font-medium">Configurar para:</Label>
+              <ToggleGroup 
+                type="single" 
+                value={deviceMode} 
+                onValueChange={(value) => value && setDeviceMode(value as 'desktop' | 'mobile')}
+                className="justify-start"
+              >
+                <ToggleGroupItem value="desktop" aria-label="Desktop" className="gap-2">
+                  <Monitor className="h-4 w-4" />
+                  Desktop
+                </ToggleGroupItem>
+                <ToggleGroupItem value="mobile" aria-label="Mobile" className="gap-2">
+                  <Smartphone className="h-4 w-4" />
+                  Mobile
+                </ToggleGroupItem>
+              </ToggleGroup>
+              <p className="text-xs text-muted-foreground">
+                Configure o posicionamento da imagem separadamente para cada dispositivo
+              </p>
+            </div>
+
             {/* Floating Image Size */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <Label className="text-xs sm:text-sm text-muted-foreground flex items-center gap-2">
                   <Move className="h-3 w-3" />
-                  Tamanho da Imagem
+                  Tamanho da Imagem ({deviceMode === 'desktop' ? 'Desktop' : 'Mobile'})
                 </Label>
-                <span className="text-xs font-medium text-primary">{formData.floating_image_size}%</span>
+                <span className="text-xs font-medium text-primary">{getCurrentSize()}%</span>
               </div>
               <Slider
-                value={[formData.floating_image_size]}
-                onValueChange={(value) => setFormData({ ...formData, floating_image_size: value[0] })}
+                value={[getCurrentSize()]}
+                onValueChange={(value) => setCurrentSize(value[0])}
                 min={50}
                 max={500}
                 step={10}
@@ -183,19 +251,19 @@ export function BannerSettings({ className }: BannerSettingsProps) {
               </p>
             </div>
 
-            {/* Floating Image Position */}
+            {/* Floating Image Horizontal Position */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <Label className="text-xs sm:text-sm text-muted-foreground">
-                  Posição Horizontal
+                  Posição Horizontal ({deviceMode === 'desktop' ? 'Desktop' : 'Mobile'})
                 </Label>
                 <span className="text-xs font-medium text-primary">
-                  {formData.floating_image_position < 50 ? 'Esquerda' : formData.floating_image_position > 50 ? 'Direita' : 'Centro'}
+                  {getCurrentHorizontalPosition() < 50 ? 'Esquerda' : getCurrentHorizontalPosition() > 50 ? 'Direita' : 'Centro'}
                 </span>
               </div>
               <Slider
-                value={[formData.floating_image_position]}
-                onValueChange={(value) => setFormData({ ...formData, floating_image_position: value[0] })}
+                value={[getCurrentHorizontalPosition()]}
+                onValueChange={(value) => setCurrentHorizontalPosition(value[0])}
                 min={10}
                 max={90}
                 step={5}
@@ -204,6 +272,30 @@ export function BannerSettings({ className }: BannerSettingsProps) {
               <div className="flex justify-between text-xs text-muted-foreground">
                 <span>← Esquerda</span>
                 <span>Direita →</span>
+              </div>
+            </div>
+
+            {/* Floating Image Vertical Position */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs sm:text-sm text-muted-foreground">
+                  Posição Vertical ({deviceMode === 'desktop' ? 'Desktop' : 'Mobile'})
+                </Label>
+                <span className="text-xs font-medium text-primary">
+                  {getCurrentVerticalPosition() < 50 ? 'Topo' : getCurrentVerticalPosition() > 50 ? 'Baixo' : 'Centro'}
+                </span>
+              </div>
+              <Slider
+                value={[getCurrentVerticalPosition()]}
+                onValueChange={(value) => setCurrentVerticalPosition(value[0])}
+                min={10}
+                max={90}
+                step={5}
+                className="w-full"
+              />
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>↑ Topo</span>
+                <span>Baixo ↓</span>
               </div>
             </div>
           </div>

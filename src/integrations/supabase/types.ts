@@ -431,8 +431,12 @@ export type Database = {
           delivery_time_max: number | null
           delivery_time_min: number | null
           floating_image_position: number | null
+          floating_image_position_mobile: number | null
           floating_image_size: number | null
+          floating_image_size_mobile: number | null
           floating_image_url: string | null
+          floating_image_vertical_position: number | null
+          floating_image_vertical_position_mobile: number | null
           hero_slogan: string | null
           hero_text_1: string | null
           hero_text_2: string | null
@@ -464,8 +468,12 @@ export type Database = {
           delivery_time_max?: number | null
           delivery_time_min?: number | null
           floating_image_position?: number | null
+          floating_image_position_mobile?: number | null
           floating_image_size?: number | null
+          floating_image_size_mobile?: number | null
           floating_image_url?: string | null
+          floating_image_vertical_position?: number | null
+          floating_image_vertical_position_mobile?: number | null
           hero_slogan?: string | null
           hero_text_1?: string | null
           hero_text_2?: string | null
@@ -497,8 +505,12 @@ export type Database = {
           delivery_time_max?: number | null
           delivery_time_min?: number | null
           floating_image_position?: number | null
+          floating_image_position_mobile?: number | null
           floating_image_size?: number | null
+          floating_image_size_mobile?: number | null
           floating_image_url?: string | null
+          floating_image_vertical_position?: number | null
+          floating_image_vertical_position_mobile?: number | null
           hero_slogan?: string | null
           hero_text_1?: string | null
           hero_text_2?: string | null
