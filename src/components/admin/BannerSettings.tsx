@@ -55,9 +55,7 @@ export function BannerSettings({ className }: BannerSettingsProps) {
     }
   }, [store]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
+  const saveBannerSettings = async () => {
     try {
       const updateData: any = {
         cover_url: formData.cover_url || null,
@@ -73,11 +71,11 @@ export function BannerSettings({ className }: BannerSettingsProps) {
         floating_image_position_mobile: formData.floating_image_position_mobile,
         floating_image_vertical_position_mobile: formData.floating_image_vertical_position_mobile,
       };
-      
+
       if (store?.id) {
         updateData.id = store.id;
       }
-      
+
       await updateStore.mutateAsync(updateData);
       toast({ title: 'Banner atualizado com sucesso!' });
     } catch (error: any) {
@@ -123,7 +121,7 @@ export function BannerSettings({ className }: BannerSettingsProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className={className}>
+    <div className={className}>
       <div className="bg-card rounded-xl p-4 sm:p-6 shadow-card space-y-6">
         <h3 className="font-semibold text-foreground flex items-center gap-2 text-sm sm:text-base">
           <Image className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
@@ -131,7 +129,7 @@ export function BannerSettings({ className }: BannerSettingsProps) {
         </h3>
 
         <p className="text-xs sm:text-sm text-muted-foreground">
-          Configure a imagem de fundo e os textos animados do banner principal. 
+          Configure a imagem de fundo e os textos animados do banner principal.
           O banner ocupa tela cheia no mobile (1080x1920px) e largura total no desktop (1920x1080px).
         </p>
 
@@ -202,16 +200,16 @@ export function BannerSettings({ className }: BannerSettingsProps) {
               onRemove={() => setFormData({ ...formData, floating_image_url: '' })}
             />
             <p className="text-xs text-muted-foreground">
-              Esta imagem aparece flutuando sobre o banner com efeito de movimento. 
+              Esta imagem aparece flutuando sobre o banner com efeito de movimento.
               Recomendado: imagem PNG com fundo transparente.
             </p>
 
             {/* Device Mode Toggle */}
             <div className="space-y-3 bg-muted/50 rounded-lg p-4">
               <Label className="text-xs sm:text-sm font-medium">Configurar para:</Label>
-              <ToggleGroup 
-                type="single" 
-                value={deviceMode} 
+              <ToggleGroup
+                type="single"
+                value={deviceMode}
                 onValueChange={(value) => value && setDeviceMode(value as 'desktop' | 'mobile')}
                 className="justify-start"
               >
@@ -258,7 +256,11 @@ export function BannerSettings({ className }: BannerSettingsProps) {
                   Posição Horizontal ({deviceMode === 'desktop' ? 'Desktop' : 'Mobile'})
                 </Label>
                 <span className="text-xs font-medium text-primary">
-                  {getCurrentHorizontalPosition() < 50 ? 'Esquerda' : getCurrentHorizontalPosition() > 50 ? 'Direita' : 'Centro'}
+                  {getCurrentHorizontalPosition() < 50
+                    ? 'Esquerda'
+                    : getCurrentHorizontalPosition() > 50
+                      ? 'Direita'
+                      : 'Centro'}
                 </span>
               </div>
               <Slider
@@ -282,7 +284,11 @@ export function BannerSettings({ className }: BannerSettingsProps) {
                   Posição Vertical ({deviceMode === 'desktop' ? 'Desktop' : 'Mobile'})
                 </Label>
                 <span className="text-xs font-medium text-primary">
-                  {getCurrentVerticalPosition() < 50 ? 'Topo' : getCurrentVerticalPosition() > 50 ? 'Baixo' : 'Centro'}
+                  {getCurrentVerticalPosition() < 50
+                    ? 'Topo'
+                    : getCurrentVerticalPosition() > 50
+                      ? 'Baixo'
+                      : 'Centro'}
                 </span>
               </div>
               <Slider
@@ -328,7 +334,12 @@ export function BannerSettings({ className }: BannerSettingsProps) {
           </div>
         </div>
 
-        <Button type="submit" className="w-full" disabled={updateStore.isPending}>
+        <Button
+          type="button"
+          className="w-full"
+          disabled={updateStore.isPending}
+          onClick={saveBannerSettings}
+        >
           {updateStore.isPending ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -339,6 +350,6 @@ export function BannerSettings({ className }: BannerSettingsProps) {
           )}
         </Button>
       </div>
-    </form>
+    </div>
   );
 }
