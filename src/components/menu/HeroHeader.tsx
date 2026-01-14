@@ -4,6 +4,7 @@ import { StoreConfig } from '@/hooks/useStore';
 import { useCart } from '@/hooks/useCart';
 import { Button } from '@/components/ui/button';
 import { useState, useEffect, useRef, useMemo } from 'react';
+import { useIsMobile } from '@/hooks/use-mobile';
 import defaultFloatingImg from '@/assets/espetinho.png';
 
 interface HeroHeaderProps {
@@ -11,6 +12,10 @@ interface HeroHeaderProps {
     floating_image_url?: string | null;
     floating_image_size?: number | null;
     floating_image_position?: number | null;
+    floating_image_vertical_position?: number | null;
+    floating_image_size_mobile?: number | null;
+    floating_image_position_mobile?: number | null;
+    floating_image_vertical_position_mobile?: number | null;
   };
 }
 
@@ -18,6 +23,7 @@ const DEFAULT_COVER = 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1
 
 export function HeroHeader({ store }: HeroHeaderProps) {
   const { totalItems } = useCart();
+  const isMobile = useIsMobile();
   const [currentTextIndex, setCurrentTextIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
   const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
@@ -25,8 +31,17 @@ export function HeroHeader({ store }: HeroHeaderProps) {
 
   const coverUrl = store.cover_url || DEFAULT_COVER;
   const floatingImageUrl = store.floating_image_url || defaultFloatingImg;
-  const floatingImageSize = store.floating_image_size ?? 100;
-  const floatingImagePosition = store.floating_image_position ?? 50;
+  
+  // Use appropriate settings based on device
+  const floatingImageSize = isMobile 
+    ? (store.floating_image_size_mobile ?? 100)
+    : (store.floating_image_size ?? 100);
+  const floatingImageHorizontalPosition = isMobile 
+    ? (store.floating_image_position_mobile ?? 50)
+    : (store.floating_image_position ?? 50);
+  const floatingImageVerticalPosition = isMobile 
+    ? (store.floating_image_vertical_position_mobile ?? 70)
+    : (store.floating_image_vertical_position ?? 50);
 
   // Use texts from store config or defaults
   const rotatingTexts = useMemo(() => {
@@ -94,6 +109,9 @@ export function HeroHeader({ store }: HeroHeaderProps) {
     }
   };
 
+  // Calculate image positioning
+  const imageWidth = Math.round(160 * floatingImageSize / 100);
+  
   return (
     <header className="relative">
       {/* Full Hero Section - Full viewport height on mobile (1080x1920 aspect), appropriate height on desktop (1920x1080 aspect) */}
@@ -195,19 +213,19 @@ export function HeroHeader({ store }: HeroHeaderProps) {
           </Button>
         </div>
 
-        {/* Floating Image - Mobile: positioned lower, Desktop: top right */}
+        {/* Floating Image - Positioned based on admin settings */}
         <img
           ref={imageRef}
           src={floatingImageUrl}
           alt="Destaque"
-          className="absolute z-20 drop-shadow-2xl transition-transform duration-200 ease-out pointer-events-none
-            bottom-32 
-            md:top-28 md:bottom-auto"
+          className="absolute z-20 drop-shadow-2xl transition-transform duration-200 ease-out pointer-events-none"
           style={{
             transform: `translate(${imagePosition.x}px, ${imagePosition.y}px) rotate(-15deg)`,
-            width: `${Math.round(160 * floatingImageSize / 100)}px`,
-            right: `${100 - floatingImagePosition}%`,
-            marginRight: `${-80 * floatingImageSize / 100}px`,
+            width: `${imageWidth}px`,
+            left: `${floatingImageHorizontalPosition}%`,
+            top: `${floatingImageVerticalPosition}%`,
+            marginLeft: `${-imageWidth / 2}px`,
+            marginTop: `${-imageWidth / 2}px`,
           }}
         />
 

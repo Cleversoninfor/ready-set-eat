@@ -31,6 +31,10 @@ export interface StoreConfig {
   floating_image_url: string | null;
   floating_image_size: number | null;
   floating_image_position: number | null;
+  floating_image_vertical_position: number | null;
+  floating_image_size_mobile: number | null;
+  floating_image_position_mobile: number | null;
+  floating_image_vertical_position_mobile: number | null;
 }
 
 export function useStoreConfig() {
@@ -76,6 +80,10 @@ export function useStoreConfig() {
           floating_image_url: null,
           floating_image_size: 100,
           floating_image_position: 50,
+          floating_image_vertical_position: 50,
+          floating_image_size_mobile: 100,
+          floating_image_position_mobile: 50,
+          floating_image_vertical_position_mobile: 70,
         } as StoreConfig;
       }
       
