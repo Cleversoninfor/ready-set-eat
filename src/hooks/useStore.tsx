@@ -28,6 +28,9 @@ export interface StoreConfig {
   hero_slogan: string | null;
   custom_domain: string | null;
   subdomain_slug: string | null;
+  floating_image_url: string | null;
+  floating_image_size: number | null;
+  floating_image_position: number | null;
 }
 
 export function useStoreConfig() {
@@ -70,6 +73,9 @@ export function useStoreConfig() {
           hero_slogan: 'O segredo está no tempero',
           custom_domain: null,
           subdomain_slug: null,
+          floating_image_url: null,
+          floating_image_size: 100,
+          floating_image_position: 50,
         } as StoreConfig;
       }
       
