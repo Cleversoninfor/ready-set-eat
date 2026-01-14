@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { StoreConfig } from '@/hooks/useStore';
 import { useCart } from '@/hooks/useCart';
 import { Button } from '@/components/ui/button';
+import { useState, useEffect, useRef } from 'react';
+import espetinhoImg from '@/assets/espetinho.png';
 
 interface HeroHeaderProps {
   store: StoreConfig;
@@ -10,10 +12,60 @@ interface HeroHeaderProps {
 
 const DEFAULT_COVER = 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=1920&h=800&fit=crop';
 
+const ROTATING_TEXTS = ['Carne macia', 'Suculenta', 'Sabor Irresistível'];
+
 export function HeroHeader({ store }: HeroHeaderProps) {
   const { totalItems } = useCart();
+  const [currentTextIndex, setCurrentTextIndex] = useState(0);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
+  const imageRef = useRef<HTMLImageElement>(null);
 
   const coverUrl = store.cover_url || DEFAULT_COVER;
+
+  // Rotating text animation
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIsAnimating(true);
+      setTimeout(() => {
+        setCurrentTextIndex((prev) => (prev + 1) % ROTATING_TEXTS.length);
+        setIsAnimating(false);
+      }, 300);
+    }, 2500);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Mouse parallax effect for desktop
+  const handleMouseMove = (e: React.MouseEvent) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = (e.clientX - rect.left - rect.width / 2) / 20;
+    const y = (e.clientY - rect.top - rect.height / 2) / 20;
+    setImagePosition({ x, y });
+  };
+
+  const handleMouseLeave = () => {
+    setImagePosition({ x: 0, y: 0 });
+  };
+
+  // Device motion for mobile
+  useEffect(() => {
+    const handleDeviceMotion = (e: DeviceMotionEvent) => {
+      if (e.accelerationIncludingGravity) {
+        const x = (e.accelerationIncludingGravity.x || 0) * 2;
+        const y = (e.accelerationIncludingGravity.y || 0) * 2;
+        setImagePosition({ x: -x, y });
+      }
+    };
+
+    if (window.DeviceMotionEvent) {
+      window.addEventListener('devicemotion', handleDeviceMotion);
+    }
+
+    return () => {
+      window.removeEventListener('devicemotion', handleDeviceMotion);
+    };
+  }, []);
 
   const scrollToMenu = () => {
     const menuSection = document.querySelector('[data-menu-section]');
@@ -27,7 +79,11 @@ export function HeroHeader({ store }: HeroHeaderProps) {
   return (
     <header className="relative">
       {/* Full Hero Section */}
-      <div className="relative min-h-[420px] sm:min-h-[480px] overflow-hidden">
+      <div 
+        className="relative min-h-[420px] sm:min-h-[480px] overflow-hidden"
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
+      >
         {/* Background Image */}
         <div
           className="absolute inset-0 bg-cover bg-center"
@@ -36,6 +92,17 @@ export function HeroHeader({ store }: HeroHeaderProps) {
 
         {/* Dark Overlay with texture effect */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/80" />
+
+        {/* Floating Espetinho Image */}
+        <img
+          ref={imageRef}
+          src={espetinhoImg}
+          alt="Espetinho"
+          className="absolute right-4 sm:right-16 top-20 sm:top-24 w-32 sm:w-48 md:w-56 z-20 drop-shadow-2xl transition-transform duration-200 ease-out pointer-events-none"
+          style={{
+            transform: `translate(${imagePosition.x}px, ${imagePosition.y}px) rotate(-15deg)`,
+          }}
+        />
 
         {/* Navigation Bar */}
         <nav className="relative z-10 flex items-center justify-between px-4 sm:px-8 py-4">
@@ -96,11 +163,17 @@ export function HeroHeader({ store }: HeroHeaderProps) {
             {store.name}
           </h1>
 
-          {/* Subtitle/Slogan */}
-          <p className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white/95 mb-6 drop-shadow-md"
-             style={{ fontFamily: "'Poppins', sans-serif", textShadow: '2px 4px 8px rgba(0,0,0,0.3)' }}>
-            Sabor irresistível
-          </p>
+          {/* Animated Subtitle/Slogan */}
+          <div className="h-14 sm:h-16 lg:h-20 mb-6 overflow-hidden">
+            <p 
+              className={`text-3xl sm:text-4xl lg:text-5xl font-extrabold text-primary mb-6 drop-shadow-md transition-all duration-300 ${
+                isAnimating ? 'opacity-0 translate-y-4' : 'opacity-100 translate-y-0'
+              }`}
+              style={{ fontFamily: "'Poppins', sans-serif", textShadow: '2px 4px 8px rgba(0,0,0,0.3)' }}
+            >
+              {ROTATING_TEXTS[currentTextIndex]}
+            </p>
+          </div>
 
           {/* Info Line */}
           <div className="flex flex-col gap-1 text-white/90 mb-6 text-sm sm:text-base font-medium">
