@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Loader2, Image, Type } from 'lucide-react';
+import { Loader2, Image, Type, Move } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Slider } from '@/components/ui/slider';
 import { ImageUpload } from '@/components/admin/ImageUpload';
 import { useStoreConfig, useUpdateStoreConfig } from '@/hooks/useStore';
 import { useToast } from '@/hooks/use-toast';
@@ -23,6 +24,8 @@ export function BannerSettings({ className }: BannerSettingsProps) {
     hero_text_3: 'Sabor Irresistível',
     hero_slogan: 'O segredo está no tempero',
     floating_image_url: '',
+    floating_image_size: 100,
+    floating_image_position: 50,
   });
 
   useEffect(() => {
@@ -34,6 +37,8 @@ export function BannerSettings({ className }: BannerSettingsProps) {
         hero_text_3: store.hero_text_3 || 'Sabor Irresistível',
         hero_slogan: store.hero_slogan || 'O segredo está no tempero',
         floating_image_url: (store as any).floating_image_url || '',
+        floating_image_size: (store as any).floating_image_size ?? 100,
+        floating_image_position: (store as any).floating_image_position ?? 50,
       });
     }
   }, [store]);
@@ -49,6 +54,8 @@ export function BannerSettings({ className }: BannerSettingsProps) {
         hero_text_3: formData.hero_text_3 || null,
         hero_slogan: formData.hero_slogan || null,
         floating_image_url: formData.floating_image_url || null,
+        floating_image_size: formData.floating_image_size,
+        floating_image_position: formData.floating_image_position,
       };
       
       if (store?.id) {
@@ -139,7 +146,7 @@ export function BannerSettings({ className }: BannerSettingsProps) {
           </div>
 
           {/* Floating Image */}
-          <div className="border-t pt-6 space-y-2">
+          <div className="border-t pt-6 space-y-4">
             <Label className="text-xs sm:text-sm text-muted-foreground">
               Imagem Animada (Efeito Parallax)
             </Label>
@@ -153,6 +160,52 @@ export function BannerSettings({ className }: BannerSettingsProps) {
               Esta imagem aparece flutuando sobre o banner com efeito de movimento. 
               Recomendado: imagem PNG com fundo transparente.
             </p>
+
+            {/* Floating Image Size */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs sm:text-sm text-muted-foreground flex items-center gap-2">
+                  <Move className="h-3 w-3" />
+                  Tamanho da Imagem
+                </Label>
+                <span className="text-xs font-medium text-primary">{formData.floating_image_size}%</span>
+              </div>
+              <Slider
+                value={[formData.floating_image_size]}
+                onValueChange={(value) => setFormData({ ...formData, floating_image_size: value[0] })}
+                min={50}
+                max={200}
+                step={10}
+                className="w-full"
+              />
+              <p className="text-xs text-muted-foreground">
+                Ajuste o tamanho da imagem animada (50% a 200%)
+              </p>
+            </div>
+
+            {/* Floating Image Position */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs sm:text-sm text-muted-foreground">
+                  Posição Horizontal
+                </Label>
+                <span className="text-xs font-medium text-primary">
+                  {formData.floating_image_position < 50 ? 'Esquerda' : formData.floating_image_position > 50 ? 'Direita' : 'Centro'}
+                </span>
+              </div>
+              <Slider
+                value={[formData.floating_image_position]}
+                onValueChange={(value) => setFormData({ ...formData, floating_image_position: value[0] })}
+                min={10}
+                max={90}
+                step={5}
+                className="w-full"
+              />
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>← Esquerda</span>
+                <span>Direita →</span>
+              </div>
+            </div>
           </div>
         </div>
 
