@@ -1,0 +1,443 @@
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { TableOrder, TableOrderItem, TableOrderStatus, OrderItemStatus } from '@/types/pdv';
+
+// Hook for fetching closed orders (history)
+export function useClosedTableOrders(startDate: string, endDate: string) {
+  const { data: orders = [], isLoading, error } = useQuery({
+    queryKey: ['closed-table-orders', startDate, endDate],
+    queryFn: async () => {
+      const startDateTime = new Date(startDate);
+      startDateTime.setHours(0, 0, 0, 0);
+      
+      const endDateTime = new Date(endDate);
+      endDateTime.setHours(23, 59, 59, 999);
+
+      const { data, error } = await supabase
+        .from('table_orders')
+        .select('*, items:table_order_items(*)')
+        .in('status', ['paid', 'cancelled'])
+        .gte('closed_at', startDateTime.toISOString())
+        .lte('closed_at', endDateTime.toISOString())
+        .order('closed_at', { ascending: false });
+
+      if (error) throw error;
+      return data as (TableOrder & { items: TableOrderItem[] })[];
+    },
+    enabled: !!startDate && !!endDate,
+  });
+
+  return { orders, isLoading, error };
+}
+
+export function useTableOrder(orderId: number | null) {
+  const { data: order, isLoading, error } = useQuery({
+    queryKey: ['table-order', orderId],
+    queryFn: async () => {
+      if (!orderId) return null;
+      const { data, error } = await supabase
+        .from('table_orders')
+        .select('*')
+        .eq('id', orderId)
+        .maybeSingle();
+      
+      if (error) throw error;
+      return data as TableOrder | null;
+    },
+    enabled: !!orderId,
+  });
+
+  const { data: items = [] } = useQuery({
+    queryKey: ['table-order-items', orderId],
+    queryFn: async () => {
+      if (!orderId) return [];
+      const { data, error } = await supabase
+        .from('table_order_items')
+        .select('*')
+        .eq('table_order_id', orderId)
+        .order('ordered_at', { ascending: true });
+      
+      if (error) throw error;
+      return data as TableOrderItem[];
+    },
+    enabled: !!orderId,
+  });
+
+  return { order, items, isLoading, error };
+}
+
+export function useTableOrderMutations() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const openTable = useMutation({
+    mutationFn: async (data: { tableId: string; customerCount?: number; waiterName?: string }) => {
+      // Create the order
+      const { data: order, error: orderError } = await supabase
+        .from('table_orders')
+        .insert({
+          table_id: data.tableId,
+          customer_count: data.customerCount || 1,
+          waiter_name: data.waiterName || null,
+          status: 'open',
+          subtotal: 0,
+          discount: 0,
+          discount_type: 'value',
+          service_fee_enabled: true,
+          service_fee_percentage: 10,
+          total_amount: 0,
+        })
+        .select()
+        .single();
+
+      if (orderError) throw orderError;
+
+      // Update table
+      const { error: tableError } = await supabase
+        .from('tables')
+        .update({ 
+          status: 'occupied', 
+          current_order_id: order.id 
+        })
+        .eq('id', data.tableId);
+
+      if (tableError) throw tableError;
+
+      return order as TableOrder;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tables'] });
+      queryClient.invalidateQueries({ queryKey: ['tables-with-orders'] });
+      toast({ title: 'Mesa aberta!' });
+    },
+    onError: (error: Error) => {
+      toast({ 
+        title: 'Erro ao abrir mesa', 
+        description: error.message,
+        variant: 'destructive' 
+      });
+    },
+  });
+
+  const addItem = useMutation({
+    mutationFn: async (data: { 
+      orderId: number; 
+      productId: string; 
+      productName: string; 
+      quantity: number; 
+      unitPrice: number;
+      observation?: string;
+    }) => {
+      const { data: item, error } = await supabase
+        .from('table_order_items')
+        .insert({
+          table_order_id: data.orderId,
+          product_id: data.productId,
+          product_name: data.productName,
+          quantity: data.quantity,
+          unit_price: data.unitPrice,
+          observation: data.observation || null,
+          status: 'pending',
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      // Update order totals
+      await updateOrderTotals(data.orderId);
+
+      return item as TableOrderItem;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['table-order-items', variables.orderId] });
+      queryClient.invalidateQueries({ queryKey: ['table-order', variables.orderId] });
+      queryClient.invalidateQueries({ queryKey: ['tables-with-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['kitchen-items'] });
+      toast({ title: 'Item adicionado!' });
+    },
+    onError: (error: Error) => {
+      toast({ 
+        title: 'Erro ao adicionar item', 
+        description: error.message,
+        variant: 'destructive' 
+      });
+    },
+  });
+
+  const updateItemStatus = useMutation({
+    mutationFn: async (data: { itemId: string; status: OrderItemStatus; orderId: number }) => {
+      const updateData: Record<string, unknown> = { status: data.status };
+      if (data.status === 'delivered') {
+        updateData.delivered_at = new Date().toISOString();
+      }
+      
+      const { data: item, error } = await supabase
+        .from('table_order_items')
+        .update(updateData)
+        .eq('id', data.itemId)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return item as TableOrderItem;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['table-order-items', variables.orderId] });
+      queryClient.invalidateQueries({ queryKey: ['kitchen-items'] });
+    },
+    onError: (error: Error) => {
+      toast({ 
+        title: 'Erro ao atualizar item', 
+        description: error.message,
+        variant: 'destructive' 
+      });
+    },
+  });
+
+  const removeItem = useMutation({
+    mutationFn: async (data: { itemId: string; orderId: number }) => {
+      const { error } = await supabase
+        .from('table_order_items')
+        .delete()
+        .eq('id', data.itemId);
+      
+      if (error) throw error;
+      
+      await updateOrderTotals(data.orderId);
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['table-order-items', variables.orderId] });
+      queryClient.invalidateQueries({ queryKey: ['table-order', variables.orderId] });
+      queryClient.invalidateQueries({ queryKey: ['tables-with-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['kitchen-items'] });
+      toast({ title: 'Item removido!' });
+    },
+    onError: (error: Error) => {
+      toast({ 
+        title: 'Erro ao remover item', 
+        description: error.message,
+        variant: 'destructive' 
+      });
+    },
+  });
+
+  const requestBill = useMutation({
+    mutationFn: async (data: { orderId: number; tableId: string }) => {
+      const { error: orderError } = await supabase
+        .from('table_orders')
+        .update({ status: 'requesting_bill' })
+        .eq('id', data.orderId);
+
+      if (orderError) throw orderError;
+
+      const { error: tableError } = await supabase
+        .from('tables')
+        .update({ status: 'requesting_bill' })
+        .eq('id', data.tableId);
+
+      if (tableError) throw tableError;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['table-order', variables.orderId] });
+      queryClient.invalidateQueries({ queryKey: ['tables'] });
+      queryClient.invalidateQueries({ queryKey: ['tables-with-orders'] });
+      toast({ title: 'Conta solicitada!' });
+    },
+    onError: (error: Error) => {
+      toast({ 
+        title: 'Erro ao solicitar conta', 
+        description: error.message,
+        variant: 'destructive' 
+      });
+    },
+  });
+
+  const closeTable = useMutation({
+    mutationFn: async (data: { 
+      orderId: number; 
+      tableId: string; 
+      paymentMethod: string;
+      discount?: number;
+      discountType?: 'value' | 'percentage';
+      serviceFeeEnabled?: boolean;
+      totalAmount?: number;
+    }) => {
+      const { error: orderError } = await supabase
+        .from('table_orders')
+        .update({ 
+          status: 'paid',
+          payment_method: data.paymentMethod,
+          discount: data.discount || 0,
+          discount_type: data.discountType || 'value',
+          service_fee_enabled: data.serviceFeeEnabled ?? true,
+          total_amount: data.totalAmount,
+          closed_at: new Date().toISOString(),
+        })
+        .eq('id', data.orderId);
+
+      if (orderError) throw orderError;
+
+      const { error: tableError } = await supabase
+        .from('tables')
+        .update({ 
+          status: 'available', 
+          current_order_id: null 
+        })
+        .eq('id', data.tableId);
+
+      if (tableError) throw tableError;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tables'] });
+      queryClient.invalidateQueries({ queryKey: ['tables-with-orders'] });
+      toast({ title: 'Mesa fechada com sucesso!' });
+    },
+    onError: (error: Error) => {
+      toast({ 
+        title: 'Erro ao fechar mesa', 
+        description: error.message,
+        variant: 'destructive' 
+      });
+    },
+  });
+
+  const cancelOrder = useMutation({
+    mutationFn: async (data: { orderId: number; tableId: string }) => {
+      const { error: orderError } = await supabase
+        .from('table_orders')
+        .update({ 
+          status: 'cancelled',
+          closed_at: new Date().toISOString(),
+        })
+        .eq('id', data.orderId);
+
+      if (orderError) throw orderError;
+
+      const { error: tableError } = await supabase
+        .from('tables')
+        .update({ 
+          status: 'available', 
+          current_order_id: null 
+        })
+        .eq('id', data.tableId);
+
+      if (tableError) throw tableError;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tables'] });
+      queryClient.invalidateQueries({ queryKey: ['tables-with-orders'] });
+      toast({ title: 'Pedido cancelado!' });
+    },
+    onError: (error: Error) => {
+      toast({ 
+        title: 'Erro ao cancelar pedido', 
+        description: error.message,
+        variant: 'destructive' 
+      });
+    },
+  });
+
+  const transferTable = useMutation({
+    mutationFn: async (data: { orderId: number; fromTableId: string; toTableId: string }) => {
+      // Update order's table_id
+      const { error: orderError } = await supabase
+        .from('table_orders')
+        .update({ table_id: data.toTableId })
+        .eq('id', data.orderId);
+
+      if (orderError) throw orderError;
+
+      // Free the old table
+      const { error: fromTableError } = await supabase
+        .from('tables')
+        .update({ 
+          status: 'available', 
+          current_order_id: null 
+        })
+        .eq('id', data.fromTableId);
+
+      if (fromTableError) throw fromTableError;
+
+      // Occupy the new table
+      const { error: toTableError } = await supabase
+        .from('tables')
+        .update({ 
+          status: 'occupied', 
+          current_order_id: data.orderId 
+        })
+        .eq('id', data.toTableId);
+
+      if (toTableError) throw toTableError;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tables'] });
+      queryClient.invalidateQueries({ queryKey: ['tables-with-orders'] });
+      toast({ title: 'Mesa transferida com sucesso!' });
+    },
+    onError: (error: Error) => {
+      toast({ 
+        title: 'Erro ao transferir mesa', 
+        description: error.message,
+        variant: 'destructive' 
+      });
+    },
+  });
+
+  return {
+    openTable,
+    addItem,
+    updateItemStatus,
+    removeItem,
+    requestBill,
+    closeTable,
+    cancelOrder,
+    transferTable,
+  };
+}
+
+// Helper function to update order totals
+async function updateOrderTotals(orderId: number) {
+  // Fetch items
+  const { data: items, error: itemsError } = await supabase
+    .from('table_order_items')
+    .select('*')
+    .eq('table_order_id', orderId)
+    .neq('status', 'cancelled');
+
+  if (itemsError) throw itemsError;
+
+  const subtotal = items.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0);
+  
+  // Fetch order for discount and service fee settings
+  const { data: order, error: orderError } = await supabase
+    .from('table_orders')
+    .select('discount, discount_type, service_fee_enabled, service_fee_percentage')
+    .eq('id', orderId)
+    .single();
+
+  if (orderError) throw orderError;
+
+  let discountAmount = 0;
+  if (order.discount_type === 'percentage') {
+    discountAmount = subtotal * ((order.discount || 0) / 100);
+  } else {
+    discountAmount = order.discount || 0;
+  }
+
+  const afterDiscount = subtotal - discountAmount;
+  const serviceFee = order.service_fee_enabled 
+    ? afterDiscount * ((order.service_fee_percentage || 10) / 100)
+    : 0;
+
+  const total = afterDiscount + serviceFee;
+
+  // Update order totals
+  const { error: updateError } = await supabase
+    .from('table_orders')
+    .update({ subtotal, total_amount: total })
+    .eq('id', orderId);
+
+  if (updateError) throw updateError;
+}
