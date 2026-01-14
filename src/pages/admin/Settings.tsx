@@ -9,6 +9,7 @@ import { AdminLayout } from '@/components/admin/AdminLayout';
 import { ImageUpload } from '@/components/admin/ImageUpload';
 import { BrandSettings } from '@/components/admin/BrandSettings';
 import { BannerSettings } from '@/components/admin/BannerSettings';
+import { DomainSettings } from '@/components/admin/DomainSettings';
 import { useStoreConfig, useUpdateStoreConfig } from '@/hooks/useStore';
 import { useBusinessHours, useUpdateBusinessHour, getDayName, BusinessHour } from '@/hooks/useBusinessHours';
 import { useToast } from '@/hooks/use-toast';
@@ -197,6 +198,9 @@ const AdminSettings = () => {
 
         {/* Banner Customization */}
         <BannerSettings />
+
+        {/* Domain Settings */}
+        <DomainSettings />
 
         {/* Settings Form */}
         <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">

@@ -425,6 +425,7 @@ export type Database = {
           address: string | null
           cover_url: string | null
           created_at: string
+          custom_domain: string | null
           delivery_fee: number
           delivery_fee_mode: string | null
           delivery_time_max: number | null
@@ -446,6 +447,7 @@ export type Database = {
           pwa_name: string | null
           pwa_short_name: string | null
           secondary_color: string | null
+          subdomain_slug: string | null
           updated_at: string
         }
         Insert: {
@@ -453,6 +455,7 @@ export type Database = {
           address?: string | null
           cover_url?: string | null
           created_at?: string
+          custom_domain?: string | null
           delivery_fee?: number
           delivery_fee_mode?: string | null
           delivery_time_max?: number | null
@@ -474,6 +477,7 @@ export type Database = {
           pwa_name?: string | null
           pwa_short_name?: string | null
           secondary_color?: string | null
+          subdomain_slug?: string | null
           updated_at?: string
         }
         Update: {
@@ -481,6 +485,7 @@ export type Database = {
           address?: string | null
           cover_url?: string | null
           created_at?: string
+          custom_domain?: string | null
           delivery_fee?: number
           delivery_fee_mode?: string | null
           delivery_time_max?: number | null
@@ -502,6 +507,7 @@ export type Database = {
           pwa_name?: string | null
           pwa_short_name?: string | null
           secondary_color?: string | null
+          subdomain_slug?: string | null
           updated_at?: string
         }
         Relationships: []
