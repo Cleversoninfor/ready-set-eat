@@ -9,7 +9,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { AdminLayout } from '@/components/admin/AdminLayout';
-import { ImageUpload } from '@/components/admin/ImageUpload';
 import { useCategories, useCreateCategory, useUpdateCategory, useDeleteCategory, useReorderCategories, Category } from '@/hooks/useCategories';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -70,19 +69,6 @@ function SortableCategoryItem({ category, onEdit, onDelete }: SortableCategoryIt
         <GripVertical className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
       </button>
 
-      {/* Category Image */}
-      {category.image_url ? (
-        <img
-          src={category.image_url}
-          alt={category.name}
-          className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg object-cover shrink-0"
-        />
-      ) : (
-        <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-muted flex items-center justify-center shrink-0">
-          <span className="text-lg sm:text-xl">🍽️</span>
-        </div>
-      )}
-
       <div className="flex-1 min-w-0">
         <p className="font-medium text-foreground text-sm sm:text-base truncate">{category.name}</p>
         <p className="text-xs text-muted-foreground">Ordem: {category.sort_order}</p>
@@ -113,7 +99,6 @@ const AdminCategories = () => {
   const [formData, setFormData] = useState({
     name: '',
     sort_order: 0,
-    image_url: null as string | null,
   });
 
   const sensors = useSensors(
@@ -132,7 +117,6 @@ const AdminCategories = () => {
     setFormData({
       name: '',
       sort_order: (categories?.length || 0) + 1,
-      image_url: null,
     });
     setIsModalOpen(true);
   };
@@ -142,7 +126,6 @@ const AdminCategories = () => {
     setFormData({
       name: category.name,
       sort_order: category.sort_order,
-      image_url: category.image_url || null,
     });
     setIsModalOpen(true);
   };
@@ -161,14 +144,12 @@ const AdminCategories = () => {
           id: editingCategory.id,
           name: formData.name,
           sort_order: formData.sort_order,
-          image_url: formData.image_url,
         });
         toast({ title: 'Categoria atualizada!' });
       } else {
         await createCategory.mutateAsync({
           name: formData.name,
           sort_order: formData.sort_order,
-          image_url: formData.image_url,
         });
         toast({ title: 'Categoria criada!' });
       }
@@ -276,17 +257,6 @@ const AdminCategories = () => {
           </DialogHeader>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Image Upload */}
-            <div>
-              <label className="text-sm text-muted-foreground mb-2 block">Imagem</label>
-              <ImageUpload
-                bucket="store-assets"
-                currentUrl={formData.image_url}
-                onUpload={(url) => setFormData({ ...formData, image_url: url })}
-                onRemove={() => setFormData({ ...formData, image_url: null })}
-              />
-            </div>
-
             <div>
               <label className="text-sm text-muted-foreground">Nome *</label>
               <Input
