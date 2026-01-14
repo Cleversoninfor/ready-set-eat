@@ -22,6 +22,10 @@ export interface StoreConfig {
   accent_color: string | null;
   pwa_name: string | null;
   pwa_short_name: string | null;
+  hero_text_1: string | null;
+  hero_text_2: string | null;
+  hero_text_3: string | null;
+  hero_slogan: string | null;
 }
 
 export function useStoreConfig() {
@@ -58,6 +62,10 @@ export function useStoreConfig() {
           accent_color: '25 100% 95%',
           pwa_name: 'Cardápio',
           pwa_short_name: 'Cardápio',
+          hero_text_1: 'Carne macia',
+          hero_text_2: 'Suculenta',
+          hero_text_3: 'Sabor Irresistível',
+          hero_slogan: 'O segredo está no tempero',
         } as StoreConfig;
       }
       

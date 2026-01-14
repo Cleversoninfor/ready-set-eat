@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { ImageUpload } from '@/components/admin/ImageUpload';
 import { BrandSettings } from '@/components/admin/BrandSettings';
+import { BannerSettings } from '@/components/admin/BannerSettings';
 import { useStoreConfig, useUpdateStoreConfig } from '@/hooks/useStore';
 import { useBusinessHours, useUpdateBusinessHour, getDayName, BusinessHour } from '@/hooks/useBusinessHours';
 import { useToast } from '@/hooks/use-toast';
@@ -193,6 +194,9 @@ const AdminSettings = () => {
 
         {/* Brand Customization */}
         <BrandSettings />
+
+        {/* Banner Customization */}
+        <BannerSettings />
 
         {/* Settings Form */}
         <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
