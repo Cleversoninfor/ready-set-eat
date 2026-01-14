@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { StoreConfig } from '@/hooks/useStore';
 import { useCart } from '@/hooks/useCart';
 import { Button } from '@/components/ui/button';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import espetinhoImg from '@/assets/espetinho.png';
 
 interface HeroHeaderProps {
@@ -11,8 +11,6 @@ interface HeroHeaderProps {
 }
 
 const DEFAULT_COVER = 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=1920&h=800&fit=crop';
-
-const ROTATING_TEXTS = ['Carne macia', 'Suculenta', 'Sabor Irresistível'];
 
 export function HeroHeader({ store }: HeroHeaderProps) {
   const { totalItems } = useCart();
@@ -23,18 +21,31 @@ export function HeroHeader({ store }: HeroHeaderProps) {
 
   const coverUrl = store.cover_url || DEFAULT_COVER;
 
+  // Use texts from store config or defaults
+  const rotatingTexts = useMemo(() => {
+    return [
+      store.hero_text_1 || 'Carne macia',
+      store.hero_text_2 || 'Suculenta',
+      store.hero_text_3 || 'Sabor Irresistível',
+    ].filter(Boolean);
+  }, [store.hero_text_1, store.hero_text_2, store.hero_text_3]);
+
+  const heroSlogan = store.hero_slogan || 'O segredo está no tempero';
+
   // Rotating text animation
   useEffect(() => {
+    if (rotatingTexts.length <= 1) return;
+    
     const interval = setInterval(() => {
       setIsAnimating(true);
       setTimeout(() => {
-        setCurrentTextIndex((prev) => (prev + 1) % ROTATING_TEXTS.length);
+        setCurrentTextIndex((prev) => (prev + 1) % rotatingTexts.length);
         setIsAnimating(false);
       }, 300);
     }, 2500);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [rotatingTexts.length]);
 
   // Mouse parallax effect for desktop
   const handleMouseMove = (e: React.MouseEvent) => {
@@ -72,15 +83,15 @@ export function HeroHeader({ store }: HeroHeaderProps) {
     if (menuSection) {
       menuSection.scrollIntoView({ behavior: 'smooth' });
     } else {
-      window.scrollTo({ top: 500, behavior: 'smooth' });
+      window.scrollTo({ top: window.innerHeight, behavior: 'smooth' });
     }
   };
 
   return (
     <header className="relative">
-      {/* Full Hero Section */}
+      {/* Full Hero Section - Full viewport height on mobile (1080x1920 aspect), appropriate height on desktop (1920x1080 aspect) */}
       <div 
-        className="relative min-h-[420px] sm:min-h-[480px] overflow-hidden"
+        className="relative h-screen md:h-[80vh] lg:h-[70vh] min-h-[500px] max-h-[1080px] overflow-hidden"
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
       >
@@ -98,7 +109,7 @@ export function HeroHeader({ store }: HeroHeaderProps) {
           ref={imageRef}
           src={espetinhoImg}
           alt="Espetinho"
-          className="absolute right-4 sm:right-16 top-20 sm:top-24 w-32 sm:w-48 md:w-56 z-20 drop-shadow-2xl transition-transform duration-200 ease-out pointer-events-none"
+          className="absolute right-4 sm:right-16 top-24 sm:top-28 w-36 sm:w-52 md:w-64 lg:w-72 z-20 drop-shadow-2xl transition-transform duration-200 ease-out pointer-events-none"
           style={{
             transform: `translate(${imagePosition.x}px, ${imagePosition.y}px) rotate(-15deg)`,
           }}
@@ -148,35 +159,33 @@ export function HeroHeader({ store }: HeroHeaderProps) {
           </div>
         </nav>
 
-        {/* Hero Content */}
-        <div className="relative z-10 px-4 sm:px-8 pt-6 sm:pt-10 pb-10">
-          {/* Tagline */}
-          {store.address && (
-            <p className="text-base sm:text-lg italic text-white/80 mb-6 sm:mb-8">
-              {store.address}
-            </p>
-          )}
+        {/* Hero Content - Centered vertically */}
+        <div className="relative z-10 flex flex-col justify-center h-[calc(100%-80px)] px-4 sm:px-8 pb-10">
+          {/* Slogan */}
+          <p className="text-base sm:text-lg lg:text-xl italic text-white/80 mb-4 sm:mb-6">
+            {heroSlogan}
+          </p>
 
           {/* Main Title */}
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white leading-tight mb-3 drop-shadow-lg"
+          <h1 className="text-4xl sm:text-5xl lg:text-7xl font-extrabold text-white leading-tight mb-3 drop-shadow-lg"
               style={{ fontFamily: "'Poppins', sans-serif", textShadow: '2px 4px 8px rgba(0,0,0,0.4)' }}>
             {store.name}
           </h1>
 
-          {/* Animated Subtitle/Slogan */}
-          <div className="h-14 sm:h-16 lg:h-20 mb-6 overflow-hidden">
+          {/* Animated Subtitle */}
+          <div className="h-16 sm:h-20 lg:h-24 mb-6 overflow-hidden">
             <p 
-              className={`text-3xl sm:text-4xl lg:text-5xl font-extrabold text-primary mb-6 drop-shadow-md transition-all duration-300 ${
+              className={`text-3xl sm:text-4xl lg:text-6xl font-extrabold text-primary drop-shadow-md transition-all duration-300 ${
                 isAnimating ? 'opacity-0 translate-y-4' : 'opacity-100 translate-y-0'
               }`}
               style={{ fontFamily: "'Poppins', sans-serif", textShadow: '2px 4px 8px rgba(0,0,0,0.3)' }}
             >
-              {ROTATING_TEXTS[currentTextIndex]}
+              {rotatingTexts[currentTextIndex]}
             </p>
           </div>
 
           {/* Info Line */}
-          <div className="flex flex-col gap-1 text-white/90 mb-6 text-sm sm:text-base font-medium">
+          <div className="flex flex-col gap-1 text-white/90 mb-8 text-sm sm:text-base font-medium">
             <span>Entrega Rápida!</span>
             {store.phone_whatsapp && (
               <span>{store.phone_whatsapp}</span>
@@ -187,14 +196,14 @@ export function HeroHeader({ store }: HeroHeaderProps) {
           <Button
             onClick={scrollToMenu}
             size="lg"
-            className="bg-destructive hover:bg-destructive/90 text-destructive-foreground font-semibold px-8 py-3 rounded-full shadow-lg transition-transform hover:scale-105"
+            className="w-fit bg-destructive hover:bg-destructive/90 text-destructive-foreground font-semibold px-10 py-4 text-lg rounded-full shadow-lg transition-transform hover:scale-105"
           >
             Cardápio
           </Button>
         </div>
 
-        {/* Decorative dots pattern (optional subtle effect) */}
-        <div className="absolute right-4 sm:right-12 top-1/3 flex flex-col gap-2 opacity-40">
+        {/* Decorative dots pattern */}
+        <div className="absolute right-4 sm:right-12 bottom-20 flex flex-col gap-2 opacity-40">
           {[...Array(5)].map((_, i) => (
             <div key={i} className="flex gap-2">
               {[...Array(3)].map((_, j) => (
@@ -202,6 +211,13 @@ export function HeroHeader({ store }: HeroHeaderProps) {
               ))}
             </div>
           ))}
+        </div>
+
+        {/* Scroll indicator */}
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
+          <div className="w-6 h-10 border-2 border-white/50 rounded-full flex items-start justify-center p-2">
+            <div className="w-1.5 h-3 bg-white/70 rounded-full" />
+          </div>
         </div>
       </div>
     </header>
