@@ -7,7 +7,11 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import defaultFloatingImg from '@/assets/espetinho.png';
 
 interface HeroHeaderProps {
-  store: StoreConfig & { floating_image_url?: string | null };
+  store: StoreConfig & { 
+    floating_image_url?: string | null;
+    floating_image_size?: number | null;
+    floating_image_position?: number | null;
+  };
 }
 
 const DEFAULT_COVER = 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=1920&h=800&fit=crop';
@@ -21,6 +25,8 @@ export function HeroHeader({ store }: HeroHeaderProps) {
 
   const coverUrl = store.cover_url || DEFAULT_COVER;
   const floatingImageUrl = store.floating_image_url || defaultFloatingImg;
+  const floatingImageSize = store.floating_image_size ?? 100;
+  const floatingImagePosition = store.floating_image_position ?? 50;
 
   // Use texts from store config or defaults
   const rotatingTexts = useMemo(() => {
@@ -177,9 +183,6 @@ export function HeroHeader({ store }: HeroHeaderProps) {
           {/* Info Line */}
           <div className="flex flex-col gap-1 text-white/90 mb-4 md:mb-8 text-base sm:text-lg font-medium">
             <span>Entrega Rápida!</span>
-            {store.phone_whatsapp && (
-              <span>{store.phone_whatsapp}</span>
-            )}
           </div>
 
           {/* CTA Button */}
@@ -198,11 +201,13 @@ export function HeroHeader({ store }: HeroHeaderProps) {
           src={floatingImageUrl}
           alt="Destaque"
           className="absolute z-20 drop-shadow-2xl transition-transform duration-200 ease-out pointer-events-none
-            right-4 bottom-32 w-40 
-            md:right-16 md:top-28 md:bottom-auto md:w-52 
-            lg:w-72"
+            bottom-32 
+            md:top-28 md:bottom-auto"
           style={{
             transform: `translate(${imagePosition.x}px, ${imagePosition.y}px) rotate(-15deg)`,
+            width: `${Math.round(160 * floatingImageSize / 100)}px`,
+            right: `${100 - floatingImagePosition}%`,
+            marginRight: `${-80 * floatingImageSize / 100}px`,
           }}
         />
 
