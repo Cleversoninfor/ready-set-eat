@@ -67,17 +67,8 @@ const AdminSettings = () => {
   }, [store]);
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!store?.id) {
-      toast({
-        title: 'Erro',
-        description: 'Configuração não encontrada',
-        variant: 'destructive'
-      });
-      return;
-    }
     try {
-      await updateStore.mutateAsync({
-        id: store.id,
+      const updateData: any = {
         name: formData.name,
         phone_whatsapp: formData.phone_whatsapp || null,
         pix_key: formData.pix_key || null,
@@ -90,7 +81,13 @@ const AdminSettings = () => {
         delivery_time_max: parseInt(formData.delivery_time_max) || 45,
         is_open: formData.is_open,
         address: formData.address || null
-      });
+      };
+      
+      // Only include id if it exists (for update vs insert)
+      if (store?.id) {
+        updateData.id = store.id;
+      }
+      await updateStore.mutateAsync(updateData);
       toast({
         title: 'Configurações salvas!'
       });

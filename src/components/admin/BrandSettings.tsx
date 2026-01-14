@@ -63,18 +63,22 @@ export function BrandSettings({ className }: BrandSettingsProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!store?.id) return;
 
     try {
-      await updateStore.mutateAsync({
-        id: store.id,
+      const updateData: any = {
         name: formData.name,
         logo_url: formData.logo_url || null,
         primary_color: formData.primary_color,
         secondary_color: formData.secondary_color,
         pwa_name: formData.pwa_name || formData.name,
         pwa_short_name: formData.pwa_short_name || formData.pwa_name?.slice(0, 12) || formData.name.slice(0, 12),
-      });
+      };
+      
+      if (store?.id) {
+        updateData.id = store.id;
+      }
+      
+      await updateStore.mutateAsync(updateData);
       toast({ title: 'Marca atualizada com sucesso!' });
     } catch (error: any) {
       toast({ title: 'Erro ao salvar', description: error.message, variant: 'destructive' });

@@ -82,8 +82,8 @@ export function useUpdateStoreConfig() {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async ({ id, ...update }: Partial<StoreConfig> & { id: string }) => {
-      // If no id, we need to create the config first
+    mutationFn: async ({ id, ...update }: Partial<StoreConfig> & { id?: string }) => {
+      // If no id or empty id, we need to create the config first
       if (!id) {
         const { data, error } = await supabase
           .from('store_config')

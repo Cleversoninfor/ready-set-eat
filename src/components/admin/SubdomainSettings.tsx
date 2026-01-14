@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useStoreConfig, useUpdateStoreConfig } from '@/hooks/useStore';
 import { useToast } from '@/hooks/use-toast';
-import { Globe, Copy, Check, ExternalLink, Info } from 'lucide-react';
+import { Globe, Copy, Check, ExternalLink, Info, Loader2 } from 'lucide-react';
 
 export function SubdomainSettings() {
   const { data: storeConfig } = useStoreConfig();
@@ -21,21 +21,23 @@ export function SubdomainSettings() {
     }
   }, [storeConfig?.subdomain_slug]);
 
-  const handleSave = async () => {
-    if (!storeConfig?.id) return;
-    
-    // Validar subdomain (apenas letras minúsculas, números e hífens)
-    const cleanSubdomain = subdomain.toLowerCase().replace(/[^a-z0-9-]/g, '');
-    
-    if (cleanSubdomain !== subdomain) {
-      setSubdomain(cleanSubdomain);
-    }
+  const handleSubdomainChange = (value: string) => {
+    // Limpar e validar em tempo real
+    const cleanValue = value.toLowerCase().replace(/[^a-z0-9-]/g, '');
+    setSubdomain(cleanValue);
+  };
 
+  const handleSave = async () => {
     try {
-      await updateConfig.mutateAsync({
-        id: storeConfig.id,
-        subdomain_slug: cleanSubdomain || null,
-      });
+      const updateData: any = {
+        subdomain_slug: subdomain || null,
+      };
+      
+      if (storeConfig?.id) {
+        updateData.id = storeConfig.id;
+      }
+      
+      await updateConfig.mutateAsync(updateData);
       toast({ title: 'Subdomínio salvo com sucesso!' });
     } catch (error) {
       toast({ 
@@ -70,12 +72,12 @@ export function SubdomainSettings() {
       <CardContent className="space-y-6">
         {/* Subdomain Input */}
         <div className="space-y-2">
-          <label className="text-sm font-medium">Subdomínio</label>
+          <label className="text-sm font-medium">Subdomínio (opcional)</label>
           <div className="flex items-center gap-2">
             <div className="flex-1 flex items-center">
               <Input
                 value={subdomain}
-                onChange={(e) => setSubdomain(e.target.value.toLowerCase())}
+                onChange={(e) => handleSubdomainChange(e.target.value)}
                 placeholder="meucardapio"
                 className="rounded-r-none"
               />
@@ -84,11 +86,16 @@ export function SubdomainSettings() {
               </span>
             </div>
             <Button onClick={handleSave} disabled={updateConfig.isPending}>
-              {updateConfig.isPending ? 'Salvando...' : 'Salvar'}
+              {updateConfig.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Salvando...
+                </>
+              ) : 'Salvar'}
             </Button>
           </div>
           <p className="text-xs text-muted-foreground">
-            Use apenas letras minúsculas, números e hífens
+            Use apenas letras minúsculas, números e hífens. Deixe vazio se não quiser usar subdomínio.
           </p>
         </div>
 
