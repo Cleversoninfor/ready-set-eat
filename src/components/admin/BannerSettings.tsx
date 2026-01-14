@@ -38,17 +38,21 @@ export function BannerSettings({ className }: BannerSettingsProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!store?.id) return;
 
     try {
-      await updateStore.mutateAsync({
-        id: store.id,
+      const updateData: any = {
         cover_url: formData.cover_url || null,
         hero_text_1: formData.hero_text_1 || null,
         hero_text_2: formData.hero_text_2 || null,
         hero_text_3: formData.hero_text_3 || null,
         hero_slogan: formData.hero_slogan || null,
-      });
+      };
+      
+      if (store?.id) {
+        updateData.id = store.id;
+      }
+      
+      await updateStore.mutateAsync(updateData);
       toast({ title: 'Banner atualizado com sucesso!' });
     } catch (error: any) {
       toast({ title: 'Erro ao salvar', description: error.message, variant: 'destructive' });
