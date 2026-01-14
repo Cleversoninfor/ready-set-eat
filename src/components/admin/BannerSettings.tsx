@@ -22,6 +22,7 @@ export function BannerSettings({ className }: BannerSettingsProps) {
     hero_text_2: 'Suculenta',
     hero_text_3: 'Sabor Irresistível',
     hero_slogan: 'O segredo está no tempero',
+    floating_image_url: '',
   });
 
   useEffect(() => {
@@ -32,6 +33,7 @@ export function BannerSettings({ className }: BannerSettingsProps) {
         hero_text_2: store.hero_text_2 || 'Suculenta',
         hero_text_3: store.hero_text_3 || 'Sabor Irresistível',
         hero_slogan: store.hero_slogan || 'O segredo está no tempero',
+        floating_image_url: (store as any).floating_image_url || '',
       });
     }
   }, [store]);
@@ -46,6 +48,7 @@ export function BannerSettings({ className }: BannerSettingsProps) {
         hero_text_2: formData.hero_text_2 || null,
         hero_text_3: formData.hero_text_3 || null,
         hero_slogan: formData.hero_slogan || null,
+        floating_image_url: formData.floating_image_url || null,
       };
       
       if (store?.id) {
@@ -133,6 +136,23 @@ export function BannerSettings({ className }: BannerSettingsProps) {
                 placeholder="Ex: Sabor Irresistível"
               />
             </div>
+          </div>
+
+          {/* Floating Image */}
+          <div className="border-t pt-6 space-y-2">
+            <Label className="text-xs sm:text-sm text-muted-foreground">
+              Imagem Animada (Efeito Parallax)
+            </Label>
+            <ImageUpload
+              bucket="store-assets"
+              currentUrl={formData.floating_image_url}
+              onUpload={(url) => setFormData({ ...formData, floating_image_url: url })}
+              onRemove={() => setFormData({ ...formData, floating_image_url: '' })}
+            />
+            <p className="text-xs text-muted-foreground">
+              Esta imagem aparece flutuando sobre o banner com efeito de movimento. 
+              Recomendado: imagem PNG com fundo transparente.
+            </p>
           </div>
         </div>
 
