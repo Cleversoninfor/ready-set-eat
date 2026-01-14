@@ -242,12 +242,12 @@ export function BannerSettings({ className }: BannerSettingsProps) {
                 value={[getCurrentSize()]}
                 onValueChange={(value) => setCurrentSize(value[0])}
                 min={50}
-                max={500}
+                max={deviceMode === 'desktop' ? 500 : 1000}
                 step={10}
                 className="w-full"
               />
               <p className="text-xs text-muted-foreground">
-                Ajuste o tamanho da imagem animada (50% a 500%)
+                Ajuste o tamanho da imagem animada (50% a {deviceMode === 'desktop' ? '500' : '1000'}%)
               </p>
             </div>
 
@@ -264,8 +264,8 @@ export function BannerSettings({ className }: BannerSettingsProps) {
               <Slider
                 value={[getCurrentHorizontalPosition()]}
                 onValueChange={(value) => setCurrentHorizontalPosition(value[0])}
-                min={10}
-                max={90}
+                min={deviceMode === 'desktop' ? 10 : -500}
+                max={deviceMode === 'desktop' ? 90 : 1000}
                 step={5}
                 className="w-full"
               />
@@ -288,8 +288,8 @@ export function BannerSettings({ className }: BannerSettingsProps) {
               <Slider
                 value={[getCurrentVerticalPosition()]}
                 onValueChange={(value) => setCurrentVerticalPosition(value[0])}
-                min={10}
-                max={90}
+                min={deviceMode === 'desktop' ? 10 : -500}
+                max={deviceMode === 'desktop' ? 90 : 1000}
                 step={5}
                 className="w-full"
               />
