@@ -430,6 +430,7 @@ export type Database = {
           delivery_fee_mode: string | null
           delivery_time_max: number | null
           delivery_time_min: number | null
+          floating_image_url: string | null
           hero_slogan: string | null
           hero_text_1: string | null
           hero_text_2: string | null
@@ -460,6 +461,7 @@ export type Database = {
           delivery_fee_mode?: string | null
           delivery_time_max?: number | null
           delivery_time_min?: number | null
+          floating_image_url?: string | null
           hero_slogan?: string | null
           hero_text_1?: string | null
           hero_text_2?: string | null
@@ -490,6 +492,7 @@ export type Database = {
           delivery_fee_mode?: string | null
           delivery_time_max?: number | null
           delivery_time_min?: number | null
+          floating_image_url?: string | null
           hero_slogan?: string | null
           hero_text_1?: string | null
           hero_text_2?: string | null

@@ -4,10 +4,10 @@ import { StoreConfig } from '@/hooks/useStore';
 import { useCart } from '@/hooks/useCart';
 import { Button } from '@/components/ui/button';
 import { useState, useEffect, useRef, useMemo } from 'react';
-import espetinhoImg from '@/assets/espetinho.png';
+import defaultFloatingImg from '@/assets/espetinho.png';
 
 interface HeroHeaderProps {
-  store: StoreConfig;
+  store: StoreConfig & { floating_image_url?: string | null };
 }
 
 const DEFAULT_COVER = 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=1920&h=800&fit=crop';
@@ -20,6 +20,7 @@ export function HeroHeader({ store }: HeroHeaderProps) {
   const imageRef = useRef<HTMLImageElement>(null);
 
   const coverUrl = store.cover_url || DEFAULT_COVER;
+  const floatingImageUrl = store.floating_image_url || defaultFloatingImg;
 
   // Use texts from store config or defaults
   const rotatingTexts = useMemo(() => {
@@ -104,17 +105,6 @@ export function HeroHeader({ store }: HeroHeaderProps) {
         {/* Dark Overlay with texture effect */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/80" />
 
-        {/* Floating Espetinho Image */}
-        <img
-          ref={imageRef}
-          src={espetinhoImg}
-          alt="Espetinho"
-          className="absolute right-4 sm:right-16 top-24 sm:top-28 w-36 sm:w-52 md:w-64 lg:w-72 z-20 drop-shadow-2xl transition-transform duration-200 ease-out pointer-events-none"
-          style={{
-            transform: `translate(${imagePosition.x}px, ${imagePosition.y}px) rotate(-15deg)`,
-          }}
-        />
-
         {/* Navigation Bar */}
         <nav className="relative z-10 flex items-center justify-between px-4 sm:px-8 py-4">
           {/* Logo */}
@@ -159,21 +149,21 @@ export function HeroHeader({ store }: HeroHeaderProps) {
           </div>
         </nav>
 
-        {/* Hero Content - Centered vertically */}
-        <div className="relative z-10 flex flex-col justify-center h-[calc(100%-80px)] px-4 sm:px-8 pb-10">
+        {/* Hero Content - Mobile: positioned higher, Desktop: centered */}
+        <div className="relative z-10 flex flex-col justify-start md:justify-center h-[calc(100%-80px)] px-4 sm:px-8 pt-4 md:pt-0 pb-10">
           {/* Slogan */}
-          <p className="text-lg sm:text-xl lg:text-2xl italic text-white/80 mb-4 sm:mb-6">
+          <p className="text-lg sm:text-xl lg:text-2xl italic text-white/80 mb-3 md:mb-6">
             {heroSlogan}
           </p>
 
           {/* Main Title */}
-          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold text-white leading-tight mb-3 drop-shadow-lg"
+          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold text-white leading-tight mb-2 md:mb-3 drop-shadow-lg"
               style={{ fontFamily: "'Poppins', sans-serif", textShadow: '2px 4px 8px rgba(0,0,0,0.4)' }}>
             {store.name}
           </h1>
 
           {/* Animated Subtitle */}
-          <div className="h-20 sm:h-24 lg:h-28 mb-6 overflow-hidden">
+          <div className="h-16 md:h-24 lg:h-28 mb-4 md:mb-6 overflow-hidden">
             <p 
               className={`text-4xl sm:text-5xl lg:text-6xl font-extrabold text-primary drop-shadow-md transition-all duration-300 ${
                 isAnimating ? 'opacity-0 translate-y-4' : 'opacity-100 translate-y-0'
@@ -185,7 +175,7 @@ export function HeroHeader({ store }: HeroHeaderProps) {
           </div>
 
           {/* Info Line */}
-          <div className="flex flex-col gap-1 text-white/90 mb-8 text-base sm:text-lg font-medium">
+          <div className="flex flex-col gap-1 text-white/90 mb-4 md:mb-8 text-base sm:text-lg font-medium">
             <span>Entrega Rápida!</span>
             {store.phone_whatsapp && (
               <span>{store.phone_whatsapp}</span>
@@ -202,8 +192,22 @@ export function HeroHeader({ store }: HeroHeaderProps) {
           </Button>
         </div>
 
+        {/* Floating Image - Mobile: positioned lower, Desktop: top right */}
+        <img
+          ref={imageRef}
+          src={floatingImageUrl}
+          alt="Destaque"
+          className="absolute z-20 drop-shadow-2xl transition-transform duration-200 ease-out pointer-events-none
+            right-4 bottom-32 w-40 
+            md:right-16 md:top-28 md:bottom-auto md:w-52 
+            lg:w-72"
+          style={{
+            transform: `translate(${imagePosition.x}px, ${imagePosition.y}px) rotate(-15deg)`,
+          }}
+        />
+
         {/* Decorative dots pattern */}
-        <div className="absolute right-4 sm:right-12 bottom-20 flex flex-col gap-2 opacity-40">
+        <div className="absolute right-4 sm:right-12 bottom-20 md:bottom-20 flex flex-col gap-2 opacity-40">
           {[...Array(5)].map((_, i) => (
             <div key={i} className="flex gap-2">
               {[...Array(3)].map((_, j) => (
