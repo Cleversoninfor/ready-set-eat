@@ -36,9 +36,9 @@ export function BannerSettings({ className }: BannerSettingsProps) {
         hero_text_2: store.hero_text_2 || 'Suculenta',
         hero_text_3: store.hero_text_3 || 'Sabor Irresistível',
         hero_slogan: store.hero_slogan || 'O segredo está no tempero',
-        floating_image_url: (store as any).floating_image_url || '',
-        floating_image_size: (store as any).floating_image_size ?? 100,
-        floating_image_position: (store as any).floating_image_position ?? 50,
+        floating_image_url: store.floating_image_url || '',
+        floating_image_size: store.floating_image_size ?? 100,
+        floating_image_position: store.floating_image_position ?? 50,
       });
     }
   }, [store]);
@@ -174,12 +174,12 @@ export function BannerSettings({ className }: BannerSettingsProps) {
                 value={[formData.floating_image_size]}
                 onValueChange={(value) => setFormData({ ...formData, floating_image_size: value[0] })}
                 min={50}
-                max={200}
+                max={500}
                 step={10}
                 className="w-full"
               />
               <p className="text-xs text-muted-foreground">
-                Ajuste o tamanho da imagem animada (50% a 200%)
+                Ajuste o tamanho da imagem animada (50% a 500%)
               </p>
             </div>
 
