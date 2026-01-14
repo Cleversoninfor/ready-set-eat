@@ -26,6 +26,8 @@ export interface StoreConfig {
   hero_text_2: string | null;
   hero_text_3: string | null;
   hero_slogan: string | null;
+  custom_domain: string | null;
+  subdomain_slug: string | null;
 }
 
 export function useStoreConfig() {
@@ -66,6 +68,8 @@ export function useStoreConfig() {
           hero_text_2: 'Suculenta',
           hero_text_3: 'Sabor Irresistível',
           hero_slogan: 'O segredo está no tempero',
+          custom_domain: null,
+          subdomain_slug: null,
         } as StoreConfig;
       }
       
