@@ -162,20 +162,20 @@ export function HeroHeader({ store }: HeroHeaderProps) {
         {/* Hero Content - Centered vertically */}
         <div className="relative z-10 flex flex-col justify-center h-[calc(100%-80px)] px-4 sm:px-8 pb-10">
           {/* Slogan */}
-          <p className="text-base sm:text-lg lg:text-xl italic text-white/80 mb-4 sm:mb-6">
+          <p className="text-lg sm:text-xl lg:text-2xl italic text-white/80 mb-4 sm:mb-6">
             {heroSlogan}
           </p>
 
           {/* Main Title */}
-          <h1 className="text-4xl sm:text-5xl lg:text-7xl font-extrabold text-white leading-tight mb-3 drop-shadow-lg"
+          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold text-white leading-tight mb-3 drop-shadow-lg"
               style={{ fontFamily: "'Poppins', sans-serif", textShadow: '2px 4px 8px rgba(0,0,0,0.4)' }}>
             {store.name}
           </h1>
 
           {/* Animated Subtitle */}
-          <div className="h-16 sm:h-20 lg:h-24 mb-6 overflow-hidden">
+          <div className="h-20 sm:h-24 lg:h-28 mb-6 overflow-hidden">
             <p 
-              className={`text-3xl sm:text-4xl lg:text-6xl font-extrabold text-primary drop-shadow-md transition-all duration-300 ${
+              className={`text-4xl sm:text-5xl lg:text-6xl font-extrabold text-primary drop-shadow-md transition-all duration-300 ${
                 isAnimating ? 'opacity-0 translate-y-4' : 'opacity-100 translate-y-0'
               }`}
               style={{ fontFamily: "'Poppins', sans-serif", textShadow: '2px 4px 8px rgba(0,0,0,0.3)' }}
@@ -185,7 +185,7 @@ export function HeroHeader({ store }: HeroHeaderProps) {
           </div>
 
           {/* Info Line */}
-          <div className="flex flex-col gap-1 text-white/90 mb-8 text-sm sm:text-base font-medium">
+          <div className="flex flex-col gap-1 text-white/90 mb-8 text-base sm:text-lg font-medium">
             <span>Entrega Rápida!</span>
             {store.phone_whatsapp && (
               <span>{store.phone_whatsapp}</span>

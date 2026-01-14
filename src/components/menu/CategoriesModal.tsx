@@ -9,16 +9,6 @@ interface CategoriesModalProps {
   onCategorySelect: (categoryId: string | null) => void;
 }
 
-const categoryEmojis: Record<string, string> = {
-  'Lanches': '🍔',
-  'Hambúrgueres': '🍔',
-  'Porções': '🍟',
-  'Acompanhamentos': '🍟',
-  'Bebidas': '🥤',
-  'Combos': '🍱',
-  'Sobremesas': '🍨',
-};
-
 export function CategoriesModal({ open, onOpenChange, categories, onCategorySelect }: CategoriesModalProps) {
   const handleSelect = (categoryId: string | null) => {
     onCategorySelect(categoryId);
@@ -33,46 +23,24 @@ export function CategoriesModal({ open, onOpenChange, categories, onCategorySele
         </DialogHeader>
         
         <div className="flex-1 overflow-y-auto py-4">
-          <div className="grid grid-cols-3 gap-4 px-2">
+          <div className="flex flex-wrap gap-2 px-2">
             {/* Todos */}
             <button
               onClick={() => handleSelect(null)}
-              className="flex flex-col items-center gap-2"
+              className="rounded-full px-4 py-2 text-sm font-medium bg-primary text-primary-foreground shadow-card"
             >
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary shadow-md">
-                <span className="text-3xl">🍽️</span>
-              </div>
-              <span className="text-xs font-medium text-primary text-center">
-                Todos
-              </span>
+              Todos
             </button>
 
-            {categories.map((category) => {
-              const emoji = categoryEmojis[category.name] || '🍴';
-              
-              return (
-                <button
-                  key={category.id}
-                  onClick={() => handleSelect(category.id)}
-                  className="flex flex-col items-center gap-2"
-                >
-                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted transition-colors hover:bg-primary/20 overflow-hidden">
-                    {category.image_url ? (
-                      <img 
-                        src={category.image_url} 
-                        alt={category.name}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <span className="text-3xl">{emoji}</span>
-                    )}
-                  </div>
-                  <span className="text-xs font-medium text-muted-foreground text-center line-clamp-2">
-                    {category.name}
-                  </span>
-                </button>
-              );
-            })}
+            {categories.map((category) => (
+              <button
+                key={category.id}
+                onClick={() => handleSelect(category.id)}
+                className="rounded-full px-4 py-2 text-sm font-medium bg-card text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-200"
+              >
+                {category.name}
+              </button>
+            ))}
           </div>
         </div>
       </DialogContent>
