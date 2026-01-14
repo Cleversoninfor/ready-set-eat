@@ -1,27 +1,14 @@
 import { Category } from '@/hooks/useCategories';
-import { ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
-import { CategoriesModal } from './CategoriesModal';
 
 interface CategoryIconsProps {
   categories: Category[];
   onCategorySelect: (categoryId: string) => void;
 }
 
-const categoryEmojis: Record<string, string> = {
-  'Lanches': '🍔',
-  'Hambúrgueres': '🍔',
-  'Porções': '🍟',
-  'Acompanhamentos': '🍟',
-  'Bebidas': '🥤',
-  'Combos': '🍱',
-  'Sobremesas': '🍨',
-};
-
 export function CategoryIcons({ categories, onCategorySelect }: CategoryIconsProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [showAllCategories, setShowAllCategories] = useState(false);
 
   const handleSelect = (categoryId: string | null) => {
     setSelectedId(categoryId);
@@ -33,85 +20,44 @@ export function CategoryIcons({ categories, onCategorySelect }: CategoryIconsPro
   };
 
   return (
-    <>
-      <div className="mt-6 px-4">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-base font-bold text-foreground">Categorias</h3>
-          <button 
-            onClick={() => setShowAllCategories(true)}
-            className="flex items-center gap-1 text-xs font-semibold text-primary"
-          >
-            Ver todas
-            <ChevronRight className="h-3 w-3" />
-          </button>
-        </div>
-        
-        <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-          {/* Todos */}
-          <button
-            onClick={() => handleSelect(null)}
-            className="flex flex-col items-center gap-2 min-w-[72px]"
-          >
-            <div className={cn(
-              "flex h-14 w-14 items-center justify-center rounded-2xl transition-colors",
-              selectedId === null 
-                ? "bg-primary shadow-md" 
-                : "bg-muted"
-            )}>
-              <span className="text-2xl">🍽️</span>
-            </div>
-            <span className={cn(
-              "text-xs font-medium text-center",
-              selectedId === null ? "text-primary" : "text-muted-foreground"
-            )}>
-              Todos
-            </span>
-          </button>
-
-          {categories.map((category) => {
-            const emoji = categoryEmojis[category.name] || '🍴';
-            const isSelected = selectedId === category.id;
-            
-            return (
-              <button
-                key={category.id}
-                onClick={() => handleSelect(category.id)}
-                className="flex flex-col items-center gap-2 min-w-[72px]"
-              >
-                <div className={cn(
-                  "flex h-14 w-14 items-center justify-center rounded-2xl transition-colors overflow-hidden",
-                  isSelected 
-                    ? "bg-primary shadow-md" 
-                    : "bg-muted"
-                )}>
-                  {category.image_url ? (
-                    <img 
-                      src={category.image_url} 
-                      alt={category.name}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <span className="text-2xl">{emoji}</span>
-                  )}
-                </div>
-                <span className={cn(
-                  "text-xs font-medium text-center line-clamp-1",
-                  isSelected ? "text-primary" : "text-muted-foreground"
-                )}>
-                  {category.name}
-                </span>
-              </button>
-            );
-          })}
-        </div>
+    <div className="mt-6 px-4">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-base font-bold text-foreground">Categorias</h3>
       </div>
+      
+      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+        {/* Todos */}
+        <button
+          onClick={() => handleSelect(null)}
+          className={cn(
+            "shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-all duration-200",
+            selectedId === null
+              ? "bg-primary text-primary-foreground shadow-card"
+              : "bg-card text-muted-foreground hover:bg-muted hover:text-foreground"
+          )}
+        >
+          Todos
+        </button>
 
-      <CategoriesModal
-        open={showAllCategories}
-        onOpenChange={setShowAllCategories}
-        categories={categories}
-        onCategorySelect={handleSelect}
-      />
-    </>
+        {categories.map((category) => {
+          const isSelected = selectedId === category.id;
+          
+          return (
+            <button
+              key={category.id}
+              onClick={() => handleSelect(category.id)}
+              className={cn(
+                "shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-all duration-200",
+                isSelected
+                  ? "bg-primary text-primary-foreground shadow-card"
+                  : "bg-card text-muted-foreground hover:bg-muted hover:text-foreground"
+              )}
+            >
+              {category.name}
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 }
