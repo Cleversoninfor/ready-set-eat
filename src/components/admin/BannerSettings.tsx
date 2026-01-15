@@ -262,21 +262,23 @@ export function BannerSettings({ className }: BannerSettingsProps) {
                   Posição Horizontal ({deviceMode === 'desktop' ? 'Desktop' : 'Mobile'})
                 </Label>
                 <span className="text-xs font-medium text-primary">
-                  {getCurrentHorizontalPosition() < 50
-                    ? 'Esquerda'
-                    : getCurrentHorizontalPosition() > 50
-                      ? 'Direita'
-                      : 'Centro'}
+                  {deviceMode === 'mobile'
+                    ? `${getCurrentHorizontalPosition()}px`
+                    : getCurrentHorizontalPosition() < 50
+                      ? 'Esquerda'
+                      : getCurrentHorizontalPosition() > 50
+                        ? 'Direita'
+                        : 'Centro'}
                 </span>
               </div>
-              <Slider
-                value={[getCurrentHorizontalPosition()]}
-                onValueChange={(value) => setCurrentHorizontalPosition(value[0])}
-                min={deviceMode === 'desktop' ? 10 : -500}
-                max={deviceMode === 'desktop' ? 90 : 1000}
-                step={5}
-                className="w-full"
-              />
+                <Slider
+                  value={[getCurrentHorizontalPosition()]}
+                  onValueChange={(value) => setCurrentHorizontalPosition(value[0])}
+                  min={deviceMode === 'desktop' ? 10 : -500}
+                  max={deviceMode === 'desktop' ? 90 : 500}
+                  step={5}
+                  className="w-full"
+                />
               <div className="flex justify-between text-xs text-muted-foreground">
                 <span>← Esquerda</span>
                 <span>Direita →</span>
@@ -290,18 +292,20 @@ export function BannerSettings({ className }: BannerSettingsProps) {
                   Posição Vertical ({deviceMode === 'desktop' ? 'Desktop' : 'Mobile'})
                 </Label>
                 <span className="text-xs font-medium text-primary">
-                  {getCurrentVerticalPosition() < 50
-                    ? 'Topo'
-                    : getCurrentVerticalPosition() > 50
-                      ? 'Baixo'
-                      : 'Centro'}
+                  {deviceMode === 'mobile'
+                    ? `${getCurrentVerticalPosition()}px`
+                    : getCurrentVerticalPosition() < 50
+                      ? 'Topo'
+                      : getCurrentVerticalPosition() > 50
+                        ? 'Baixo'
+                        : 'Centro'}
                 </span>
               </div>
               <Slider
                 value={[getCurrentVerticalPosition()]}
                 onValueChange={(value) => setCurrentVerticalPosition(value[0])}
                 min={deviceMode === 'desktop' ? 10 : -500}
-                max={deviceMode === 'desktop' ? 90 : 1000}
+                max={deviceMode === 'desktop' ? 90 : 500}
                 step={5}
                 className="w-full"
               />
