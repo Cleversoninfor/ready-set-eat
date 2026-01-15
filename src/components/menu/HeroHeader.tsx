@@ -221,11 +221,12 @@ export function HeroHeader({ store }: HeroHeaderProps) {
             ref={imageRef}
             src={floatingImageUrl}
             alt="Destaque"
-            className={`absolute drop-shadow-2xl transition-transform duration-200 ease-out pointer-events-none ${isMobile ? 'z-0' : 'z-30'}`}
+            className={`absolute drop-shadow-2xl transition-transform duration-200 ease-out pointer-events-none ${isMobile ? 'z-20' : 'z-30'}`}
             style={
               isMobile
                 ? {
                     width: `${imageWidth}px`,
+                    maxWidth: 'none',
                     left: '50%',
                     top: '50%',
                     transform: `translate(calc(-50% + ${floatingImageHorizontalPosition}px + ${imagePosition.x}px), calc(-50% + ${floatingImageVerticalPosition}px + ${imagePosition.y}px)) rotate(-15deg)`,
@@ -233,6 +234,7 @@ export function HeroHeader({ store }: HeroHeaderProps) {
                 : {
                     transform: `translate(${imagePosition.x}px, ${imagePosition.y}px) rotate(-15deg)`,
                     width: `${imageWidth}px`,
+                    maxWidth: 'none',
                     left: `${floatingImageHorizontalPosition}%`,
                     top: `${floatingImageVerticalPosition}%`,
                     marginLeft: `${-imageWidth / 2}px`,
