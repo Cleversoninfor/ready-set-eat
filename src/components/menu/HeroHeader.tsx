@@ -173,8 +173,8 @@ export function HeroHeader({ store }: HeroHeaderProps) {
           </div>
         </nav>
 
-        {/* Hero Content - Mobile: positioned higher, Desktop: centered */}
-        <div className="relative z-10 flex flex-col justify-start md:justify-center h-[calc(100%-80px)] px-4 sm:px-8 pt-4 md:pt-0 pb-10">
+        {/* Hero Content - Mobile: centered, Desktop: left-aligned */}
+        <div className="relative z-10 flex flex-col items-center text-center md:items-start md:text-left justify-center h-[calc(100%-80px)] px-4 sm:px-8 pb-10">
           {/* Slogan */}
           <p className="text-lg sm:text-xl lg:text-2xl italic text-white/80 mb-3 md:mb-6">
             {heroSlogan}
@@ -214,20 +214,27 @@ export function HeroHeader({ store }: HeroHeaderProps) {
         </div>
 
         {/* Floating Image - Positioned based on admin settings */}
-        <img
-          ref={imageRef}
-          src={floatingImageUrl}
-          alt="Destaque"
-          className="absolute z-20 drop-shadow-2xl transition-transform duration-200 ease-out pointer-events-none"
-          style={{
-            transform: `translate(${imagePosition.x}px, ${imagePosition.y}px) rotate(-15deg)`,
-            width: `${imageWidth}px`,
-            left: `${floatingImageHorizontalPosition}%`,
-            top: `${floatingImageVerticalPosition}%`,
-            marginLeft: `${-imageWidth / 2}px`,
-            marginTop: `${-imageWidth / 2}px`,
-          }}
-        />
+        {floatingImageUrl && (
+          <img
+            ref={imageRef}
+            src={floatingImageUrl}
+            alt="Destaque"
+            className="absolute z-30 drop-shadow-2xl transition-transform duration-200 ease-out pointer-events-none"
+            style={{
+              transform: `translate(${imagePosition.x}px, ${imagePosition.y}px) rotate(-15deg)`,
+              width: `${imageWidth}px`,
+              maxWidth: isMobile ? '80vw' : '50vw',
+              left: `${floatingImageHorizontalPosition}%`,
+              top: `${floatingImageVerticalPosition}%`,
+              marginLeft: `${-imageWidth / 2}px`,
+              marginTop: `${-imageWidth / 2}px`,
+            }}
+            onError={(e) => {
+              console.log('Floating image failed to load:', floatingImageUrl);
+              e.currentTarget.style.display = 'none';
+            }}
+          />
+        )}
 
         {/* Decorative dots pattern */}
         <div className="absolute right-4 sm:right-12 bottom-20 md:bottom-20 flex flex-col gap-2 opacity-40">
