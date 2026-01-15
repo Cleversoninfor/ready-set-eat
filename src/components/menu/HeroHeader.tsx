@@ -32,10 +32,10 @@ export function HeroHeader({ store }: HeroHeaderProps) {
   const coverUrl = store.cover_url || DEFAULT_COVER;
   const floatingImageUrl = store.floating_image_url || defaultFloatingImg;
 
-  // Use appropriate settings based on device
+  // Use appropriate settings based on device - sizes are now in pixels
   const floatingImageSize = isMobile
-    ? (store.floating_image_size_mobile ?? 100)
-    : (store.floating_image_size ?? 100);
+    ? (store.floating_image_size_mobile ?? 300)
+    : (store.floating_image_size ?? 300);
 
   // Desktop uses % (CSS left/top). Mobile uses px offsets from screen center.
   const floatingImageHorizontalPosition = isMobile
@@ -226,7 +226,6 @@ export function HeroHeader({ store }: HeroHeaderProps) {
               isMobile
                 ? {
                     width: `${imageWidth}px`,
-                    maxWidth: '80vw',
                     left: '50%',
                     top: '50%',
                     transform: `translate(calc(-50% + ${floatingImageHorizontalPosition}px + ${imagePosition.x}px), calc(-50% + ${floatingImageVerticalPosition}px + ${imagePosition.y}px)) rotate(-15deg)`,
@@ -234,7 +233,6 @@ export function HeroHeader({ store }: HeroHeaderProps) {
                 : {
                     transform: `translate(${imagePosition.x}px, ${imagePosition.y}px) rotate(-15deg)`,
                     width: `${imageWidth}px`,
-                    maxWidth: '50vw',
                     left: `${floatingImageHorizontalPosition}%`,
                     top: `${floatingImageVerticalPosition}%`,
                     marginLeft: `${-imageWidth / 2}px`,
