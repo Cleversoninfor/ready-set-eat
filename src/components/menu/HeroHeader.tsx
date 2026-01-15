@@ -31,16 +31,18 @@ export function HeroHeader({ store }: HeroHeaderProps) {
 
   const coverUrl = store.cover_url || DEFAULT_COVER;
   const floatingImageUrl = store.floating_image_url || defaultFloatingImg;
-  
+
   // Use appropriate settings based on device
-  const floatingImageSize = isMobile 
+  const floatingImageSize = isMobile
     ? (store.floating_image_size_mobile ?? 100)
     : (store.floating_image_size ?? 100);
-  const floatingImageHorizontalPosition = isMobile 
-    ? (store.floating_image_position_mobile ?? 50)
+
+  // Desktop uses % (CSS left/top). Mobile uses px offsets from screen center.
+  const floatingImageHorizontalPosition = isMobile
+    ? (store.floating_image_position_mobile ?? 0)
     : (store.floating_image_position ?? 50);
-  const floatingImageVerticalPosition = isMobile 
-    ? (store.floating_image_vertical_position_mobile ?? 70)
+  const floatingImageVerticalPosition = isMobile
+    ? (store.floating_image_vertical_position_mobile ?? 0)
     : (store.floating_image_vertical_position ?? 50);
 
   // Use texts from store config or defaults
@@ -220,15 +222,25 @@ export function HeroHeader({ store }: HeroHeaderProps) {
             src={floatingImageUrl}
             alt="Destaque"
             className="absolute z-30 drop-shadow-2xl transition-transform duration-200 ease-out pointer-events-none"
-            style={{
-              transform: `translate(${imagePosition.x}px, ${imagePosition.y}px) rotate(-15deg)`,
-              width: `${imageWidth}px`,
-              maxWidth: isMobile ? '80vw' : '50vw',
-              left: `${floatingImageHorizontalPosition}%`,
-              top: `${floatingImageVerticalPosition}%`,
-              marginLeft: `${-imageWidth / 2}px`,
-              marginTop: `${-imageWidth / 2}px`,
-            }}
+            style={
+              isMobile
+                ? {
+                    width: `${imageWidth}px`,
+                    maxWidth: '80vw',
+                    left: '50%',
+                    top: '50%',
+                    transform: `translate(calc(-50% + ${floatingImageHorizontalPosition}px + ${imagePosition.x}px), calc(-50% + ${floatingImageVerticalPosition}px + ${imagePosition.y}px)) rotate(-15deg)`,
+                  }
+                : {
+                    transform: `translate(${imagePosition.x}px, ${imagePosition.y}px) rotate(-15deg)`,
+                    width: `${imageWidth}px`,
+                    maxWidth: '50vw',
+                    left: `${floatingImageHorizontalPosition}%`,
+                    top: `${floatingImageVerticalPosition}%`,
+                    marginLeft: `${-imageWidth / 2}px`,
+                    marginTop: `${-imageWidth / 2}px`,
+                  }
+            }
             onError={(e) => {
               console.log('Floating image failed to load:', floatingImageUrl);
               e.currentTarget.style.display = 'none';
