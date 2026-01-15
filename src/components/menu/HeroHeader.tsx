@@ -175,23 +175,23 @@ export function HeroHeader({ store }: HeroHeaderProps) {
           </div>
         </nav>
 
-        {/* Hero Content - Mobile: centered, Desktop: left-aligned */}
-        <div className="relative z-10 flex flex-col items-center text-center md:items-start md:text-left justify-center h-[calc(100%-80px)] px-4 sm:px-8 pb-10">
+        {/* Hero Content - Left-aligned, vertically centered */}
+        <div className="relative z-10 flex flex-col items-start text-left justify-center h-[calc(100%-80px)] px-6 sm:px-8 md:px-12 lg:px-16">
           {/* Slogan */}
-          <p className="text-lg sm:text-xl lg:text-2xl italic text-white/80 mb-3 md:mb-6">
+          <p className="text-base sm:text-lg lg:text-xl italic text-white/80 mb-4">
             {heroSlogan}
           </p>
 
           {/* Main Title */}
-          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold text-white leading-tight mb-2 md:mb-3 drop-shadow-lg"
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white leading-tight mb-2 drop-shadow-lg"
               style={{ fontFamily: "'Poppins', sans-serif", textShadow: '2px 4px 8px rgba(0,0,0,0.4)' }}>
             {store.name}
           </h1>
 
           {/* Animated Subtitle */}
-          <div className="h-16 md:h-24 lg:h-28 mb-4 md:mb-6 overflow-hidden">
+          <div className="h-12 sm:h-14 lg:h-16 mb-6 overflow-hidden">
             <p 
-              className={`text-4xl sm:text-5xl lg:text-6xl font-extrabold text-primary drop-shadow-md transition-all duration-300 ${
+              className={`text-2xl sm:text-3xl lg:text-4xl font-extrabold text-primary drop-shadow-md transition-all duration-300 ${
                 isAnimating ? 'opacity-0 translate-y-4' : 'opacity-100 translate-y-0'
               }`}
               style={{ fontFamily: "'Poppins', sans-serif", textShadow: '2px 4px 8px rgba(0,0,0,0.3)' }}
@@ -201,15 +201,15 @@ export function HeroHeader({ store }: HeroHeaderProps) {
           </div>
 
           {/* Info Line */}
-          <div className="flex flex-col gap-1 text-white/90 mb-4 md:mb-8 text-base sm:text-lg font-medium">
-            <span>Entrega Rápida!</span>
-          </div>
+          <p className="text-white/90 mb-6 text-base sm:text-lg font-medium">
+            Entrega Rápida!
+          </p>
 
           {/* CTA Button */}
           <Button
             onClick={scrollToMenu}
             size="lg"
-            className="w-fit bg-destructive hover:bg-destructive/90 text-destructive-foreground font-semibold px-10 py-4 text-lg rounded-full shadow-lg transition-transform hover:scale-105"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-10 py-4 text-lg rounded-full shadow-lg transition-transform hover:scale-105"
           >
             Cardápio
           </Button>
