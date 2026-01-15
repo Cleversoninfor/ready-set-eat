@@ -37,14 +37,26 @@ export function BannerSettings({ className }: BannerSettingsProps) {
   });
 
   // Keep a ref with the latest form data to avoid any race between a slider drag and the save click.
+  // IMPORTANT: we update this ref synchronously inside every state update to guarantee Save always uses the latest value.
   const formDataRef = useRef(formData);
+
+  const setFormDataAndRef = (
+    updater: (prev: typeof formData) => typeof formData
+  ) => {
+    setFormData((prev) => {
+      const next = updater(prev);
+      formDataRef.current = next;
+      return next;
+    });
+  };
+
   useEffect(() => {
     formDataRef.current = formData;
   }, [formData]);
 
   useEffect(() => {
     if (store) {
-      setFormData({
+      const next = {
         cover_url: store.cover_url || '',
         hero_text_1: store.hero_text_1 || 'Carne macia',
         hero_text_2: store.hero_text_2 || 'Suculenta',
@@ -57,7 +69,10 @@ export function BannerSettings({ className }: BannerSettingsProps) {
         floating_image_size_mobile: store.floating_image_size_mobile ?? 100,
         floating_image_position_mobile: store.floating_image_position_mobile ?? 50,
         floating_image_vertical_position_mobile: store.floating_image_vertical_position_mobile ?? 70,
-      });
+      };
+
+      setFormData(next);
+      formDataRef.current = next;
     }
   }, [store]);
 
@@ -97,32 +112,29 @@ export function BannerSettings({ className }: BannerSettingsProps) {
   const getCurrentVerticalPosition = () => deviceMode === 'desktop' ? formData.floating_image_vertical_position : formData.floating_image_vertical_position_mobile;
 
   const setCurrentSize = (value: number) => {
-    setFormData(prev => {
+    setFormDataAndRef((prev) => {
       if (deviceMode === 'desktop') {
         return { ...prev, floating_image_size: value };
-      } else {
-        return { ...prev, floating_image_size_mobile: value };
       }
+      return { ...prev, floating_image_size_mobile: value };
     });
   };
 
   const setCurrentHorizontalPosition = (value: number) => {
-    setFormData(prev => {
+    setFormDataAndRef((prev) => {
       if (deviceMode === 'desktop') {
         return { ...prev, floating_image_position: value };
-      } else {
-        return { ...prev, floating_image_position_mobile: value };
       }
+      return { ...prev, floating_image_position_mobile: value };
     });
   };
 
   const setCurrentVerticalPosition = (value: number) => {
-    setFormData(prev => {
+    setFormDataAndRef((prev) => {
       if (deviceMode === 'desktop') {
         return { ...prev, floating_image_vertical_position: value };
-      } else {
-        return { ...prev, floating_image_vertical_position_mobile: value };
       }
+      return { ...prev, floating_image_vertical_position_mobile: value };
     });
   };
 
@@ -155,8 +167,8 @@ export function BannerSettings({ className }: BannerSettingsProps) {
           <ImageUpload
             bucket="store-assets"
             currentUrl={formData.cover_url}
-            onUpload={(url) => setFormData((prev) => ({ ...prev, cover_url: url }))}
-            onRemove={() => setFormData((prev) => ({ ...prev, cover_url: '' }))}
+            onUpload={(url) => setFormDataAndRef((prev) => ({ ...prev, cover_url: url }))}
+            onRemove={() => setFormDataAndRef((prev) => ({ ...prev, cover_url: '' }))}
           />
           <p className="text-xs text-muted-foreground">
             Recomendado: 1920x1080 pixels para melhor qualidade em todas as telas
@@ -178,7 +190,7 @@ export function BannerSettings({ className }: BannerSettingsProps) {
               <Label className="text-xs sm:text-sm text-muted-foreground">Texto 1</Label>
               <Input
                 value={formData.hero_text_1}
-                onChange={(e) => setFormData((prev) => ({ ...prev, hero_text_1: e.target.value }))}
+                onChange={(e) => setFormDataAndRef((prev) => ({ ...prev, hero_text_1: e.target.value }))}
                 placeholder="Ex: Carne macia"
               />
             </div>
@@ -187,7 +199,7 @@ export function BannerSettings({ className }: BannerSettingsProps) {
               <Label className="text-xs sm:text-sm text-muted-foreground">Texto 2</Label>
               <Input
                 value={formData.hero_text_2}
-                onChange={(e) => setFormData((prev) => ({ ...prev, hero_text_2: e.target.value }))}
+                onChange={(e) => setFormDataAndRef((prev) => ({ ...prev, hero_text_2: e.target.value }))}
                 placeholder="Ex: Suculenta"
               />
             </div>
@@ -196,7 +208,7 @@ export function BannerSettings({ className }: BannerSettingsProps) {
               <Label className="text-xs sm:text-sm text-muted-foreground">Texto 3</Label>
               <Input
                 value={formData.hero_text_3}
-                onChange={(e) => setFormData((prev) => ({ ...prev, hero_text_3: e.target.value }))}
+                onChange={(e) => setFormDataAndRef((prev) => ({ ...prev, hero_text_3: e.target.value }))}
                 placeholder="Ex: Sabor Irresistível"
               />
             </div>
@@ -210,8 +222,8 @@ export function BannerSettings({ className }: BannerSettingsProps) {
             <ImageUpload
               bucket="store-assets"
               currentUrl={formData.floating_image_url}
-              onUpload={(url) => setFormData((prev) => ({ ...prev, floating_image_url: url }))}
-              onRemove={() => setFormData((prev) => ({ ...prev, floating_image_url: '' }))}
+              onUpload={(url) => setFormDataAndRef((prev) => ({ ...prev, floating_image_url: url }))}
+              onRemove={() => setFormDataAndRef((prev) => ({ ...prev, floating_image_url: '' }))}
             />
             <p className="text-xs text-muted-foreground">
               Esta imagem aparece flutuando sobre o banner com efeito de movimento.
@@ -330,7 +342,7 @@ export function BannerSettings({ className }: BannerSettingsProps) {
           <Label className="text-xs sm:text-sm text-muted-foreground">Slogan</Label>
           <Input
             value={formData.hero_slogan}
-            onChange={(e) => setFormData((prev) => ({ ...prev, hero_slogan: e.target.value }))}
+            onChange={(e) => setFormDataAndRef((prev) => ({ ...prev, hero_slogan: e.target.value }))}
             placeholder="Ex: O segredo está no tempero"
           />
           <p className="text-xs text-muted-foreground">
