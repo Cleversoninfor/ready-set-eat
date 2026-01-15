@@ -111,8 +111,8 @@ export function HeroHeader({ store }: HeroHeaderProps) {
     }
   };
 
-  // Calculate image positioning
-  const imageWidth = Math.round(160 * floatingImageSize / 100);
+  // Calculate image width - now using direct pixel value from admin
+  const imageWidth = floatingImageSize;
   
   return (
     <header className="relative">

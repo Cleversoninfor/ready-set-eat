@@ -240,18 +240,18 @@ export function BannerSettings({ className }: BannerSettingsProps) {
                   <Move className="h-3 w-3" />
                   Tamanho da Imagem ({deviceMode === 'desktop' ? 'Desktop' : 'Mobile'})
                 </Label>
-                <span className="text-xs font-medium text-primary">{getCurrentSize()}%</span>
+                <span className="text-xs font-medium text-primary">{getCurrentSize()}px</span>
               </div>
               <Slider
                 value={[getCurrentSize()]}
                 onValueChange={(value) => setCurrentSize(value[0])}
                 min={50}
-                max={deviceMode === 'desktop' ? 500 : 1000}
-                step={10}
+                max={5000}
+                step={50}
                 className="w-full"
               />
               <p className="text-xs text-muted-foreground">
-                Ajuste o tamanho da imagem animada (50% a {deviceMode === 'desktop' ? '500' : '1000'}%)
+                Ajuste o tamanho da imagem animada (50px a 5000px)
               </p>
             </div>
 
