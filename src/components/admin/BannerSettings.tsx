@@ -89,27 +89,33 @@ export function BannerSettings({ className }: BannerSettingsProps) {
   const getCurrentVerticalPosition = () => deviceMode === 'desktop' ? formData.floating_image_vertical_position : formData.floating_image_vertical_position_mobile;
 
   const setCurrentSize = (value: number) => {
-    if (deviceMode === 'desktop') {
-      setFormData({ ...formData, floating_image_size: value });
-    } else {
-      setFormData({ ...formData, floating_image_size_mobile: value });
-    }
+    setFormData(prev => {
+      if (deviceMode === 'desktop') {
+        return { ...prev, floating_image_size: value };
+      } else {
+        return { ...prev, floating_image_size_mobile: value };
+      }
+    });
   };
 
   const setCurrentHorizontalPosition = (value: number) => {
-    if (deviceMode === 'desktop') {
-      setFormData({ ...formData, floating_image_position: value });
-    } else {
-      setFormData({ ...formData, floating_image_position_mobile: value });
-    }
+    setFormData(prev => {
+      if (deviceMode === 'desktop') {
+        return { ...prev, floating_image_position: value };
+      } else {
+        return { ...prev, floating_image_position_mobile: value };
+      }
+    });
   };
 
   const setCurrentVerticalPosition = (value: number) => {
-    if (deviceMode === 'desktop') {
-      setFormData({ ...formData, floating_image_vertical_position: value });
-    } else {
-      setFormData({ ...formData, floating_image_vertical_position_mobile: value });
-    }
+    setFormData(prev => {
+      if (deviceMode === 'desktop') {
+        return { ...prev, floating_image_vertical_position: value };
+      } else {
+        return { ...prev, floating_image_vertical_position_mobile: value };
+      }
+    });
   };
 
   if (isLoading) {
