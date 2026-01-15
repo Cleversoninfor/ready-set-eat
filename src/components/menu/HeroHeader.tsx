@@ -221,7 +221,7 @@ export function HeroHeader({ store }: HeroHeaderProps) {
             ref={imageRef}
             src={floatingImageUrl}
             alt="Destaque"
-            className={`absolute drop-shadow-2xl transition-transform duration-200 ease-out pointer-events-none ${isMobile ? 'z-20' : 'z-30'}`}
+            className="absolute drop-shadow-2xl transition-transform duration-200 ease-out pointer-events-none z-0"
             style={
               isMobile
                 ? {
