@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Loader2, Image, Type, Move, Monitor, Smartphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,6 +36,12 @@ export function BannerSettings({ className }: BannerSettingsProps) {
     floating_image_vertical_position_mobile: 70,
   });
 
+  // Keep a ref with the latest form data to avoid any race between a slider drag and the save click.
+  const formDataRef = useRef(formData);
+  useEffect(() => {
+    formDataRef.current = formData;
+  }, [formData]);
+
   useEffect(() => {
     if (store) {
       setFormData({
@@ -47,29 +53,31 @@ export function BannerSettings({ className }: BannerSettingsProps) {
         floating_image_url: store.floating_image_url || '',
         floating_image_size: store.floating_image_size ?? 100,
         floating_image_position: store.floating_image_position ?? 50,
-        floating_image_vertical_position: (store as any).floating_image_vertical_position ?? 50,
-        floating_image_size_mobile: (store as any).floating_image_size_mobile ?? 100,
-        floating_image_position_mobile: (store as any).floating_image_position_mobile ?? 50,
-        floating_image_vertical_position_mobile: (store as any).floating_image_vertical_position_mobile ?? 70,
+        floating_image_vertical_position: store.floating_image_vertical_position ?? 50,
+        floating_image_size_mobile: store.floating_image_size_mobile ?? 100,
+        floating_image_position_mobile: store.floating_image_position_mobile ?? 50,
+        floating_image_vertical_position_mobile: store.floating_image_vertical_position_mobile ?? 70,
       });
     }
   }, [store]);
 
   const saveBannerSettings = async () => {
     try {
+      const current = formDataRef.current;
+
       const updateData: any = {
-        cover_url: formData.cover_url || null,
-        hero_text_1: formData.hero_text_1 || null,
-        hero_text_2: formData.hero_text_2 || null,
-        hero_text_3: formData.hero_text_3 || null,
-        hero_slogan: formData.hero_slogan || null,
-        floating_image_url: formData.floating_image_url || null,
-        floating_image_size: formData.floating_image_size,
-        floating_image_position: formData.floating_image_position,
-        floating_image_vertical_position: formData.floating_image_vertical_position,
-        floating_image_size_mobile: formData.floating_image_size_mobile,
-        floating_image_position_mobile: formData.floating_image_position_mobile,
-        floating_image_vertical_position_mobile: formData.floating_image_vertical_position_mobile,
+        cover_url: current.cover_url || null,
+        hero_text_1: current.hero_text_1 || null,
+        hero_text_2: current.hero_text_2 || null,
+        hero_text_3: current.hero_text_3 || null,
+        hero_slogan: current.hero_slogan || null,
+        floating_image_url: current.floating_image_url || null,
+        floating_image_size: current.floating_image_size,
+        floating_image_position: current.floating_image_position,
+        floating_image_vertical_position: current.floating_image_vertical_position,
+        floating_image_size_mobile: current.floating_image_size_mobile,
+        floating_image_position_mobile: current.floating_image_position_mobile,
+        floating_image_vertical_position_mobile: current.floating_image_vertical_position_mobile,
       };
 
       if (store?.id) {
@@ -147,8 +155,8 @@ export function BannerSettings({ className }: BannerSettingsProps) {
           <ImageUpload
             bucket="store-assets"
             currentUrl={formData.cover_url}
-            onUpload={(url) => setFormData({ ...formData, cover_url: url })}
-            onRemove={() => setFormData({ ...formData, cover_url: '' })}
+            onUpload={(url) => setFormData((prev) => ({ ...prev, cover_url: url }))}
+            onRemove={() => setFormData((prev) => ({ ...prev, cover_url: '' }))}
           />
           <p className="text-xs text-muted-foreground">
             Recomendado: 1920x1080 pixels para melhor qualidade em todas as telas
@@ -170,7 +178,7 @@ export function BannerSettings({ className }: BannerSettingsProps) {
               <Label className="text-xs sm:text-sm text-muted-foreground">Texto 1</Label>
               <Input
                 value={formData.hero_text_1}
-                onChange={(e) => setFormData({ ...formData, hero_text_1: e.target.value })}
+                onChange={(e) => setFormData((prev) => ({ ...prev, hero_text_1: e.target.value }))}
                 placeholder="Ex: Carne macia"
               />
             </div>
@@ -179,7 +187,7 @@ export function BannerSettings({ className }: BannerSettingsProps) {
               <Label className="text-xs sm:text-sm text-muted-foreground">Texto 2</Label>
               <Input
                 value={formData.hero_text_2}
-                onChange={(e) => setFormData({ ...formData, hero_text_2: e.target.value })}
+                onChange={(e) => setFormData((prev) => ({ ...prev, hero_text_2: e.target.value }))}
                 placeholder="Ex: Suculenta"
               />
             </div>
@@ -188,7 +196,7 @@ export function BannerSettings({ className }: BannerSettingsProps) {
               <Label className="text-xs sm:text-sm text-muted-foreground">Texto 3</Label>
               <Input
                 value={formData.hero_text_3}
-                onChange={(e) => setFormData({ ...formData, hero_text_3: e.target.value })}
+                onChange={(e) => setFormData((prev) => ({ ...prev, hero_text_3: e.target.value }))}
                 placeholder="Ex: Sabor Irresistível"
               />
             </div>
@@ -202,8 +210,8 @@ export function BannerSettings({ className }: BannerSettingsProps) {
             <ImageUpload
               bucket="store-assets"
               currentUrl={formData.floating_image_url}
-              onUpload={(url) => setFormData({ ...formData, floating_image_url: url })}
-              onRemove={() => setFormData({ ...formData, floating_image_url: '' })}
+              onUpload={(url) => setFormData((prev) => ({ ...prev, floating_image_url: url }))}
+              onRemove={() => setFormData((prev) => ({ ...prev, floating_image_url: '' }))}
             />
             <p className="text-xs text-muted-foreground">
               Esta imagem aparece flutuando sobre o banner com efeito de movimento.
@@ -246,12 +254,12 @@ export function BannerSettings({ className }: BannerSettingsProps) {
                 value={[getCurrentSize()]}
                 onValueChange={(value) => setCurrentSize(value[0])}
                 min={50}
-                max={5000}
+                max={9999}
                 step={50}
                 className="w-full"
               />
               <p className="text-xs text-muted-foreground">
-                Ajuste o tamanho da imagem animada (50px a 5000px)
+                Ajuste o tamanho da imagem animada (50px a 9999px)
               </p>
             </div>
 
@@ -322,7 +330,7 @@ export function BannerSettings({ className }: BannerSettingsProps) {
           <Label className="text-xs sm:text-sm text-muted-foreground">Slogan</Label>
           <Input
             value={formData.hero_slogan}
-            onChange={(e) => setFormData({ ...formData, hero_slogan: e.target.value })}
+            onChange={(e) => setFormData((prev) => ({ ...prev, hero_slogan: e.target.value }))}
             placeholder="Ex: O segredo está no tempero"
           />
           <p className="text-xs text-muted-foreground">
