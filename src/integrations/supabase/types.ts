@@ -762,6 +762,22 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_order_with_items: {
+        Args: {
+          _address_complement?: string
+          _address_neighborhood: string
+          _address_number: string
+          _address_reference?: string
+          _address_street: string
+          _change_for?: number
+          _customer_name: string
+          _customer_phone: string
+          _items: Json
+          _payment_method: string
+          _total_amount: number
+        }
+        Returns: number
+      }
       get_public_store_config: {
         Args: never
         Returns: {
