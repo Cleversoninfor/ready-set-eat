@@ -240,17 +240,22 @@ const Checkout = () => {
         })),
       });
 
+      console.log('[Checkout] Order created successfully:', order);
+
       toast({
         title: '🎉 Pedido enviado!',
         description: `Pedido #${order.id} recebido com sucesso.`,
       });
 
       // Save customer phone for public order lookup
+      console.log('[Checkout] Saving customer phone:', deliveryData.phone);
       saveCustomerPhone(deliveryData.phone);
       
       clearCart();
       clearCheckoutStorage();
       saveLastOrderId(order.id);
+      
+      console.log('[Checkout] Navigating to order status:', order.id);
       navigate(`/order/${order.id}`);
     } catch (error: any) {
       console.error('Erro ao enviar pedido (createOrder):', error);

@@ -103,18 +103,33 @@ export function useOrderWithItems(orderId: number) {
     queryFn: async () => {
       const customerPhone = getCustomerPhone();
       
-      // If we have the customer phone, use the public RPC
+      console.log('[useOrderWithItems] Fetching order:', { orderId, hasPhone: !!customerPhone });
+      
+      // Always try public RPC first if we have a phone
       if (customerPhone) {
+        console.log('[useOrderWithItems] Using public RPC with phone:', customerPhone);
+        
         const { data, error } = await supabase.rpc('get_order_with_items_public', {
           _order_id: orderId,
           _customer_phone: customerPhone,
         });
         
-        if (error) throw error;
-        if (!data) return { order: null, items: [] };
+        console.log('[useOrderWithItems] RPC result:', { data, error });
+        
+        if (error) {
+          console.error('[useOrderWithItems] RPC error:', error);
+          throw error;
+        }
+        
+        if (!data) {
+          console.warn('[useOrderWithItems] No data returned from RPC');
+          return { order: null, items: [] };
+        }
         
         // Type assertion - data is jsonb from the function
         const result = data as unknown as { order: Order; items: OrderItem[] };
+        console.log('[useOrderWithItems] Parsed result:', result);
+        
         return {
           order: result.order,
           items: result.items,
@@ -122,6 +137,8 @@ export function useOrderWithItems(orderId: number) {
       }
       
       // Fallback: direct query (will work for admins with SELECT permission)
+      console.log('[useOrderWithItems] Using direct query (admin fallback)');
+      
       const { data, error } = await supabase
         .from('orders')
         .select('*')
