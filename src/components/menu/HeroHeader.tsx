@@ -176,7 +176,7 @@ export function HeroHeader({ store }: HeroHeaderProps) {
         </nav>
 
         {/* Hero Content - Left-aligned, positioned higher */}
-        <div className="relative z-10 flex flex-col items-start text-left justify-start pt-8 md:justify-center h-[calc(100%-80px)] px-6 sm:px-8 md:px-12 lg:px-16">
+        <div className="relative z-10 flex flex-col items-start text-left justify-start pt-24 md:pt-8 md:justify-center h-[calc(100%-80px)] px-6 sm:px-8 md:px-12 lg:px-16">
           {/* Slogan */}
           <p className="text-lg sm:text-xl lg:text-2xl italic text-white/80 mb-4">
             {heroSlogan}
