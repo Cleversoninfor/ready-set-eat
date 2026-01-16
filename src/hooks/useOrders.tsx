@@ -98,69 +98,58 @@ export function getCustomerPhone(): string | null {
 }
 
 export function useOrderWithItems(orderId: number) {
+  const customerPhone = getCustomerPhone();
+
   const orderQuery = useQuery({
-    queryKey: ['order', orderId],
+    queryKey: ['order', orderId, customerPhone],
     queryFn: async () => {
-      const customerPhone = getCustomerPhone();
-      
-      console.log('[useOrderWithItems] Fetching order:', { orderId, hasPhone: !!customerPhone });
-      
-      // Always try public RPC first if we have a phone
+      // Prefer public RPC when we have the customer's phone (public flow)
       if (customerPhone) {
-        console.log('[useOrderWithItems] Using public RPC with phone:', customerPhone);
-        
         const { data, error } = await supabase.rpc('get_order_with_items_public', {
           _order_id: orderId,
           _customer_phone: customerPhone,
         });
-        
-        console.log('[useOrderWithItems] RPC result:', { data, error });
-        
-        if (error) {
-          console.error('[useOrderWithItems] RPC error:', error);
-          throw error;
-        }
-        
-        if (!data) {
-          console.warn('[useOrderWithItems] No data returned from RPC');
-          return { order: null, items: [] };
-        }
-        
-        // Type assertion - data is jsonb from the function
+
+        if (error) throw error;
+        if (!data) return { order: null, items: [] };
+
         const result = data as unknown as { order: Order; items: OrderItem[] };
-        console.log('[useOrderWithItems] Parsed result:', result);
-        
         return {
           order: result.order,
           items: result.items,
         };
       }
-      
-      // Fallback: direct query (will work for admins with SELECT permission)
-      console.log('[useOrderWithItems] Using direct query (admin fallback)');
-      
+
+      // Admin fallback (direct read)
       const { data, error } = await supabase
         .from('orders')
         .select('*')
         .eq('id', orderId)
         .maybeSingle();
-      
+
       if (error) throw error;
-      
-      // Fetch items separately for fallback
+
       const { data: itemsData, error: itemsError } = await supabase
         .from('order_items')
         .select('*')
         .eq('order_id', orderId);
-      
+
       if (itemsError) throw itemsError;
-      
+
       return {
         order: data as Order | null,
         items: (itemsData as OrderItem[]) || [],
       };
     },
     enabled: !!orderId,
+    // Realtime can be blocked for public users by security rules; polling guarantees updates.
+    refetchInterval: (query) => {
+      const status = (query.state.data as any)?.order?.status as Order['status'] | undefined;
+      if (!customerPhone) return false;
+      if (!status) return 5000;
+      return status === 'completed' || status === 'cancelled' ? false : 5000;
+    },
+    refetchIntervalInBackground: true,
   });
 
   return {
@@ -170,6 +159,7 @@ export function useOrderWithItems(orderId: number) {
     error: orderQuery.error,
   };
 }
+
 
 export function useCreateOrder() {
   const queryClient = useQueryClient();

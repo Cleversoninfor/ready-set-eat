@@ -37,8 +37,9 @@ const OrderStatus = () => {
         },
         (payload) => {
           console.log('[OrderStatus] Received realtime update:', payload);
-          queryClient.invalidateQueries({ queryKey: ['order', Number(id)] });
-          
+          // Invalidate all variants of the order query (it may include extra key parts like phone)
+          queryClient.invalidateQueries({ queryKey: ['order', Number(id)], exact: false });
+
           const newStatus = (payload.new as any)?.status;
           previousStatus.current = newStatus;
         }
@@ -71,8 +72,7 @@ const OrderStatus = () => {
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    await queryClient.invalidateQueries({ queryKey: ['order', Number(id)] });
-    await queryClient.invalidateQueries({ queryKey: ['order-items', Number(id)] });
+    await queryClient.invalidateQueries({ queryKey: ['order', Number(id)], exact: false });
     setIsRefreshing(false);
     toast.success('Pedido atualizado!');
   };
