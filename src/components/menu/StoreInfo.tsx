@@ -54,9 +54,10 @@ export function StoreInfo({ store }: StoreInfoProps) {
           </div>
           <button 
             onClick={() => setHoursModalOpen(true)}
-            className="text-sm font-semibold uppercase text-primary hover:text-primary/80 transition-colors"
+            className="flex flex-col items-center text-xs font-semibold uppercase text-primary hover:text-primary/80 transition-colors leading-tight"
           >
-            Ver Horários
+            <span>Ver</span>
+            <span>Horários</span>
           </button>
         </div>
 
