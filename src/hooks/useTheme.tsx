@@ -142,6 +142,19 @@ export function useTheme() {
         appleTouchIcon.href = store.logo_url;
         document.head.appendChild(appleTouchIcon);
       }
+
+      // Update favicon with store logo
+      let favicon = document.querySelector('link[rel="icon"]') as HTMLLinkElement;
+      if (favicon) {
+        favicon.href = store.logo_url;
+        favicon.type = 'image/png';
+      } else {
+        favicon = document.createElement('link');
+        favicon.rel = 'icon';
+        favicon.type = 'image/png';
+        favicon.href = store.logo_url;
+        document.head.appendChild(favicon);
+      }
     }
 
   }, [store]);

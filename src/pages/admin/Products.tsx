@@ -304,12 +304,17 @@ const AdminProducts = () => {
           </DialogHeader>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <ImageUpload
-              bucket="product-images"
-              currentUrl={formData.image_url}
-              onUpload={(url) => setFormData({ ...formData, image_url: url })}
-              onRemove={() => setFormData({ ...formData, image_url: '' })}
-            />
+            <div className="space-y-2">
+              <ImageUpload
+                bucket="product-images"
+                currentUrl={formData.image_url}
+                onUpload={(url) => setFormData({ ...formData, image_url: url })}
+                onRemove={() => setFormData({ ...formData, image_url: '' })}
+              />
+              <p className="text-xs text-muted-foreground">
+                <strong>Recomendado:</strong> 400×400 pixels (quadrada, PNG ou JPG).
+              </p>
+            </div>
 
             <div>
               <label className="text-sm text-muted-foreground">Nome *</label>
