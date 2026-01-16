@@ -3,7 +3,7 @@ import { MessageCircle } from 'lucide-react';
 
 export const InfornexaBanner = () => {
   const whatsappNumber = '5587991660237';
-  const whatsappMessage = encodeURIComponent('Olá! Gostaria de ter um cardápio digital como esse para meu negócio.');
+  const whatsappMessage = encodeURIComponent('Olá! Gostaria de ter um cardápio digital.');
   const whatsappLink = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
 
   return (
@@ -17,7 +17,7 @@ export const InfornexaBanner = () => {
           <img 
             src={logoInfornexa} 
             alt="Infornexa Logo" 
-            className="w-20 h-20 sm:w-24 sm:h-24 object-contain"
+            className="w-28 h-28 sm:w-36 sm:h-36 object-contain"
           />
         </div>
 
