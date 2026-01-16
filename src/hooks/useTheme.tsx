@@ -1,6 +1,5 @@
-import { useEffect } from 'react';
+import { useLayoutEffect } from 'react';
 import { useStoreConfig } from './useStore';
-
 // Convert HSL string like "45 100% 51%" to proper CSS variable value
 function parseHslColor(color: string | null | undefined, fallback: string): string {
   if (!color) return fallback;
@@ -53,7 +52,7 @@ function parseHslToHex(hslString: string | null | undefined, fallback: string): 
 export function useTheme() {
   const { data: store } = useStoreConfig();
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!store) return;
 
     const root = document.documentElement;
