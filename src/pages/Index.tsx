@@ -9,6 +9,7 @@ import { ProductModal } from '@/components/menu/ProductModal';
 import { CartButton } from '@/components/cart/CartButton';
 import { FloatingOrderButton, getLastOrderId } from '@/components/order/FloatingOrderButton';
 import { InstallPrompt } from '@/components/pwa/InstallPrompt';
+import { InfornexaBanner } from '@/components/menu/InfornexaBanner';
 import { useStoreConfig } from '@/hooks/useStore';
 import { useCategories } from '@/hooks/useCategories';
 import { useProducts, Product } from '@/hooks/useProducts';
@@ -233,6 +234,9 @@ const Index = () => {
             </div>
           )}
         </div>
+
+        {/* Infornexa Advertisement Banner */}
+        <InfornexaBanner />
 
         {/* Floating Order Button */}
         {lastOrderId && (
