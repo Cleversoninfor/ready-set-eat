@@ -778,6 +778,10 @@ export type Database = {
         }
         Returns: number
       }
+      get_order_with_items_public: {
+        Args: { _customer_phone: string; _order_id: number }
+        Returns: Json
+      }
       get_public_store_config: {
         Args: never
         Returns: {

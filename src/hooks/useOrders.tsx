@@ -79,10 +79,49 @@ export function useOrderItems(orderId: number) {
   });
 }
 
+const CUSTOMER_PHONE_KEY = 'delivery-customer-phone';
+
+export function saveCustomerPhone(phone: string) {
+  try {
+    localStorage.setItem(CUSTOMER_PHONE_KEY, phone);
+  } catch (e) {
+    console.error('Error saving customer phone:', e);
+  }
+}
+
+export function getCustomerPhone(): string | null {
+  try {
+    return localStorage.getItem(CUSTOMER_PHONE_KEY);
+  } catch (e) {
+    return null;
+  }
+}
+
 export function useOrderWithItems(orderId: number) {
   const orderQuery = useQuery({
     queryKey: ['order', orderId],
     queryFn: async () => {
+      const customerPhone = getCustomerPhone();
+      
+      // If we have the customer phone, use the public RPC
+      if (customerPhone) {
+        const { data, error } = await supabase.rpc('get_order_with_items_public', {
+          _order_id: orderId,
+          _customer_phone: customerPhone,
+        });
+        
+        if (error) throw error;
+        if (!data) return { order: null, items: [] };
+        
+        // Type assertion - data is jsonb from the function
+        const result = data as unknown as { order: Order; items: OrderItem[] };
+        return {
+          order: result.order,
+          items: result.items,
+        };
+      }
+      
+      // Fallback: direct query (will work for admins with SELECT permission)
       const { data, error } = await supabase
         .from('orders')
         .select('*')
@@ -90,18 +129,28 @@ export function useOrderWithItems(orderId: number) {
         .maybeSingle();
       
       if (error) throw error;
-      return data as Order | null;
+      
+      // Fetch items separately for fallback
+      const { data: itemsData, error: itemsError } = await supabase
+        .from('order_items')
+        .select('*')
+        .eq('order_id', orderId);
+      
+      if (itemsError) throw itemsError;
+      
+      return {
+        order: data as Order | null,
+        items: (itemsData as OrderItem[]) || [],
+      };
     },
     enabled: !!orderId,
   });
 
-  const itemsQuery = useOrderItems(orderId);
-
   return {
-    order: orderQuery.data,
-    items: itemsQuery.data,
-    isLoading: orderQuery.isLoading || itemsQuery.isLoading,
-    error: orderQuery.error || itemsQuery.error,
+    order: orderQuery.data?.order,
+    items: orderQuery.data?.items,
+    isLoading: orderQuery.isLoading,
+    error: orderQuery.error,
   };
 }
 
