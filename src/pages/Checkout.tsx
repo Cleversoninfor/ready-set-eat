@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { useCart } from '@/hooks/useCart';
 import { useToast } from '@/hooks/use-toast';
 import { useStoreConfig } from '@/hooks/useStore';
-import { useCreateOrder } from '@/hooks/useOrders';
+import { useCreateOrder, saveCustomerPhone } from '@/hooks/useOrders';
 import { useValidateCoupon, calculateDiscount, Coupon } from '@/hooks/useCoupons';
 import { saveLastOrderId } from '@/components/order/FloatingOrderButton';
 import { useBusinessHours, isStoreCurrentlyOpen } from '@/hooks/useBusinessHours';
@@ -245,6 +245,9 @@ const Checkout = () => {
         description: `Pedido #${order.id} recebido com sucesso.`,
       });
 
+      // Save customer phone for public order lookup
+      saveCustomerPhone(deliveryData.phone);
+      
       clearCart();
       clearCheckoutStorage();
       saveLastOrderId(order.id);
