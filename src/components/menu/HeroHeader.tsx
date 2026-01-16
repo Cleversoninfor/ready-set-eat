@@ -1,8 +1,7 @@
-import { UtensilsCrossed, ShoppingBag, Clock } from 'lucide-react';
+import { UtensilsCrossed, ShoppingBag } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { StoreConfig } from '@/hooks/useStore';
 import { useCart } from '@/hooks/useCart';
-import { useBusinessHours, isStoreCurrentlyOpen } from '@/hooks/useBusinessHours';
 import { Button } from '@/components/ui/button';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -24,13 +23,10 @@ const DEFAULT_COVER = 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1
 
 export function HeroHeader({ store }: HeroHeaderProps) {
   const { totalItems } = useCart();
-  const { data: businessHours = [] } = useBusinessHours();
-  const isOpen = isStoreCurrentlyOpen(businessHours);
   const isMobile = useIsMobile();
   const [currentTextIndex, setCurrentTextIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
   const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
-  const [showHoursModal, setShowHoursModal] = useState(false);
   const imageRef = useRef<HTMLImageElement>(null);
 
   const coverUrl = store.cover_url || DEFAULT_COVER;
@@ -218,60 +214,7 @@ export function HeroHeader({ store }: HeroHeaderProps) {
             Cardápio
           </Button>
 
-          {/* Store Status - Mobile Only */}
-          {isMobile && (
-            <div className="mt-8 flex items-center gap-4 bg-white/95 backdrop-blur-sm rounded-lg px-4 py-3 shadow-lg">
-              <div className="flex items-center gap-2">
-                <div className={`w-2.5 h-2.5 rounded-full ${isOpen ? 'bg-green-500' : 'bg-red-500'}`} />
-                <div className="flex flex-col">
-                  <span className={`font-semibold text-sm ${isOpen ? 'text-green-600' : 'text-red-600'}`}>
-                    {isOpen ? 'Aberto' : 'Fechado'}
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    {isOpen ? 'Aceitando pedidos' : 'Fora do horário de atendimento'}
-                  </span>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowHoursModal(true)}
-                className="text-primary font-bold text-sm uppercase tracking-wide hover:underline"
-              >
-                VER HORÁRIOS
-              </button>
-            </div>
-          )}
         </div>
-
-        {/* Hours Modal - Mobile Only */}
-        {showHoursModal && isMobile && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowHoursModal(false)}>
-            <div className="bg-white rounded-xl p-6 mx-4 max-w-sm w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                  <Clock className="h-5 w-5" />
-                  Horários de Funcionamento
-                </h3>
-                <button onClick={() => setShowHoursModal(false)} className="text-gray-500 hover:text-gray-700">
-                  ✕
-                </button>
-              </div>
-              <div className="space-y-2">
-                {['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'].map((day, index) => {
-                  const hours = businessHours.find(h => h.day_of_week === index);
-                  const isToday = new Date().getDay() === index;
-                  return (
-                    <div key={day} className={`flex justify-between py-2 px-3 rounded ${isToday ? 'bg-primary/10' : ''}`}>
-                      <span className={`font-medium ${isToday ? 'text-primary' : 'text-gray-700'}`}>{day}</span>
-                      <span className={hours?.is_active ? 'text-gray-600' : 'text-red-500'}>
-                        {hours?.is_active ? `${hours.open_time} - ${hours.close_time}` : 'Fechado'}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Floating Image - Positioned based on admin settings */}
         {floatingImageUrl && (
