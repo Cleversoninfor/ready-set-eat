@@ -22,7 +22,7 @@ import { useTheme } from '@/hooks/useTheme';
 export default function Kitchen() {
   const navigate = useNavigate();
   const { data: store } = useStoreConfig();
-  const { items, isLoading } = useKitchenItems();
+  const { items, isLoading, error } = useKitchenItems();
   const [activeTab, setActiveTab] = useState<'pending' | 'preparing' | 'ready'>('pending');
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [lastItemCount, setLastItemCount] = useState(0);
@@ -144,6 +144,15 @@ export default function Kitchen() {
             </div>
           </div>
         </header>
+
+        {error && (
+          <div className="mx-4 mt-4 rounded-xl border border-destructive/30 bg-destructive/10 p-4">
+            <p className="text-sm font-medium text-foreground">Erro ao carregar pedidos</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {error instanceof Error ? error.message : 'Tente recarregar a página.'}
+            </p>
+          </div>
+        )}
 
         {/* Stats Bar */}
         <div className="grid grid-cols-3 gap-4 p-4 bg-muted/50">
