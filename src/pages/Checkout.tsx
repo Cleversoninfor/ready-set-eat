@@ -123,6 +123,20 @@ const Checkout = () => {
     return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7, 11)}`;
   };
 
+  const parseMoneyInputToNumber = (value: string): number | null => {
+    // Keep only digits, comma and dot
+    const cleaned = value.replace(/[^0-9.,]/g, '').trim();
+    if (!cleaned) return null;
+
+    // If user uses comma as decimal separator (pt-BR), normalize to dot
+    const normalized = cleaned.includes(',')
+      ? cleaned.replace(/\./g, '').replace(',', '.')
+      : cleaned;
+
+    const num = Number(normalized);
+    return Number.isFinite(num) ? num : null;
+  };
+
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) {
       toast({ title: 'Digite o código do cupom', variant: 'destructive' });
@@ -167,8 +181,6 @@ const Checkout = () => {
       return;
     }
 
-
-
     if (!deliveryData.name.trim()) {
       toast({ title: 'Preencha seu nome', variant: 'destructive' });
       return;
@@ -177,7 +189,10 @@ const Checkout = () => {
       toast({ title: 'Telefone inválido', variant: 'destructive' });
       return;
     }
-    if (deliveryType === 'delivery' && (!deliveryData.street.trim() || !deliveryData.number.trim() || !deliveryData.neighborhood.trim())) {
+    if (
+      deliveryType === 'delivery' &&
+      (!deliveryData.street.trim() || !deliveryData.number.trim() || !deliveryData.neighborhood.trim())
+    ) {
       toast({ title: 'Preencha o endereço completo', variant: 'destructive' });
       return;
     }
@@ -186,8 +201,23 @@ const Checkout = () => {
       return;
     }
 
+    // Validate change_for input
+    const changeForValue =
+      selectedPayment === 'money' && changeFor
+        ? parseMoneyInputToNumber(changeFor)
+        : null;
+
+    if (selectedPayment === 'money' && changeFor && changeForValue === null) {
+      toast({
+        title: 'Troco inválido',
+        description: 'Digite apenas números. Ex: 50,00',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     // Get the correct payment method for database
-    const paymentOption = paymentOptions.find(p => p.id === selectedPayment);
+    const paymentOption = paymentOptions.find((p) => p.id === selectedPayment);
     const paymentMethod = paymentOption?.dbValue || 'money';
 
     try {
@@ -200,9 +230,9 @@ const Checkout = () => {
           address_neighborhood: deliveryType === 'delivery' ? deliveryData.neighborhood : '-',
           total_amount: finalTotal,
           payment_method: paymentMethod,
-          change_for: selectedPayment === 'money' && changeFor ? parseFloat(changeFor.replace(',', '.')) : null,
+          change_for: changeForValue,
         },
-        items: items.map(item => ({
+        items: items.map((item) => ({
           product_name: item.product.name,
           quantity: item.quantity,
           unit_price: item.product.price,
@@ -219,10 +249,12 @@ const Checkout = () => {
       clearCheckoutStorage();
       saveLastOrderId(order.id);
       navigate(`/order/${order.id}`);
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Erro ao enviar pedido (createOrder):', error);
+
       toast({
         title: 'Erro ao enviar pedido',
-        description: 'Tente novamente em alguns instantes.',
+        description: error?.message || 'Tente novamente em alguns instantes.',
         variant: 'destructive',
       });
     }
