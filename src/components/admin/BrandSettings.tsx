@@ -114,7 +114,10 @@ export function BrandSettings({ className }: BrandSettingsProps) {
         {/* Logo */}
         <div className="space-y-2">
           <Label className="text-xs sm:text-sm text-muted-foreground">
-            Logo (também será o ícone do app instalado)
+            Logo do Restaurante / Ícone do App
+            <span className="ml-2 px-2 py-0.5 bg-primary/10 text-primary rounded text-[10px] font-medium">
+              512×512px (quadrada)
+            </span>
           </Label>
           <ImageUpload
             bucket="store-assets"
@@ -123,7 +126,8 @@ export function BrandSettings({ className }: BrandSettingsProps) {
             onRemove={() => setFormData({ ...formData, logo_url: '' })}
           />
           <p className="text-xs text-muted-foreground">
-            Recomendado: imagem quadrada de pelo menos 512x512 pixels
+            <strong>Obrigatório:</strong> Imagem quadrada de 512×512 pixels (PNG ou JPG). 
+            Esta imagem será usada como logo e também como ícone quando o app for instalado.
           </p>
         </div>
 
