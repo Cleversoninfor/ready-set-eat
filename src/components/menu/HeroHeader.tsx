@@ -1,7 +1,8 @@
-import { UtensilsCrossed, ShoppingBag } from 'lucide-react';
+import { UtensilsCrossed, ShoppingBag, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { StoreConfig } from '@/hooks/useStore';
 import { useCart } from '@/hooks/useCart';
+import { useBusinessHours, isStoreCurrentlyOpen } from '@/hooks/useBusinessHours';
 import { Button } from '@/components/ui/button';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -23,10 +24,13 @@ const DEFAULT_COVER = 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1
 
 export function HeroHeader({ store }: HeroHeaderProps) {
   const { totalItems } = useCart();
+  const { data: businessHours = [] } = useBusinessHours();
+  const isOpen = isStoreCurrentlyOpen(businessHours);
   const isMobile = useIsMobile();
   const [currentTextIndex, setCurrentTextIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
   const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
+  const [showHoursModal, setShowHoursModal] = useState(false);
   const imageRef = useRef<HTMLImageElement>(null);
 
   const coverUrl = store.cover_url || DEFAULT_COVER;
@@ -175,23 +179,23 @@ export function HeroHeader({ store }: HeroHeaderProps) {
           </div>
         </nav>
 
-        {/* Hero Content - Left-aligned, vertically centered */}
-        <div className="relative z-10 flex flex-col items-start text-left justify-center h-[calc(100%-80px)] px-6 sm:px-8 md:px-12 lg:px-16">
+        {/* Hero Content - Left-aligned, positioned higher */}
+        <div className="relative z-10 flex flex-col items-start text-left justify-start pt-8 md:justify-center h-[calc(100%-80px)] px-6 sm:px-8 md:px-12 lg:px-16">
           {/* Slogan */}
-          <p className="text-base sm:text-lg lg:text-xl italic text-white/80 mb-4">
+          <p className="text-lg sm:text-xl lg:text-2xl italic text-white/80 mb-4">
             {heroSlogan}
           </p>
 
           {/* Main Title */}
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white leading-tight mb-2 drop-shadow-lg"
+          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold text-white leading-tight mb-3 drop-shadow-lg"
               style={{ fontFamily: "'Poppins', sans-serif", textShadow: '2px 4px 8px rgba(0,0,0,0.4)' }}>
             {store.name}
           </h1>
 
           {/* Animated Subtitle */}
-          <div className="h-12 sm:h-14 lg:h-16 mb-6 overflow-hidden">
+          <div className="h-14 sm:h-16 lg:h-20 mb-4 overflow-hidden">
             <p 
-              className={`text-2xl sm:text-3xl lg:text-4xl font-extrabold text-primary drop-shadow-md transition-all duration-300 ${
+              className={`text-3xl sm:text-4xl lg:text-5xl font-extrabold text-primary drop-shadow-md transition-all duration-300 ${
                 isAnimating ? 'opacity-0 translate-y-4' : 'opacity-100 translate-y-0'
               }`}
               style={{ fontFamily: "'Poppins', sans-serif", textShadow: '2px 4px 8px rgba(0,0,0,0.3)' }}
@@ -201,7 +205,7 @@ export function HeroHeader({ store }: HeroHeaderProps) {
           </div>
 
           {/* Info Line */}
-          <p className="text-white/90 mb-6 text-base sm:text-lg font-medium">
+          <p className="text-white/90 mb-6 text-lg sm:text-xl font-medium">
             Entrega Rápida!
           </p>
 
@@ -213,7 +217,61 @@ export function HeroHeader({ store }: HeroHeaderProps) {
           >
             Cardápio
           </Button>
+
+          {/* Store Status - Mobile Only */}
+          {isMobile && (
+            <div className="mt-8 flex items-center gap-4 bg-white/95 backdrop-blur-sm rounded-lg px-4 py-3 shadow-lg">
+              <div className="flex items-center gap-2">
+                <div className={`w-2.5 h-2.5 rounded-full ${isOpen ? 'bg-green-500' : 'bg-red-500'}`} />
+                <div className="flex flex-col">
+                  <span className={`font-semibold text-sm ${isOpen ? 'text-green-600' : 'text-red-600'}`}>
+                    {isOpen ? 'Aberto' : 'Fechado'}
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    {isOpen ? 'Aceitando pedidos' : 'Fora do horário de atendimento'}
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowHoursModal(true)}
+                className="text-primary font-bold text-sm uppercase tracking-wide hover:underline"
+              >
+                VER HORÁRIOS
+              </button>
+            </div>
+          )}
         </div>
+
+        {/* Hours Modal - Mobile Only */}
+        {showHoursModal && isMobile && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowHoursModal(false)}>
+            <div className="bg-white rounded-xl p-6 mx-4 max-w-sm w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                  <Clock className="h-5 w-5" />
+                  Horários de Funcionamento
+                </h3>
+                <button onClick={() => setShowHoursModal(false)} className="text-gray-500 hover:text-gray-700">
+                  ✕
+                </button>
+              </div>
+              <div className="space-y-2">
+                {['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'].map((day, index) => {
+                  const hours = businessHours.find(h => h.day_of_week === index);
+                  const isToday = new Date().getDay() === index;
+                  return (
+                    <div key={day} className={`flex justify-between py-2 px-3 rounded ${isToday ? 'bg-primary/10' : ''}`}>
+                      <span className={`font-medium ${isToday ? 'text-primary' : 'text-gray-700'}`}>{day}</span>
+                      <span className={hours?.is_active ? 'text-gray-600' : 'text-red-500'}>
+                        {hours?.is_active ? `${hours.open_time} - ${hours.close_time}` : 'Fechado'}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Floating Image - Positioned based on admin settings */}
         {floatingImageUrl && (
