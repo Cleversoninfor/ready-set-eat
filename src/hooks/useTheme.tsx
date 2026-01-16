@@ -96,35 +96,41 @@ export function useTheme() {
     // Build and apply dynamic manifest
     const manifest = {
       name: store.pwa_name || store.name || 'Cardápio Digital',
-      short_name: store.pwa_short_name || store.pwa_name?.slice(0, 12) || store.name?.slice(0, 12) || 'Cardápio',
+      short_name:
+        store.pwa_short_name ||
+        store.pwa_name?.slice(0, 12) ||
+        store.name?.slice(0, 12) ||
+        'Cardápio',
       description: 'Cardápio digital e delivery - Faça seu pedido online',
       start_url: '/',
       display: 'standalone',
       background_color: '#ffffff',
       theme_color: themeColor,
       orientation: 'portrait-primary',
-      icons: store.logo_url ? [
-        { src: store.logo_url, sizes: '192x192', type: 'image/png', purpose: 'any' },
-        { src: store.logo_url, sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
-      ] : [
-        { src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
-        { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
-      ],
+      icons: store.logo_url
+        ? [
+            { src: store.logo_url, sizes: '192x192', type: 'image/png', purpose: 'any' },
+            { src: store.logo_url, sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
+          ]
+        : [
+            { src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+            { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
+          ],
       categories: ['food', 'shopping'],
-      lang: 'pt-BR'
+      lang: 'pt-BR',
     };
 
-    const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
-    const manifestUrl = URL.createObjectURL(manifestBlob);
+    // IMPORTANT: use a data: URL (not blob:) so the browser can reliably fetch it for installation
+    const manifestJson = JSON.stringify(manifest);
+    const manifestUrl = `data:application/manifest+json;charset=utf-8,${encodeURIComponent(manifestJson)}`;
 
-    let manifestLink = document.querySelector('link[rel="manifest"]') as HTMLLinkElement;
-    if (manifestLink) {
-      const oldUrl = manifestLink.href;
-      manifestLink.href = manifestUrl;
-      if (oldUrl.startsWith('blob:')) {
-        URL.revokeObjectURL(oldUrl);
-      }
+    let manifestLink = document.querySelector('link[rel="manifest"]') as HTMLLinkElement | null;
+    if (!manifestLink) {
+      manifestLink = document.createElement('link');
+      manifestLink.rel = 'manifest';
+      document.head.appendChild(manifestLink);
     }
+    manifestLink.href = manifestUrl;
 
     // Update apple-touch-icon with store logo
     if (store.logo_url) {

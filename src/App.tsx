@@ -12,6 +12,7 @@ import Checkout from "./pages/Checkout";
 import OrderStatus from "./pages/OrderStatus";
 import MyOrders from "./pages/MyOrders";
 import Auth from "./pages/Auth";
+import Install from "./pages/Install";
 import AdminOrders from "./pages/admin/Orders";
 import AdminProducts from "./pages/admin/Products";
 import AdminCategories from "./pages/admin/Categories";
@@ -42,6 +43,7 @@ const App = () => (
             <BrowserRouter>
               <Routes>
                 <Route path="/" element={<Index />} />
+                <Route path="/install" element={<Install />} />
                 <Route path="/cart" element={<Cart />} />
                 <Route path="/checkout" element={<Checkout />} />
                 <Route path="/order/:id" element={<OrderStatus />} />
@@ -73,3 +75,4 @@ const App = () => (
 );
 
 export default App;
+
