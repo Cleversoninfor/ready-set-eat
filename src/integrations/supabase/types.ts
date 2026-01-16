@@ -762,12 +762,55 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_public_store_config: {
+        Args: never
+        Returns: {
+          accent_color: string
+          address: string
+          cover_url: string
+          delivery_fee: number
+          delivery_fee_mode: string
+          delivery_time_max: number
+          delivery_time_min: number
+          floating_image_position: number
+          floating_image_position_mobile: number
+          floating_image_size: number
+          floating_image_size_mobile: number
+          floating_image_url: string
+          floating_image_vertical_position: number
+          floating_image_vertical_position_mobile: number
+          hero_slogan: string
+          hero_text_1: string
+          hero_text_2: string
+          hero_text_3: string
+          id: string
+          is_open: boolean
+          logo_url: string
+          min_order_value: number
+          name: string
+          primary_color: string
+          pwa_name: string
+          pwa_short_name: string
+          secondary_color: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      validate_coupon: {
+        Args: { coupon_code: string }
+        Returns: {
+          code: string
+          discount_type: string
+          discount_value: number
+          id: string
+          is_valid: boolean
+          min_order_value: number
+        }[]
       }
     }
     Enums: {

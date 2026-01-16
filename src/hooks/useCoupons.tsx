@@ -32,32 +32,37 @@ export function useCoupons() {
 export function useValidateCoupon() {
   return useMutation({
     mutationFn: async ({ code, orderTotal }: { code: string; orderTotal: number }) => {
-      const { data: coupon, error } = await supabase
-        .from('coupons')
-        .select('*')
-        .ilike('code', code)
-        .eq('is_active', true)
-        .maybeSingle();
+      // Use the secure validate_coupon function
+      const { data, error } = await supabase
+        .rpc('validate_coupon', { coupon_code: code });
       
       if (error) throw error;
-      if (!coupon) throw new Error('Cupom não encontrado');
+      if (!data || data.length === 0) throw new Error('Cupom não encontrado');
       
-      // Check if expired
-      if (coupon.expires_at && new Date(coupon.expires_at) < new Date()) {
-        throw new Error('Cupom expirado');
-      }
+      const coupon = data[0];
       
-      // Check max uses
-      if (coupon.max_uses && coupon.current_uses >= coupon.max_uses) {
-        throw new Error('Cupom esgotado');
+      // Check if valid
+      if (!coupon.is_valid) {
+        throw new Error('Cupom inválido ou expirado');
       }
       
       // Check min order value
       if (coupon.min_order_value && orderTotal < coupon.min_order_value) {
-        throw new Error(`Pedido mínimo de R$ ${coupon.min_order_value.toFixed(2)} para usar este cupom`);
+        throw new Error(`Pedido mínimo de R$ ${Number(coupon.min_order_value).toFixed(2)} para usar este cupom`);
       }
       
-      return coupon as Coupon;
+      return {
+        id: coupon.id,
+        code: coupon.code,
+        discount_type: coupon.discount_type as 'percentage' | 'fixed',
+        discount_value: Number(coupon.discount_value),
+        min_order_value: Number(coupon.min_order_value) || 0,
+        max_uses: null,
+        current_uses: 0,
+        is_active: true,
+        expires_at: null,
+        created_at: '',
+      } as Coupon;
     },
   });
 }
