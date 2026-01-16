@@ -1,8 +1,8 @@
 import logoInfornexa from '@/assets/logo-infornexa.png';
 import { MessageCircle } from 'lucide-react';
 
-export const InfornexaBanner = () => {
-  const whatsappNumber = '5587991660237';
+const InfornexaBanner = () => {
+  const whatsappNumber = '5581996465310';
   const whatsappMessage = encodeURIComponent('Olá! Gostaria de ter um cardápio digital.');
   const whatsappLink = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
 
@@ -17,7 +17,7 @@ export const InfornexaBanner = () => {
           <img 
             src={logoInfornexa} 
             alt="Infornexa Logo" 
-            className="w-28 h-28 sm:w-36 sm:h-36 object-contain"
+            className="w-36 h-36 sm:w-40 sm:h-40 object-contain"
           />
         </div>
 
@@ -45,3 +45,5 @@ export const InfornexaBanner = () => {
     </div>
   );
 };
+
+export { InfornexaBanner };

@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
 import { useStoreConfig } from '@/hooks/useStore';
 
-export function InstallPrompt() {
+const InstallPrompt = () => {
   const { isInstallable, isInstalled, promptInstall, isIOS, showIOSInstructions } = usePWAInstall();
   const { data: store } = useStoreConfig();
   const [dismissed, setDismissed] = useState(false);
@@ -105,4 +105,6 @@ export function InstallPrompt() {
       )}
     </>
   );
-}
+};
+
+export { InstallPrompt };
