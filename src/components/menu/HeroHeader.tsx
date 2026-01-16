@@ -135,7 +135,7 @@ export function HeroHeader({ store }: HeroHeaderProps) {
         <nav className="relative z-10 flex items-center justify-between px-4 sm:px-8 py-4">
           {/* Logo */}
           <div className="flex items-center gap-3">
-            <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-full border-2 border-primary bg-background shadow-lg overflow-hidden flex-shrink-0">
+            <div className="h-14 w-14 sm:h-14 sm:w-14 rounded-full border-2 border-primary bg-background shadow-lg overflow-hidden flex-shrink-0">
               {store.logo_url ? (
                 <img
                   src={store.logo_url}
@@ -152,19 +152,19 @@ export function HeroHeader({ store }: HeroHeaderProps) {
           </div>
 
           {/* Nav Links */}
-          <div className="flex items-center gap-4 sm:gap-6">
+          <div className="flex items-center gap-6 sm:gap-6">
             <button
               onClick={scrollToMenu}
               className="flex items-center gap-2 text-sm font-medium text-white/90 hover:text-white transition-colors"
             >
-              <UtensilsCrossed className="h-4 w-4" />
+              <UtensilsCrossed className="h-6 w-6 sm:h-4 sm:w-4" />
               <span className="hidden sm:inline">Catálogo</span>
             </button>
             <Link
               to="/my-orders"
               className="flex items-center gap-2 text-sm font-medium text-white/90 hover:text-white transition-colors"
             >
-              <ShoppingBag className="h-4 w-4" />
+              <ShoppingBag className="h-6 w-6 sm:h-4 sm:w-4" />
               <span className="hidden sm:inline">Meus pedidos</span>
               {totalItems > 0 && (
                 <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
