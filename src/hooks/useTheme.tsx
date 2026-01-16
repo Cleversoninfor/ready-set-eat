@@ -1,71 +1,10 @@
 import { useEffect } from 'react';
 import { useStoreConfig } from './useStore';
-import { useDynamicManifest } from './useDynamicManifest';
 
 // Convert HSL string like "45 100% 51%" to proper CSS variable value
 function parseHslColor(color: string | null | undefined, fallback: string): string {
   if (!color) return fallback;
-  // Already in correct format (H S% L%)
   return color;
-}
-
-export function useTheme() {
-  const { data: store } = useStoreConfig();
-  
-  // Use dynamic manifest hook to update PWA manifest
-  useDynamicManifest();
-
-  useEffect(() => {
-    if (!store) return;
-
-    const root = document.documentElement;
-
-    // Apply primary color
-    if (store.primary_color) {
-      root.style.setProperty('--primary', parseHslColor(store.primary_color, '45 100% 51%'));
-      root.style.setProperty('--ring', parseHslColor(store.primary_color, '45 100% 51%'));
-      root.style.setProperty('--sidebar-ring', parseHslColor(store.primary_color, '45 100% 51%'));
-    }
-
-    // Apply secondary color
-    if (store.secondary_color) {
-      root.style.setProperty('--secondary', parseHslColor(store.secondary_color, '142 76% 49%'));
-      root.style.setProperty('--whatsapp', parseHslColor(store.secondary_color, '142 76% 49%'));
-    }
-
-    // Apply accent color
-    if (store.accent_color) {
-      root.style.setProperty('--accent', parseHslColor(store.accent_color, '45 100% 95%'));
-    }
-
-    // Update theme-color meta tag
-    if (store.primary_color) {
-      const themeColorMeta = document.querySelector('meta[name="theme-color"]');
-      if (themeColorMeta) {
-        // Convert HSL to approximate hex for theme-color
-        const hslMatch = store.primary_color.match(/(\d+)\s+(\d+)%\s+(\d+)%/);
-        if (hslMatch) {
-          const h = parseInt(hslMatch[1]);
-          const s = parseInt(hslMatch[2]) / 100;
-          const l = parseInt(hslMatch[3]) / 100;
-          const hex = hslToHex(h, s, l);
-          themeColorMeta.setAttribute('content', hex);
-        }
-      }
-    }
-
-    // Update document title and apple-mobile-web-app-title
-    if (store.pwa_name || store.name) {
-      document.title = store.pwa_name || store.name || 'Cardápio';
-      
-      // Update apple-mobile-web-app-title
-      const appleTitleMeta = document.querySelector('meta[name="apple-mobile-web-app-title"]');
-      if (appleTitleMeta) {
-        appleTitleMeta.setAttribute('content', store.pwa_short_name || store.pwa_name || store.name || 'Cardápio');
-      }
-    }
-
-  }, [store]);
 }
 
 // Helper function to convert HSL to Hex
@@ -95,4 +34,110 @@ function hslToHex(h: number, s: number, l: number): string {
   };
 
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
+
+function parseHslToHex(hslString: string | null | undefined, fallback: string): string {
+  if (!hslString) return fallback;
+  
+  const match = hslString.match(/(\d+)\s+(\d+)%\s+(\d+)%/);
+  if (match) {
+    const h = parseInt(match[1]);
+    const s = parseInt(match[2]) / 100;
+    const l = parseInt(match[3]) / 100;
+    return hslToHex(h, s, l);
+  }
+  
+  return fallback;
+}
+
+export function useTheme() {
+  const { data: store } = useStoreConfig();
+
+  useEffect(() => {
+    if (!store) return;
+
+    const root = document.documentElement;
+
+    // Apply primary color
+    if (store.primary_color) {
+      root.style.setProperty('--primary', parseHslColor(store.primary_color, '45 100% 51%'));
+      root.style.setProperty('--ring', parseHslColor(store.primary_color, '45 100% 51%'));
+      root.style.setProperty('--sidebar-ring', parseHslColor(store.primary_color, '45 100% 51%'));
+    }
+
+    // Apply secondary color
+    if (store.secondary_color) {
+      root.style.setProperty('--secondary', parseHslColor(store.secondary_color, '142 76% 49%'));
+      root.style.setProperty('--whatsapp', parseHslColor(store.secondary_color, '142 76% 49%'));
+    }
+
+    // Apply accent color
+    if (store.accent_color) {
+      root.style.setProperty('--accent', parseHslColor(store.accent_color, '45 100% 95%'));
+    }
+
+    // Update theme-color meta tag
+    const themeColor = parseHslToHex(store.primary_color, '#f59e0b');
+    const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+    if (themeColorMeta) {
+      themeColorMeta.setAttribute('content', themeColor);
+    }
+
+    // Update document title and apple-mobile-web-app-title
+    if (store.pwa_name || store.name) {
+      document.title = store.pwa_name || store.name || 'Cardápio';
+      
+      const appleTitleMeta = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+      if (appleTitleMeta) {
+        appleTitleMeta.setAttribute('content', store.pwa_short_name || store.pwa_name || store.name || 'Cardápio');
+      }
+    }
+
+    // Build and apply dynamic manifest
+    const manifest = {
+      name: store.pwa_name || store.name || 'Cardápio Digital',
+      short_name: store.pwa_short_name || store.pwa_name?.slice(0, 12) || store.name?.slice(0, 12) || 'Cardápio',
+      description: 'Cardápio digital e delivery - Faça seu pedido online',
+      start_url: '/',
+      display: 'standalone',
+      background_color: '#ffffff',
+      theme_color: themeColor,
+      orientation: 'portrait-primary',
+      icons: store.logo_url ? [
+        { src: store.logo_url, sizes: '192x192', type: 'image/png', purpose: 'any' },
+        { src: store.logo_url, sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
+      ] : [
+        { src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+        { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
+      ],
+      categories: ['food', 'shopping'],
+      lang: 'pt-BR'
+    };
+
+    const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+    const manifestUrl = URL.createObjectURL(manifestBlob);
+
+    let manifestLink = document.querySelector('link[rel="manifest"]') as HTMLLinkElement;
+    if (manifestLink) {
+      const oldUrl = manifestLink.href;
+      manifestLink.href = manifestUrl;
+      if (oldUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(oldUrl);
+      }
+    }
+
+    // Update apple-touch-icon with store logo
+    if (store.logo_url) {
+      let appleTouchIcon = document.querySelector('link[rel="apple-touch-icon"]') as HTMLLinkElement;
+      if (appleTouchIcon) {
+        appleTouchIcon.href = store.logo_url;
+      } else {
+        appleTouchIcon = document.createElement('link');
+        appleTouchIcon.rel = 'apple-touch-icon';
+        appleTouchIcon.href = store.logo_url;
+        document.head.appendChild(appleTouchIcon);
+      }
+    }
+
+  }, [store]);
 }
