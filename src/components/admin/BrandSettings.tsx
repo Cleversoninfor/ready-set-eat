@@ -56,7 +56,7 @@ export function BrandSettings({ className }: BrandSettingsProps) {
         primary_color: store.primary_color || '45 100% 51%',
         secondary_color: store.secondary_color || '142 76% 49%',
         pwa_name: store.pwa_name || store.name || '',
-        pwa_short_name: store.pwa_short_name || '',
+        pwa_short_name: store.pwa_short_name || store.pwa_name?.slice(0, 12) || store.name?.slice(0, 12) || '',
       });
     }
   }, [store]);
@@ -217,6 +217,31 @@ export function BrandSettings({ className }: BrandSettingsProps) {
         <div className="border-t pt-6 space-y-4">
           <h4 className="font-medium text-sm">Configurações do App Instalável (PWA)</h4>
           
+          {/* PWA Preview */}
+          <div className="p-4 rounded-lg border bg-background">
+            <Label className="text-xs text-muted-foreground mb-3 block">Preview do Ícone</Label>
+            <div className="flex items-center gap-4">
+              {formData.logo_url ? (
+                <img 
+                  src={formData.logo_url} 
+                  alt="Ícone do App" 
+                  className="h-16 w-16 rounded-xl object-cover shadow-md"
+                />
+              ) : (
+                <div 
+                  className="h-16 w-16 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-md"
+                  style={{ backgroundColor: `hsl(${formData.primary_color})` }}
+                >
+                  {formData.name.charAt(0).toUpperCase() || '?'}
+                </div>
+              )}
+              <div>
+                <p className="font-medium text-sm">{formData.pwa_short_name || formData.pwa_name || formData.name || 'App'}</p>
+                <p className="text-xs text-muted-foreground">Como aparece na tela inicial</p>
+              </div>
+            </div>
+          </div>
+
           <div className="space-y-2">
             <Label className="text-xs sm:text-sm text-muted-foreground">
               Nome do App (exibido na tela inicial)
@@ -224,7 +249,7 @@ export function BrandSettings({ className }: BrandSettingsProps) {
             <Input
               value={formData.pwa_name}
               onChange={(e) => setFormData({ ...formData, pwa_name: e.target.value })}
-              placeholder="Nome completo do app"
+              placeholder={formData.name || "Nome completo do app"}
               maxLength={45}
             />
           </div>
@@ -236,7 +261,7 @@ export function BrandSettings({ className }: BrandSettingsProps) {
             <Input
               value={formData.pwa_short_name}
               onChange={(e) => setFormData({ ...formData, pwa_short_name: e.target.value })}
-              placeholder="Nome curto (máx. 12 caracteres)"
+              placeholder={formData.pwa_name?.slice(0, 12) || formData.name?.slice(0, 12) || "Nome curto"}
               maxLength={12}
             />
             <p className="text-xs text-muted-foreground">
