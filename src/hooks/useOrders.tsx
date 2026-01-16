@@ -110,43 +110,33 @@ export function useCreateOrder() {
 
   return useMutation({
     mutationFn: async ({ order, items }: { order: CreateOrderData; items: Omit<CreateOrderItemData, 'order_id'>[] }) => {
-      // Create the order
-      const { data: newOrder, error: orderError } = await supabase
-        .from('orders')
-        .insert({
-          customer_name: order.customer_name,
-          customer_phone: order.customer_phone,
-          address_street: order.address_street,
-          address_number: order.address_number,
-          address_neighborhood: order.address_neighborhood,
-          address_complement: order.address_complement || null,
-          address_reference: order.address_reference || null,
-          total_amount: order.total_amount,
-          payment_method: order.payment_method,
-          change_for: order.change_for || null,
-          status: 'pending',
-        })
-        .select()
-        .single();
-      
-      if (orderError) throw orderError;
-      
-      // Create order items
-      const orderItems = items.map(item => ({
-        order_id: newOrder.id,
-        product_name: item.product_name,
-        quantity: item.quantity,
-        unit_price: item.unit_price,
-        observation: item.observation || null,
-      }));
-      
-      const { error: itemsError } = await supabase
-        .from('order_items')
-        .insert(orderItems);
-      
-      if (itemsError) throw itemsError;
-      
-      return newOrder as Order;
+      // Use RPC function that bypasses RLS (security definer)
+      const { data: orderId, error } = await supabase.rpc('create_order_with_items', {
+        _customer_name: order.customer_name,
+        _customer_phone: order.customer_phone,
+        _address_street: order.address_street,
+        _address_number: order.address_number,
+        _address_neighborhood: order.address_neighborhood,
+        _total_amount: order.total_amount,
+        _payment_method: order.payment_method,
+        _items: items.map(item => ({
+          product_name: item.product_name,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          observation: item.observation || null,
+        })),
+        _address_complement: order.address_complement || null,
+        _address_reference: order.address_reference || null,
+        _change_for: order.change_for ?? null,
+      });
+
+      if (error) {
+        console.error('create_order_with_items error:', error);
+        throw error;
+      }
+
+      // Return a minimal order object with the ID
+      return { id: orderId } as Order;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
