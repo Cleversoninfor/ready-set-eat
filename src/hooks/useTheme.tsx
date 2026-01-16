@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useStoreConfig } from './useStore';
+import { useDynamicManifest } from './useDynamicManifest';
 
 // Convert HSL string like "45 100% 51%" to proper CSS variable value
 function parseHslColor(color: string | null | undefined, fallback: string): string {
@@ -10,6 +11,9 @@ function parseHslColor(color: string | null | undefined, fallback: string): stri
 
 export function useTheme() {
   const { data: store } = useStoreConfig();
+  
+  // Use dynamic manifest hook to update PWA manifest
+  useDynamicManifest();
 
   useEffect(() => {
     if (!store) return;
@@ -50,7 +54,7 @@ export function useTheme() {
       }
     }
 
-    // Update PWA manifest name dynamically (for display purposes, actual manifest is static)
+    // Update document title and apple-mobile-web-app-title
     if (store.pwa_name || store.name) {
       document.title = store.pwa_name || store.name || 'Cardápio';
       
