@@ -163,6 +163,9 @@ export function BannerSettings({ className }: BannerSettingsProps) {
         <div className="space-y-2">
           <Label className="text-xs sm:text-sm text-muted-foreground">
             Imagem de Fundo do Banner
+            <span className="ml-2 px-2 py-0.5 bg-primary/10 text-primary rounded text-[10px] font-medium">
+              1920×1080px (paisagem)
+            </span>
           </Label>
           <ImageUpload
             bucket="store-assets"
@@ -171,7 +174,8 @@ export function BannerSettings({ className }: BannerSettingsProps) {
             onRemove={() => setFormDataAndRef((prev) => ({ ...prev, cover_url: '' }))}
           />
           <p className="text-xs text-muted-foreground">
-            Recomendado: 1920x1080 pixels para melhor qualidade em todas as telas
+            <strong>Recomendado:</strong> 1920×1080 pixels (proporção 16:9). 
+            Esta imagem aparece como plano de fundo do banner principal.
           </p>
         </div>
 
@@ -218,6 +222,9 @@ export function BannerSettings({ className }: BannerSettingsProps) {
           <div className="border-t pt-6 space-y-4">
             <Label className="text-xs sm:text-sm text-muted-foreground">
               Imagem Animada (Efeito Parallax)
+              <span className="ml-2 px-2 py-0.5 bg-primary/10 text-primary rounded text-[10px] font-medium">
+                800×800px (PNG transparente)
+              </span>
             </Label>
             <ImageUpload
               bucket="store-assets"
@@ -226,8 +233,8 @@ export function BannerSettings({ className }: BannerSettingsProps) {
               onRemove={() => setFormDataAndRef((prev) => ({ ...prev, floating_image_url: '' }))}
             />
             <p className="text-xs text-muted-foreground">
-              Esta imagem aparece flutuando sobre o banner com efeito de movimento.
-              Recomendado: imagem PNG com fundo transparente.
+              <strong>Recomendado:</strong> 800×800 pixels, formato PNG com fundo transparente. 
+              Esta imagem aparece flutuando sobre o banner com efeito de movimento parallax.
             </p>
 
             {/* Device Mode Toggle */}
