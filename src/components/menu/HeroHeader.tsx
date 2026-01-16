@@ -158,7 +158,7 @@ export function HeroHeader({ store }: HeroHeaderProps) {
               className="flex items-center gap-2 text-sm font-medium text-white/90 hover:text-white transition-colors"
             >
               <UtensilsCrossed className="h-6 w-6 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Catálogo</span>
+              <span className="hidden sm:inline">Cardápio</span>
             </button>
             <Link
               to="/my-orders"
