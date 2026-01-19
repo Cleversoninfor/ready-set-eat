@@ -30,16 +30,17 @@ import {
 } from '@dnd-kit/core';
 
 type DateFilter = 'today' | 'week' | 'month' | 'all';
-type OrderStatus = 'pending' | 'preparing' | 'delivery' | 'completed';
+type OrderStatus = 'pending' | 'preparing' | 'ready' | 'delivery' | 'completed';
 
 const columns: { id: OrderStatus; label: string; color: string }[] = [
   { id: 'pending', label: 'Pendentes', color: 'bg-warning/10' },
   { id: 'preparing', label: 'Em Preparo', color: 'bg-primary/10' },
+  { id: 'ready', label: 'Prontos na Cozinha', color: 'bg-orange-500/10' },
   { id: 'delivery', label: 'Saiu p/ Entrega', color: 'bg-secondary/10' },
   { id: 'completed', label: 'Finalizados', color: 'bg-green-500/10' },
 ];
 
-const COLORS = ['hsl(var(--warning))', 'hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(142, 76%, 36%)'];
+const COLORS = ['hsl(var(--warning))', 'hsl(var(--primary))', 'hsl(24, 100%, 50%)', 'hsl(var(--secondary))', 'hsl(142, 76%, 36%)'];
 const AUTO_REFRESH_INTERVAL = 30000; // 30 seconds
 
 // Draggable Order Card Wrapper
@@ -125,7 +126,8 @@ function OrderCardContent({ order, store, onOpenDetails, dragListeners }: { orde
   const getNextStatus = (status: Order['status']): Order['status'] | null => {
     const flow: Record<string, Order['status']> = {
       pending: 'preparing',
-      preparing: 'delivery',
+      preparing: 'ready',
+      ready: 'delivery',
       delivery: 'completed',
     };
     return flow[status] || null;
@@ -134,7 +136,8 @@ function OrderCardContent({ order, store, onOpenDetails, dragListeners }: { orde
   const getNextStatusLabel = (status: Order['status']) => {
     const labels: Record<string, string> = {
       pending: 'Aceitar',
-      preparing: 'Despachar',
+      preparing: 'Pronto',
+      ready: 'Saiu p/ Entrega',
       delivery: 'Finalizar',
     };
     return labels[status];
@@ -740,7 +743,7 @@ const AdminOrders = () => {
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
         >
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3 sm:gap-6">
             {columns.map((column) => {
               const columnOrders = filteredOrders.filter(o => o.status === column.id);
               
