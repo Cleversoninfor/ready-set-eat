@@ -14,7 +14,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { KitchenItemCard } from '@/components/kitchen/KitchenItemCard';
+import { KitchenOrderCard, groupItemsByOrder, GroupedKitchenOrder } from '@/components/kitchen/KitchenOrderCard';
 import { useKitchenItems } from '@/hooks/useKitchenItems';
 import { useStoreConfig } from '@/hooks/useStore';
 import { useTheme } from '@/hooks/useTheme';
@@ -87,16 +87,19 @@ export default function Kitchen() {
     };
   }, []);
 
-  // Filter items by status
-  const pendingItems = items.filter(i => i.status === 'pending');
-  const preparingItems = items.filter(i => i.status === 'preparing');
-  const readyItems = items.filter(i => i.status === 'ready');
+  // Group items by order
+  const groupedOrders = groupItemsByOrder(items);
 
-  const currentItems = activeTab === 'pending' 
-    ? pendingItems 
+  // Filter grouped orders by status
+  const pendingOrders = groupedOrders.filter(o => o.status === 'pending');
+  const preparingOrders = groupedOrders.filter(o => o.status === 'preparing');
+  const readyOrders = groupedOrders.filter(o => o.status === 'ready');
+
+  const currentOrders = activeTab === 'pending' 
+    ? pendingOrders 
     : activeTab === 'preparing' 
-      ? preparingItems 
-      : readyItems;
+      ? preparingOrders 
+      : readyOrders;
 
   return (
     <>
@@ -165,7 +168,7 @@ export default function Kitchen() {
             onClick={() => setActiveTab('pending')}
           >
             <Clock className="h-8 w-8 text-amber-700 mx-auto mb-2" />
-            <p className="text-3xl font-bold text-amber-800">{pendingItems.length}</p>
+            <p className="text-3xl font-bold text-amber-800">{pendingOrders.length}</p>
             <p className="text-sm text-amber-700 font-medium">Pendentes</p>
           </div>
           <div 
@@ -177,7 +180,7 @@ export default function Kitchen() {
             onClick={() => setActiveTab('preparing')}
           >
             <ChefHat className="h-8 w-8 text-blue-700 mx-auto mb-2" />
-            <p className="text-3xl font-bold text-blue-800">{preparingItems.length}</p>
+            <p className="text-3xl font-bold text-blue-800">{preparingOrders.length}</p>
             <p className="text-sm text-blue-700 font-medium">Preparando</p>
           </div>
           <div 
@@ -189,7 +192,7 @@ export default function Kitchen() {
             onClick={() => setActiveTab('ready')}
           >
             <CheckCircle className="h-8 w-8 text-green-700 mx-auto mb-2" />
-            <p className="text-3xl font-bold text-green-800">{readyItems.length}</p>
+            <p className="text-3xl font-bold text-green-800">{readyOrders.length}</p>
             <p className="text-sm text-green-700 font-medium">Prontos</p>
           </div>
         </div>
@@ -200,7 +203,7 @@ export default function Kitchen() {
             <div className="flex justify-center py-16">
               <Loader2 className="h-12 w-12 animate-spin text-primary" />
             </div>
-          ) : currentItems.length === 0 ? (
+          ) : currentOrders.length === 0 ? (
             <div className="text-center py-16">
               <div className="mx-auto mb-4 h-20 w-20 rounded-full bg-muted flex items-center justify-center">
                 {activeTab === 'pending' && <Clock className="h-10 w-10 text-muted-foreground" />}
@@ -208,15 +211,15 @@ export default function Kitchen() {
                 {activeTab === 'ready' && <CheckCircle className="h-10 w-10 text-muted-foreground" />}
               </div>
               <p className="text-xl text-muted-foreground">
-                {activeTab === 'pending' && 'Nenhum item pendente'}
-                {activeTab === 'preparing' && 'Nenhum item em preparo'}
-                {activeTab === 'ready' && 'Nenhum item pronto'}
+                {activeTab === 'pending' && 'Nenhum pedido pendente'}
+                {activeTab === 'preparing' && 'Nenhum pedido em preparo'}
+                {activeTab === 'ready' && 'Nenhum pedido pronto'}
               </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {currentItems.map((item) => (
-                <KitchenItemCard key={item.id} item={item} />
+              {currentOrders.map((order) => (
+                <KitchenOrderCard key={order.orderKey} order={order} />
               ))}
             </div>
           )}
