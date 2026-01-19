@@ -35,42 +35,47 @@ export function useKitchenItems(statusFilter?: KitchenItemStatus) {
       if (ordersError) throw ordersError;
 
       // Get table order items
-      let tableItemsQuery = supabase
-        .from('table_order_items')
-        .select('*')
-        .in('table_order_id', openTableOrders?.map(o => o.id) || []);
+      const tableOrderIds = (openTableOrders || []).map(o => o.id);
+      let transformedTableItems: KitchenItem[] = [];
       
-      if (statusFilter) {
-        tableItemsQuery = tableItemsQuery.eq('status', statusFilter);
-      } else {
-        tableItemsQuery = tableItemsQuery.in('status', ['pending', 'preparing', 'ready']);
-      }
-      
-      const { data: tableItems, error: tableItemsError } = await tableItemsQuery;
-      if (tableItemsError) throw tableItemsError;
+      if (tableOrderIds.length > 0) {
+        let tableItemsQuery = supabase
+          .from('table_order_items')
+          .select('*')
+          .in('table_order_id', tableOrderIds);
+        
+        if (statusFilter) {
+          tableItemsQuery = tableItemsQuery.eq('status', statusFilter);
+        } else {
+          tableItemsQuery = tableItemsQuery.in('status', ['pending', 'preparing', 'ready']);
+        }
+        
+        const { data: tableItems, error: tableItemsError } = await tableItemsQuery;
+        if (tableItemsError) throw tableItemsError;
 
-      // Transform table order items
-      const transformedTableItems: KitchenItem[] = (tableItems || []).map(item => {
-        const order = openTableOrders?.find(o => o.id === item.table_order_id);
-        const table = order?.table;
-        return {
-          id: item.id,
-          table_order_id: item.table_order_id,
-          order_id: null,
-          product_id: item.product_id,
-          product_name: item.product_name,
-          quantity: item.quantity,
-          observation: item.observation,
-          unit_price: item.unit_price,
-          status: item.status || 'pending',
-          ordered_at: item.ordered_at || item.created_at || new Date().toISOString(),
-          delivered_at: item.delivered_at,
-          table_number: table?.number || null,
-          table_name: table?.name || null,
-          waiter_name: order?.waiter_name || null,
-          order_type: 'table' as const,
-        };
-      });
+        // Transform table order items
+        transformedTableItems = (tableItems || []).map(item => {
+          const order = openTableOrders?.find(o => o.id === item.table_order_id);
+          const table = order?.table;
+          return {
+            id: item.id,
+            table_order_id: item.table_order_id,
+            order_id: null,
+            product_id: item.product_id,
+            product_name: item.product_name,
+            quantity: item.quantity,
+            observation: item.observation,
+            unit_price: item.unit_price,
+            status: item.status || 'pending',
+            ordered_at: item.ordered_at || item.created_at || new Date().toISOString(),
+            delivered_at: item.delivered_at,
+            table_number: table?.number || null,
+            table_name: table?.name || null,
+            waiter_name: order?.waiter_name || null,
+            order_type: 'table' as const,
+          };
+        });
+      }
 
       // Get delivery orders that are pending/preparing
       const { data: activeDeliveryOrders, error: deliveryError } = await supabase
@@ -81,55 +86,60 @@ export function useKitchenItems(statusFilter?: KitchenItemStatus) {
       if (deliveryError) throw deliveryError;
 
       // Get delivery order items
-      const { data: deliveryItems, error: deliveryItemsError } = await supabase
-        .from('order_items')
-        .select('*')
-        .in('order_id', activeDeliveryOrders?.map(o => o.id) || []);
-      
-      if (deliveryItemsError) throw deliveryItemsError;
+      const deliveryOrderIds = (activeDeliveryOrders || []).map(o => o.id);
+      let transformedDeliveryItems: KitchenItem[] = [];
 
-      // Map order status to kitchen status
-      const mapOrderStatusToKitchenStatus = (orderStatus: string): string => {
-        switch (orderStatus) {
-          case 'pending':
-            return 'pending';
-          case 'preparing':
-            return 'preparing';
-          default:
-            return 'pending';
-        }
-      };
+      if (deliveryOrderIds.length > 0) {
+        const { data: deliveryItems, error: deliveryItemsError } = await supabase
+          .from('order_items')
+          .select('*')
+          .in('order_id', deliveryOrderIds);
+        
+        if (deliveryItemsError) throw deliveryItemsError;
 
-      // Transform delivery order items
-      const transformedDeliveryItems: KitchenItem[] = (deliveryItems || [])
-        .map(item => {
-          const order = activeDeliveryOrders?.find(o => o.id === item.order_id);
-          const kitchenStatus = mapOrderStatusToKitchenStatus(order?.status || 'pending');
-          
-          // Apply status filter for delivery items
-          if (statusFilter && kitchenStatus !== statusFilter) return null;
-          if (!statusFilter && !['pending', 'preparing', 'ready'].includes(kitchenStatus)) return null;
-          
-          return {
-            id: item.id,
-            table_order_id: null,
-            order_id: item.order_id,
-            product_id: null,
-            product_name: item.product_name,
-            quantity: item.quantity,
-            observation: item.observation,
-            unit_price: item.unit_price,
-            status: kitchenStatus,
-            ordered_at: order?.created_at || new Date().toISOString(),
-            delivered_at: null,
-            table_number: null,
-            table_name: null,
-            waiter_name: null,
-            order_type: 'delivery' as const,
-            customer_name: order?.customer_name,
-          };
-        })
-        .filter(Boolean) as KitchenItem[];
+        // Map order status to kitchen status
+        const mapOrderStatusToKitchenStatus = (orderStatus: string): string => {
+          switch (orderStatus) {
+            case 'pending':
+              return 'pending';
+            case 'preparing':
+              return 'preparing';
+            default:
+              return 'pending';
+          }
+        };
+
+        // Transform delivery order items
+        transformedDeliveryItems = (deliveryItems || [])
+          .map(item => {
+            const order = activeDeliveryOrders?.find(o => o.id === item.order_id);
+            const kitchenStatus = mapOrderStatusToKitchenStatus(order?.status || 'pending');
+            
+            // Apply status filter for delivery items
+            if (statusFilter && kitchenStatus !== statusFilter) return null;
+            if (!statusFilter && !['pending', 'preparing', 'ready'].includes(kitchenStatus)) return null;
+            
+            return {
+              id: item.id,
+              table_order_id: null,
+              order_id: item.order_id,
+              product_id: null,
+              product_name: item.product_name,
+              quantity: item.quantity,
+              observation: item.observation,
+              unit_price: item.unit_price,
+              status: kitchenStatus,
+              ordered_at: order?.created_at || new Date().toISOString(),
+              delivered_at: null,
+              table_number: null,
+              table_name: null,
+              waiter_name: null,
+              order_type: 'delivery' as const,
+              customer_name: order?.customer_name,
+            };
+          })
+          .filter(Boolean) as KitchenItem[];
+      }
 
       // Combine and sort by ordered_at
       const allItems = [...transformedTableItems, ...transformedDeliveryItems].sort((a, b) => 
@@ -138,6 +148,7 @@ export function useKitchenItems(statusFilter?: KitchenItemStatus) {
 
       return allItems;
     },
+    refetchInterval: 5000, // Poll every 5 seconds for new orders
   });
 
   return { items, isLoading, error };
