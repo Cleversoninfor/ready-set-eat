@@ -80,10 +80,11 @@ export function useKitchenItemMutations() {
       if (error) throw error;
     } else {
       // For delivery orders, update the order status
+      // When kitchen marks as 'ready', keep it as 'ready' - admin will move to 'delivery'
       const orderStatusMap: Record<string, string> = {
         'pending': 'pending',
         'preparing': 'preparing',
-        'ready': 'delivery',
+        'ready': 'ready',
       };
 
       if (orderId) {
