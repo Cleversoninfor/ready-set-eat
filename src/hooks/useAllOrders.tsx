@@ -64,12 +64,12 @@ export function useAllOrders() {
 
       if (deliveryError) throw deliveryError;
 
-      // Fetch table orders with table info
+      // Fetch table orders with table info (specify FK to avoid ambiguity)
       const { data: tableOrders, error: tableError } = await supabase
         .from('table_orders')
         .select(`
           *,
-          table:tables(id, number, name)
+          table:tables!table_orders_table_id_fkey(id, number, name)
         `)
         .in('status', ['open', 'requesting_bill'])
         .order('opened_at', { ascending: false });
