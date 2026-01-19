@@ -98,11 +98,16 @@ const OrderStatus = () => {
     );
   }
 
+  // For customer display, 'ready' should still show as 'preparing' 
+  // since the customer doesn't need to know internal kitchen status
+  const displayStatus = order.status === 'ready' ? 'preparing' : order.status;
+
   const getStatusMessage = () => {
     switch (order.status) {
       case 'pending':
         return 'O restaurante está analisando seu pedido';
       case 'preparing':
+      case 'ready': // Show same message as preparing for customers
         return 'Seu pedido está sendo preparado';
       case 'delivery':
         return 'Seu pedido está a caminho';
@@ -173,7 +178,7 @@ const OrderStatus = () => {
             </p>
 
             {/* Status Tracker */}
-            <OrderStatusTracker status={order.status} />
+            <OrderStatusTracker status={displayStatus} />
           </section>
 
           {/* Order Details */}

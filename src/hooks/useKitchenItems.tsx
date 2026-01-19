@@ -37,24 +37,33 @@ export function useKitchenItems(statusFilter?: KitchenItemStatus) {
       }
 
       // Transform the data to match KitchenItem interface
-      return (data || []).map((item: any) => ({
-        id: item.id,
-        table_order_id: item.table_order_id,
-        order_id: item.order_id,
-        product_id: item.product_id,
-        product_name: item.product_name,
-        quantity: item.quantity,
-        observation: item.observation,
-        unit_price: item.unit_price,
-        status: item.status || 'pending',
-        ordered_at: item.ordered_at || new Date().toISOString(),
-        delivered_at: item.delivered_at,
-        table_number: item.table_number,
-        table_name: item.table_name,
-        waiter_name: item.waiter_name,
-        order_type: item.order_type as 'table' | 'delivery',
-        customer_name: item.customer_name,
-      }));
+      // Filter out 'ready' delivery orders - they should only appear in admin panel
+      return (data || [])
+        .filter((item: any) => {
+          // For delivery orders, exclude 'ready' status from kitchen view
+          if (item.order_type === 'delivery' && item.status === 'ready') {
+            return false;
+          }
+          return true;
+        })
+        .map((item: any) => ({
+          id: item.id,
+          table_order_id: item.table_order_id,
+          order_id: item.order_id,
+          product_id: item.product_id,
+          product_name: item.product_name,
+          quantity: item.quantity,
+          observation: item.observation,
+          unit_price: item.unit_price,
+          status: item.status || 'pending',
+          ordered_at: item.ordered_at || new Date().toISOString(),
+          delivered_at: item.delivered_at,
+          table_number: item.table_number,
+          table_name: item.table_name,
+          waiter_name: item.waiter_name,
+          order_type: item.order_type as 'table' | 'delivery',
+          customer_name: item.customer_name,
+        }));
     },
     refetchInterval: 5000, // Poll every 5 seconds for new orders
   });
