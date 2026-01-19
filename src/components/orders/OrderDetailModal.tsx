@@ -2,8 +2,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
-import { MapPin, Phone, User, CreditCard, Clock, Printer } from 'lucide-react';
-import { useOrderItems, Order } from '@/hooks/useOrders';
+import { MapPin, Phone, User, CreditCard, Clock, Printer, Users, Utensils } from 'lucide-react';
+import { useUnifiedOrderItems, UnifiedOrder } from '@/hooks/useAllOrders';
 import { useStoreConfig } from '@/hooks/useStore';
 import { PrintReceiptButton } from '@/components/pdv/PrintReceiptButton';
 import { PrintOrderData } from '@/utils/thermalPrinter';
@@ -11,7 +11,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 interface OrderDetailModalProps {
-  order: Order | null;
+  order: UnifiedOrder | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -30,7 +30,7 @@ const paymentConfig: Record<string, { label: string; icon: string }> = {
 };
 
 export function OrderDetailModal({ order, open, onOpenChange }: OrderDetailModalProps) {
-  const { data: items } = useOrderItems(order?.id ?? null);
+  const { data: items } = useUnifiedOrderItems(order?.id ?? 0, order?.type ?? 'delivery');
   const { data: store } = useStoreConfig();
 
   const formatCurrency = (value: number) =>
@@ -41,15 +41,17 @@ export function OrderDetailModal({ order, open, onOpenChange }: OrderDetailModal
     
     return {
       orderNumber: order.id,
-      orderType: 'delivery',
+      orderType: order.type === 'table' ? 'table' : 'delivery',
       customerName: order.customer_name,
-      customerPhone: order.customer_phone,
-      address: {
+      customerPhone: order.customer_phone || undefined,
+      address: order.type === 'delivery' && order.address_street ? {
         street: order.address_street,
-        number: order.address_number,
-        neighborhood: order.address_neighborhood,
+        number: order.address_number || '',
+        neighborhood: order.address_neighborhood || '',
         complement: order.address_complement || undefined,
-      },
+      } : undefined,
+      tableName: order.type === 'table' ? order.customer_name : undefined,
+      waiterName: order.waiter_name || undefined,
       items: items.map(item => ({
         name: item.product_name,
         quantity: item.quantity,
@@ -57,9 +59,9 @@ export function OrderDetailModal({ order, open, onOpenChange }: OrderDetailModal
         observation: item.observation || undefined,
       })),
       subtotal: items.reduce((sum, item) => sum + (item.quantity * Number(item.unit_price)), 0),
-      deliveryFee: store?.delivery_fee || 0,
+      deliveryFee: order.type === 'delivery' ? (store?.delivery_fee || 0) : 0,
       total: Number(order.total_amount),
-      paymentMethod: paymentConfig[order.payment_method]?.label || order.payment_method,
+      paymentMethod: order.payment_method ? (paymentConfig[order.payment_method]?.label || order.payment_method) : undefined,
       createdAt: new Date(order.created_at),
     };
   };
@@ -69,15 +71,22 @@ export function OrderDetailModal({ order, open, onOpenChange }: OrderDetailModal
   if (!order) return null;
 
   const status = statusConfig[order.status] || { label: order.status, color: 'bg-gray-100 text-gray-800' };
-  const payment = paymentConfig[order.payment_method] || { label: order.payment_method, icon: '💰' };
+  const payment = order.payment_method ? (paymentConfig[order.payment_method] || { label: order.payment_method, icon: '💰' }) : null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center justify-between">
-            <DialogTitle className="text-xl">Pedido #{order.id}</DialogTitle>
-            <Badge className={status.color}>{status.label}</Badge>
+            <DialogTitle className="text-xl">
+              {order.type === 'table' ? order.customer_name : `Pedido #${order.id}`}
+            </DialogTitle>
+            <div className="flex gap-2">
+              <Badge variant="outline" className="text-xs">
+                {order.type === 'table' ? '🍽️ Mesa' : '🛵 Delivery'}
+              </Badge>
+              <Badge className={status.color}>{status.label}</Badge>
+            </div>
           </div>
         </DialogHeader>
 
@@ -92,44 +101,74 @@ export function OrderDetailModal({ order, open, onOpenChange }: OrderDetailModal
 
           <Separator />
 
-          {/* Customer Info */}
+          {/* Customer/Table Info */}
           <div className="space-y-3">
-            <h3 className="font-semibold text-sm text-muted-foreground">CLIENTE</h3>
+            <h3 className="font-semibold text-sm text-muted-foreground">
+              {order.type === 'table' ? 'MESA' : 'CLIENTE'}
+            </h3>
             <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <User className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium">{order.customer_name}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Phone className="h-4 w-4 text-muted-foreground" />
-                <span>{order.customer_phone}</span>
-              </div>
+              {order.type === 'table' ? (
+                <>
+                  <div className="flex items-center gap-2">
+                    <Utensils className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-medium">{order.customer_name}</span>
+                  </div>
+                  {order.waiter_name && (
+                    <div className="flex items-center gap-2">
+                      <User className="h-4 w-4 text-muted-foreground" />
+                      <span>Garçom: {order.waiter_name}</span>
+                    </div>
+                  )}
+                  {order.customer_count && (
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4 text-muted-foreground" />
+                      <span>{order.customer_count} pessoa(s)</span>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-medium">{order.customer_name}</span>
+                  </div>
+                  {order.customer_phone && (
+                    <div className="flex items-center gap-2">
+                      <Phone className="h-4 w-4 text-muted-foreground" />
+                      <span>{order.customer_phone}</span>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </div>
 
-          <Separator />
-
-          {/* Delivery Address */}
-          <div className="space-y-3">
-            <h3 className="font-semibold text-sm text-muted-foreground">ENDEREÇO DE ENTREGA</h3>
-            <div className="flex gap-2">
-              <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="font-medium">
-                  {order.address_street}, {order.address_number}
-                </p>
-                {order.address_complement && (
-                  <p className="text-sm text-muted-foreground">{order.address_complement}</p>
-                )}
-                <p className="text-sm text-muted-foreground">{order.address_neighborhood}</p>
-                {order.address_reference && (
-                  <p className="text-sm text-muted-foreground italic">
-                    Ref: {order.address_reference}
-                  </p>
-                )}
+          {/* Delivery Address - Only for delivery orders */}
+          {order.type === 'delivery' && order.address_street && (
+            <>
+              <Separator />
+              <div className="space-y-3">
+                <h3 className="font-semibold text-sm text-muted-foreground">ENDEREÇO DE ENTREGA</h3>
+                <div className="flex gap-2">
+                  <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="font-medium">
+                      {order.address_street}, {order.address_number}
+                    </p>
+                    {order.address_complement && (
+                      <p className="text-sm text-muted-foreground">{order.address_complement}</p>
+                    )}
+                    <p className="text-sm text-muted-foreground">{order.address_neighborhood}</p>
+                    {order.address_reference && (
+                      <p className="text-sm text-muted-foreground italic">
+                        Ref: {order.address_reference}
+                      </p>
+                    )}
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+            </>
+          )}
 
           <Separator />
 
@@ -158,20 +197,22 @@ export function OrderDetailModal({ order, open, onOpenChange }: OrderDetailModal
           <Separator />
 
           {/* Payment Info */}
-          <div className="space-y-3">
-            <h3 className="font-semibold text-sm text-muted-foreground">PAGAMENTO</h3>
-            <div className="flex items-center gap-2">
-              <CreditCard className="h-4 w-4 text-muted-foreground" />
-              <span>
-                {payment.icon} {payment.label}
-              </span>
-              {order.payment_method === 'money' && order.change_for && (
-                <span className="text-muted-foreground">
-                  (Troco p/ {formatCurrency(order.change_for)})
+          {payment && (
+            <div className="space-y-3">
+              <h3 className="font-semibold text-sm text-muted-foreground">PAGAMENTO</h3>
+              <div className="flex items-center gap-2">
+                <CreditCard className="h-4 w-4 text-muted-foreground" />
+                <span>
+                  {payment.icon} {payment.label}
                 </span>
-              )}
+                {order.payment_method === 'money' && order.change_for && (
+                  <span className="text-muted-foreground">
+                    (Troco p/ {formatCurrency(order.change_for)})
+                  </span>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
           <Separator />
 
