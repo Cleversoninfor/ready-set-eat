@@ -11,8 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { useStoreConfig } from '@/hooks/useStore';
-import { useOrders, useOrderItems, useUpdateOrderStatus, Order } from '@/hooks/useOrders';
+import { useAllOrders, useUnifiedOrderItems, useUpdateUnifiedOrderStatus, UnifiedOrder } from '@/hooks/useAllOrders';
 import { OrderDetailModal } from '@/components/orders/OrderDetailModal';
+import { Order } from '@/hooks/useOrders';
 import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval, subDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
@@ -44,9 +45,9 @@ const COLORS = ['hsl(var(--warning))', 'hsl(var(--primary))', 'hsl(24, 100%, 50%
 const AUTO_REFRESH_INTERVAL = 30000; // 30 seconds
 
 // Draggable Order Card Wrapper
-function DraggableOrderCard({ order, store, onOpenDetails }: { order: Order; store: any; onOpenDetails: (order: Order) => void }) {
+function DraggableOrderCard({ order, store, onOpenDetails }: { order: UnifiedOrder; store: any; onOpenDetails: (order: UnifiedOrder) => void }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id: order.id.toString(),
+    id: `${order.type}-${order.id}`,
     data: { order },
   });
 
@@ -85,14 +86,14 @@ function DroppableColumn({ id, children, color, label, count }: { id: string; ch
 }
 
 // Order Card Content
-function OrderCardContent({ order, store, onOpenDetails, dragListeners }: { order: Order; store: any; onOpenDetails: (order: Order) => void; dragListeners?: any }) {
-  const { data: items } = useOrderItems(order.id);
-  const updateStatus = useUpdateOrderStatus();
+function OrderCardContent({ order, store, onOpenDetails, dragListeners }: { order: UnifiedOrder; store: any; onOpenDetails: (order: UnifiedOrder) => void; dragListeners?: any }) {
+  const { data: items } = useUnifiedOrderItems(order.id, order.type);
+  const updateStatus = useUpdateUnifiedOrderStatus();
 
   const formatCurrency = (value: number) =>
     Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-  const getPaymentLabel = (method: string) => {
+  const getPaymentLabel = (method: string | null) => {
     switch (method) {
       case 'pix':
         return '💠 PIX';
@@ -101,8 +102,15 @@ function OrderCardContent({ order, store, onOpenDetails, dragListeners }: { orde
       case 'card':
         return '💳 Levar Máquina';
       default:
-        return method;
+        return method || 'Não definido';
     }
+  };
+
+  const getOrderTypeLabel = () => {
+    if (order.type === 'table') {
+      return order.waiter_name ? `🍽️ ${order.waiter_name}` : '🍽️ Mesa';
+    }
+    return '🛵 Delivery';
   };
 
   const sendPixCharge = (e: React.MouseEvent) => {
@@ -123,8 +131,18 @@ function OrderCardContent({ order, store, onOpenDetails, dragListeners }: { orde
     window.open(`https://wa.me/55${order.customer_phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`, '_blank');
   };
 
-  const getNextStatus = (status: Order['status']): Order['status'] | null => {
-    const flow: Record<string, Order['status']> = {
+  const getNextStatus = (status: UnifiedOrder['status']): UnifiedOrder['status'] | null => {
+    // For table orders, different flow
+    if (order.type === 'table') {
+      const tableFlow: Record<string, UnifiedOrder['status']> = {
+        pending: 'preparing',
+        preparing: 'ready',
+        ready: 'completed', // Table orders don't go to delivery
+      };
+      return tableFlow[status] || null;
+    }
+    
+    const flow: Record<string, UnifiedOrder['status']> = {
       pending: 'preparing',
       preparing: 'ready',
       ready: 'delivery',
@@ -133,7 +151,16 @@ function OrderCardContent({ order, store, onOpenDetails, dragListeners }: { orde
     return flow[status] || null;
   };
 
-  const getNextStatusLabel = (status: Order['status']) => {
+  const getNextStatusLabel = (status: UnifiedOrder['status']) => {
+    if (order.type === 'table') {
+      const tableLabels: Record<string, string> = {
+        pending: 'Aceitar',
+        preparing: 'Pronto',
+        ready: 'Finalizar',
+      };
+      return tableLabels[status];
+    }
+    
     const labels: Record<string, string> = {
       pending: 'Aceitar',
       preparing: 'Pronto',
@@ -147,7 +174,7 @@ function OrderCardContent({ order, store, onOpenDetails, dragListeners }: { orde
     e.stopPropagation();
     const next = getNextStatus(order.status);
     if (next) {
-      updateStatus.mutate({ orderId: order.id, status: next });
+      updateStatus.mutate({ orderId: order.id, status: next, orderType: order.type });
     }
   };
 
@@ -164,7 +191,14 @@ function OrderCardContent({ order, store, onOpenDetails, dragListeners }: { orde
             </div>
           )}
           <div className="min-w-0 flex-1">
-            <p className="font-bold text-base sm:text-lg text-foreground">#{order.id}</p>
+            <div className="flex items-center gap-2">
+              <p className="font-bold text-base sm:text-lg text-foreground">
+                {order.type === 'table' ? `Mesa #${order.table_number}` : `#${order.id}`}
+              </p>
+              <Badge variant="outline" className="text-[10px]">
+                {getOrderTypeLabel()}
+              </Badge>
+            </div>
             <p className="text-xs sm:text-sm text-muted-foreground truncate">{order.customer_name}</p>
             {isCompleted && (
               <p className="text-xs text-muted-foreground mt-1">
@@ -173,9 +207,11 @@ function OrderCardContent({ order, store, onOpenDetails, dragListeners }: { orde
             )}
           </div>
         </div>
-        <Badge variant={order.payment_method as any} className="text-[10px] sm:text-xs flex-shrink-0 whitespace-nowrap">
-          {getPaymentLabel(order.payment_method)}
-        </Badge>
+        {order.payment_method && (
+          <Badge variant={order.payment_method as any} className="text-[10px] sm:text-xs flex-shrink-0 whitespace-nowrap">
+            {getPaymentLabel(order.payment_method)}
+          </Badge>
+        )}
       </div>
 
       {/* Order Items */}
@@ -203,7 +239,7 @@ function OrderCardContent({ order, store, onOpenDetails, dragListeners }: { orde
 
         {!isCompleted && (
           <div className="flex gap-2">
-            {order.payment_method === 'pix' && order.status === 'pending' && (
+            {order.type === 'delivery' && order.payment_method === 'pix' && order.status === 'pending' && (
               <Button
                 variant="whatsapp"
                 size="sm"
@@ -273,8 +309,8 @@ function StatsCard({ title, value, icon: Icon, trend, color }: {
 
 const AdminOrders = () => {
   const { data: store } = useStoreConfig();
-  const { data: orders, isLoading, refetch } = useOrders();
-  const updateStatus = useUpdateOrderStatus();
+  const { data: orders, isLoading, refetch } = useAllOrders();
+  const updateStatus = useUpdateUnifiedOrderStatus();
   const { playNotificationSound, setEnabled, isEnabled } = useNotificationSound();
   const { notifyNewOrder, isEnabled: pushEnabled } = usePushNotifications();
   const lastOrderCountRef = useRef<number | null>(null);
@@ -286,8 +322,8 @@ const AdminOrders = () => {
   const [countdown, setCountdown] = useState(30);
   const [dateFilter, setDateFilter] = useState<DateFilter>('today');
   const [viewMode, setViewMode] = useState<'kanban' | 'stats'>('kanban');
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [activeOrder, setActiveOrder] = useState<Order | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<UnifiedOrder | null>(null);
+  const [activeOrder, setActiveOrder] = useState<UnifiedOrder | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -460,7 +496,7 @@ const AdminOrders = () => {
     Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
   const handleDragStart = (event: DragStartEvent) => {
-    const order = (event.active.data.current as any)?.order as Order;
+    const order = (event.active.data.current as any)?.order as UnifiedOrder;
     setActiveOrder(order);
   };
 
@@ -470,12 +506,15 @@ const AdminOrders = () => {
 
     if (!over) return;
 
-    const orderId = parseInt(active.id as string);
+    const activeId = active.id as string;
+    const [orderType, orderId] = activeId.includes('-') 
+      ? [activeId.split('-')[0] as 'delivery' | 'table', parseInt(activeId.split('-')[1])]
+      : ['delivery' as const, parseInt(activeId)];
     const newStatus = over.id as OrderStatus;
-    const order = filteredOrders.find(o => o.id === orderId);
+    const order = filteredOrders.find(o => o.id === orderId && o.type === orderType);
 
     if (order && order.status !== newStatus) {
-      updateStatus.mutate({ orderId, status: newStatus });
+      updateStatus.mutate({ orderId, status: newStatus, orderType: order.type });
     }
   };
 
