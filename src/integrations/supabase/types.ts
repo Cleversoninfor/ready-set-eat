@@ -778,6 +778,27 @@ export type Database = {
         }
         Returns: number
       }
+      get_kitchen_items: {
+        Args: { _status_filter?: string }
+        Returns: {
+          customer_name: string
+          delivered_at: string
+          id: string
+          observation: string
+          order_id: number
+          order_type: string
+          ordered_at: string
+          product_id: string
+          product_name: string
+          quantity: number
+          status: string
+          table_name: string
+          table_number: number
+          table_order_id: number
+          unit_price: number
+          waiter_name: string
+        }[]
+      }
       get_order_with_items_public: {
         Args: { _customer_phone: string; _order_id: number }
         Returns: Json
