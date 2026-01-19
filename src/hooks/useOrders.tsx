@@ -11,7 +11,7 @@ export interface Order {
   address_complement: string | null;
   address_reference: string | null;
   total_amount: number;
-  status: 'pending' | 'preparing' | 'delivery' | 'completed' | 'cancelled';
+  status: 'pending' | 'preparing' | 'ready' | 'delivery' | 'completed' | 'cancelled';
   payment_method: 'money' | 'card' | 'pix';
   change_for: number | null;
   created_at: string;
