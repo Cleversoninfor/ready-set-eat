@@ -25,128 +25,36 @@ type KitchenItemStatus = 'pending' | 'preparing' | 'ready' | 'delivered';
 export function useKitchenItems(statusFilter?: KitchenItemStatus) {
   const { data: items = [], isLoading, error } = useQuery({
     queryKey: ['kitchen-items', statusFilter],
-    queryFn: async () => {
-      // Get open table orders
-      const { data: openTableOrders, error: ordersError } = await supabase
-        .from('table_orders')
-        .select('*, table:tables(*)')
-        .in('status', ['open', 'requesting_bill']);
-      
-      if (ordersError) throw ordersError;
+    queryFn: async (): Promise<KitchenItem[]> => {
+      // Use the RPC function to get kitchen items
+      const { data, error } = await supabase.rpc('get_kitchen_items', {
+        _status_filter: statusFilter || null,
+      });
 
-      // Get table order items
-      const tableOrderIds = (openTableOrders || []).map(o => o.id);
-      let transformedTableItems: KitchenItem[] = [];
-      
-      if (tableOrderIds.length > 0) {
-        let tableItemsQuery = supabase
-          .from('table_order_items')
-          .select('*')
-          .in('table_order_id', tableOrderIds);
-        
-        if (statusFilter) {
-          tableItemsQuery = tableItemsQuery.eq('status', statusFilter);
-        } else {
-          tableItemsQuery = tableItemsQuery.in('status', ['pending', 'preparing', 'ready']);
-        }
-        
-        const { data: tableItems, error: tableItemsError } = await tableItemsQuery;
-        if (tableItemsError) throw tableItemsError;
-
-        // Transform table order items
-        transformedTableItems = (tableItems || []).map(item => {
-          const order = openTableOrders?.find(o => o.id === item.table_order_id);
-          const table = order?.table;
-          return {
-            id: item.id,
-            table_order_id: item.table_order_id,
-            order_id: null,
-            product_id: item.product_id,
-            product_name: item.product_name,
-            quantity: item.quantity,
-            observation: item.observation,
-            unit_price: item.unit_price,
-            status: item.status || 'pending',
-            ordered_at: item.ordered_at || item.created_at || new Date().toISOString(),
-            delivered_at: item.delivered_at,
-            table_number: table?.number || null,
-            table_name: table?.name || null,
-            waiter_name: order?.waiter_name || null,
-            order_type: 'table' as const,
-          };
-        });
+      if (error) {
+        console.error('Error fetching kitchen items:', error);
+        throw error;
       }
 
-      // Get delivery orders that are pending/preparing
-      const { data: activeDeliveryOrders, error: deliveryError } = await supabase
-        .from('orders')
-        .select('*')
-        .in('status', ['pending', 'preparing']);
-      
-      if (deliveryError) throw deliveryError;
-
-      // Get delivery order items
-      const deliveryOrderIds = (activeDeliveryOrders || []).map(o => o.id);
-      let transformedDeliveryItems: KitchenItem[] = [];
-
-      if (deliveryOrderIds.length > 0) {
-        const { data: deliveryItems, error: deliveryItemsError } = await supabase
-          .from('order_items')
-          .select('*')
-          .in('order_id', deliveryOrderIds);
-        
-        if (deliveryItemsError) throw deliveryItemsError;
-
-        // Map order status to kitchen status
-        const mapOrderStatusToKitchenStatus = (orderStatus: string): string => {
-          switch (orderStatus) {
-            case 'pending':
-              return 'pending';
-            case 'preparing':
-              return 'preparing';
-            default:
-              return 'pending';
-          }
-        };
-
-        // Transform delivery order items
-        transformedDeliveryItems = (deliveryItems || [])
-          .map(item => {
-            const order = activeDeliveryOrders?.find(o => o.id === item.order_id);
-            const kitchenStatus = mapOrderStatusToKitchenStatus(order?.status || 'pending');
-            
-            // Apply status filter for delivery items
-            if (statusFilter && kitchenStatus !== statusFilter) return null;
-            if (!statusFilter && !['pending', 'preparing', 'ready'].includes(kitchenStatus)) return null;
-            
-            return {
-              id: item.id,
-              table_order_id: null,
-              order_id: item.order_id,
-              product_id: null,
-              product_name: item.product_name,
-              quantity: item.quantity,
-              observation: item.observation,
-              unit_price: item.unit_price,
-              status: kitchenStatus,
-              ordered_at: order?.created_at || new Date().toISOString(),
-              delivered_at: null,
-              table_number: null,
-              table_name: null,
-              waiter_name: null,
-              order_type: 'delivery' as const,
-              customer_name: order?.customer_name,
-            };
-          })
-          .filter(Boolean) as KitchenItem[];
-      }
-
-      // Combine and sort by ordered_at
-      const allItems = [...transformedTableItems, ...transformedDeliveryItems].sort((a, b) => 
-        new Date(a.ordered_at).getTime() - new Date(b.ordered_at).getTime()
-      );
-
-      return allItems;
+      // Transform the data to match KitchenItem interface
+      return (data || []).map((item: any) => ({
+        id: item.id,
+        table_order_id: item.table_order_id,
+        order_id: item.order_id,
+        product_id: item.product_id,
+        product_name: item.product_name,
+        quantity: item.quantity,
+        observation: item.observation,
+        unit_price: item.unit_price,
+        status: item.status || 'pending',
+        ordered_at: item.ordered_at || new Date().toISOString(),
+        delivered_at: item.delivered_at,
+        table_number: item.table_number,
+        table_name: item.table_name,
+        waiter_name: item.waiter_name,
+        order_type: item.order_type as 'table' | 'delivery',
+        customer_name: item.customer_name,
+      }));
     },
     refetchInterval: 5000, // Poll every 5 seconds for new orders
   });
@@ -199,45 +107,40 @@ export function useKitchenItemMutations() {
 export function useWaiterReadyItems(waiterId?: string) {
   const { data: items = [], isLoading, error } = useQuery({
     queryKey: ['waiter-ready-items', waiterId],
-    queryFn: async () => {
-      const { data: openTableOrders, error: ordersError } = await supabase
-        .from('table_orders')
-        .select('*, table:tables(*)')
-        .in('status', ['open', 'requesting_bill']);
-      
-      if (ordersError) throw ordersError;
+    queryFn: async (): Promise<KitchenItem[]> => {
+      // Use the RPC function filtered by 'ready' status
+      const { data, error } = await supabase.rpc('get_kitchen_items', {
+        _status_filter: 'ready',
+      });
 
-      const { data: readyItems, error: itemsError } = await supabase
-        .from('table_order_items')
-        .select('*')
-        .in('table_order_id', openTableOrders?.map(o => o.id) || [])
-        .eq('status', 'ready');
-      
-      if (itemsError) throw itemsError;
+      if (error) {
+        console.error('Error fetching waiter ready items:', error);
+        throw error;
+      }
 
-      return (readyItems || []).map(item => {
-        const order = openTableOrders?.find(o => o.id === item.table_order_id);
-        const table = order?.table;
-        return {
+      // Filter only table items for waiters
+      return (data || [])
+        .filter((item: any) => item.order_type === 'table')
+        .map((item: any) => ({
           id: item.id,
           table_order_id: item.table_order_id,
-          order_id: null,
+          order_id: item.order_id,
           product_id: item.product_id,
           product_name: item.product_name,
           quantity: item.quantity,
           observation: item.observation,
           unit_price: item.unit_price,
           status: item.status || 'ready',
-          ordered_at: item.ordered_at || item.created_at || new Date().toISOString(),
+          ordered_at: item.ordered_at || new Date().toISOString(),
           delivered_at: item.delivered_at,
-          table_number: table?.number || null,
-          table_name: table?.name || null,
-          waiter_name: order?.waiter_name || null,
+          table_number: item.table_number,
+          table_name: item.table_name,
+          waiter_name: item.waiter_name,
           order_type: 'table' as const,
-        };
-      }) as KitchenItem[];
+        }));
     },
     enabled: true,
+    refetchInterval: 5000,
   });
 
   return { items, isLoading, error };
