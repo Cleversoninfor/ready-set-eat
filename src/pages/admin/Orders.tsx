@@ -1,22 +1,13 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Loader2, Calendar, TrendingUp, Package, DollarSign, CheckCircle2, GripVertical, Volume2, VolumeX, Wifi, WifiOff, RefreshCw } from 'lucide-react';
 import { useNotificationSound } from '@/hooks/useNotificationSound';
 import { useTitleNotification } from '@/hooks/useTitleNotification';
-import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { PushNotificationToggle } from '@/components/admin/PushNotificationToggle';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { useStoreConfig } from '@/hooks/useStore';
 import { useAllOrders, useUnifiedOrderItems, useUpdateUnifiedOrderStatus, UnifiedOrder } from '@/hooks/useAllOrders';
@@ -307,12 +298,7 @@ const AdminOrders = () => {
   const { data: store } = useStoreConfig();
   const { data: orders, isLoading, refetch } = useAllOrders();
   const updateStatus = useUpdateUnifiedOrderStatus();
-  const { playNotificationSound, startAlarm, stopAlarm, setEnabled, isEnabled, isAlarmPlaying } = useNotificationSound();
-  const { notifyNewOrder, isEnabled: pushEnabled } = usePushNotifications();
-  const lastOrderCountRef = useRef<number | null>(null);
-
-  const [newOrderDialogOpen, setNewOrderDialogOpen] = useState(false);
-  const [lastNotifiedPendingCount, setLastNotifiedPendingCount] = useState(0);
+  const { playNotificationSound, setEnabled, isEnabled } = useNotificationSound();
 
   const [autoRefresh, setAutoRefresh] = useState(() => {
     const saved = localStorage.getItem('orders-auto-refresh');
@@ -341,38 +327,6 @@ const AdminOrders = () => {
 
   // Title notification for pending orders
   useTitleNotification(pendingCount, 'Pedidos');
-
-  // New orders behavior:
-  // - open a blocking popup
-  // - keep a loud alarm playing until user clicks OK
-  useEffect(() => {
-    if (lastOrderCountRef.current !== null && pendingCount > lastOrderCountRef.current) {
-      setLastNotifiedPendingCount(pendingCount);
-      setNewOrderDialogOpen(true);
-
-      toast.success('Novo pedido recebido!', {
-        description: `Você tem ${pendingCount} pedido(s) pendente(s)`,
-        duration: 5000,
-      });
-
-      if (isEnabled) {
-        startAlarm();
-      }
-
-      if (pushEnabled) {
-        notifyNewOrder(pendingCount);
-      }
-    }
-    lastOrderCountRef.current = pendingCount;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendingCount, pushEnabled, isEnabled]);
-
-  // Safety: if sound gets disabled while alarm is playing
-  useEffect(() => {
-    if (!isEnabled && isAlarmPlaying) {
-      stopAlarm();
-    }
-  }, [isEnabled, isAlarmPlaying, stopAlarm]);
 
   // Auto-refresh logic (kept as-is; realtime already helps)
   const handleRefresh = useCallback(() => {
@@ -416,11 +370,6 @@ const AdminOrders = () => {
     if (checked && pendingCount === 0) {
       playNotificationSound(); // Test beep
     }
-  };
-
-  const handleAcknowledgeNewOrder = () => {
-    stopAlarm();
-    setNewOrderDialogOpen(false);
   };
 
   // Filter orders by date
@@ -538,19 +487,6 @@ const AdminOrders = () => {
 
   return (
     <AdminLayout title="Pedidos">
-      {/* New Order Popup */}
-      <AlertDialog open={newOrderDialogOpen} onOpenChange={(open) => setNewOrderDialogOpen(open)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Novo pedido recebido</AlertDialogTitle>
-            <AlertDialogDescription>
-              Você tem {lastNotifiedPendingCount} pedido(s) pendente(s). Clique em OK para silenciar o alerta.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogAction onClick={handleAcknowledgeNewOrder}>OK</AlertDialogAction>
-        </AlertDialogContent>
-      </AlertDialog>
-
       {/* Filters and View Toggle */}
       <div className="flex flex-wrap items-center gap-2 sm:gap-4 mb-4 sm:mb-6">
         {/* Sound Toggle */}

@@ -29,6 +29,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useStoreConfig } from '@/hooks/useStore';
 import { useTheme } from '@/hooks/useTheme';
 import { cn } from '@/lib/utils';
+import { GlobalOrderNotification } from './GlobalOrderNotification';
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -157,6 +158,9 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
       <Helmet>
         <title>{title || 'Admin'} - {store?.name || 'Delivery'}</title>
       </Helmet>
+
+      {/* Global Order Notification */}
+      <GlobalOrderNotification />
 
       <div className="min-h-screen bg-background flex">
         {/* Mobile Sidebar Overlay */}
