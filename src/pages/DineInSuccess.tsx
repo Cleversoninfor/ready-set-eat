@@ -1,7 +1,7 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, UtensilsCrossed, Home } from 'lucide-react';
+import { CheckCircle, UtensilsCrossed, Home, Clock } from 'lucide-react';
 import { useStoreConfig } from '@/hooks/useStore';
 
 const DineInSuccess = () => {
@@ -81,9 +81,20 @@ const DineInSuccess = () => {
 
           {/* Actions */}
           <div className="space-y-3">
+            {orderId && (
+              <Button
+                onClick={() => navigate(`/dine-in-order/${orderId}`)}
+                size="lg"
+                className="w-full rounded-full"
+              >
+                <Clock className="h-4 w-4 mr-2" />
+                Acompanhar Pedido
+              </Button>
+            )}
             <Button
               onClick={() => navigate('/')}
               size="lg"
+              variant="outline"
               className="w-full rounded-full"
             >
               <Home className="h-4 w-4 mr-2" />
