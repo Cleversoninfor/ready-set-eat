@@ -91,7 +91,7 @@ export default function Dashboard() {
   const [lastRefresh, setLastRefresh] = useState(new Date());
   const [countdown, setCountdown] = useState(30);
   const lastOrderCountRef = useRef<number | null>(null);
-  const { playNotificationSound, setEnabled, isEnabled } = useNotificationSound();
+  const { setEnabled, isEnabled } = useNotificationSound();
   const { notifyNewOrder, isEnabled: pushEnabled } = usePushNotifications();
 
   const getDateRange = (p: Period) => {
@@ -145,29 +145,10 @@ export default function Dashboard() {
   // Title notification for pending orders
   useTitleNotification(pendingCount, 'Dashboard');
 
-  // Notify new orders - play sound once when new order arrives
+  // Update ref for title notification tracking
   useEffect(() => {
-    if (lastOrderCountRef.current !== null && pendingCount > lastOrderCountRef.current) {
-      // New order arrived!
-      toast.success('Novo pedido recebido!', {
-        description: `Você tem ${pendingCount} pedido(s) pendente(s)`,
-        duration: 5000,
-      });
-      
-      // Play notification sound once
-      if (isEnabled) {
-        playNotificationSound();
-      }
-      
-      // Send push notification
-      if (pushEnabled) {
-        notifyNewOrder(pendingCount);
-      }
-    }
-    
     lastOrderCountRef.current = pendingCount;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendingCount, pushEnabled, isEnabled]);
+  }, [pendingCount]);
 
   // Fetch previous period delivery orders for comparison
   const { data: previousDeliveryOrders = [] } = useQuery({
@@ -322,9 +303,6 @@ export default function Dashboard() {
 
   const handleSoundToggle = (checked: boolean) => {
     setEnabled(checked);
-    if (checked && pendingCount === 0) {
-      playNotificationSound(); // Test beep
-    }
   };
 
   // Calculate stats
