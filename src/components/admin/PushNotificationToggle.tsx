@@ -1,51 +1,53 @@
-import { Volume2, VolumeX } from 'lucide-react';
+import { Bell, BellOff } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
-import { useNotificationSound } from '@/hooks/useNotificationSound';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 
 interface PushNotificationToggleProps {
   variant?: 'switch' | 'button';
 }
 
 export function PushNotificationToggle({ variant = 'switch' }: PushNotificationToggleProps) {
-  const { isEnabled, setEnabled, stopAlarm, isAlarmPlaying } = useNotificationSound();
+  const { isSupported, isEnabled, permission, requestPermission } = usePushNotifications();
 
-  const handleToggle = () => {
-    const newState = !isEnabled;
-    setEnabled(newState);
-    // If disabling and alarm is playing, stop it
-    if (!newState && isAlarmPlaying) {
-      stopAlarm();
+  if (!isSupported) return null;
+
+  const handleToggle = async () => {
+    // Browser notifications can only be enabled by requesting permission.
+    if (!isEnabled) {
+      await requestPermission();
     }
   };
 
   if (variant === 'button') {
     return (
       <Button
-        variant={isEnabled ? "default" : "outline"}
+        variant={isEnabled ? 'default' : 'outline'}
         size="sm"
         onClick={handleToggle}
         className="gap-2"
-        title={isEnabled ? 'Som de notificações ativado' : 'Som de notificações desativado'}
+        disabled={permission === 'denied'}
+        title={
+          permission === 'denied'
+            ? 'Permissão negada. Ative nas configurações do navegador.'
+            : isEnabled
+              ? 'Notificações ativadas'
+              : 'Ativar notificações'
+        }
       >
-        {isEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
-        <span className="hidden sm:inline">
-          {isEnabled ? 'Som On' : 'Som Off'}
-        </span>
+        {isEnabled ? <Bell className="h-4 w-4" /> : <BellOff className="h-4 w-4" />}
+        <span className="hidden sm:inline">{isEnabled ? 'Notificações On' : 'Ativar Notificações'}</span>
       </Button>
     );
   }
 
   return (
     <div className="flex items-center gap-2 bg-muted/50 rounded-lg px-3 py-2">
-      {isEnabled ? (
-        <Volume2 className="w-4 h-4 text-primary" />
-      ) : (
-        <VolumeX className="w-4 h-4 text-muted-foreground" />
-      )}
+      {isEnabled ? <Bell className="w-4 h-4 text-primary" /> : <BellOff className="w-4 h-4 text-muted-foreground" />}
       <Switch
         checked={isEnabled}
         onCheckedChange={handleToggle}
+        disabled={permission === 'denied'}
         className="data-[state=checked]:bg-primary"
       />
     </div>
