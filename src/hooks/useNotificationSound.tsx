@@ -5,8 +5,9 @@ let audioContext: AudioContext | null = null;
 let isCurrentlyEnabled = localStorage.getItem('notification-sound-enabled') !== 'false';
 const listeners = new Set<() => void>();
 
-// Alarm state
+// Alarm state with session tracking to prevent race conditions
 let alarmPlaying = false;
+let alarmSessionId = 0;
 
 // We use multiple timeouts (on + off) per cycle; keep track so we can reliably stop.
 const alarmTimeoutIds = new Set<ReturnType<typeof setTimeout>>();
@@ -43,36 +44,45 @@ function clearAlarmTimeouts() {
 function stopCurrentBurst() {
   if (!currentAlarmNodes) return;
 
+  const nodes = currentAlarmNodes;
+  currentAlarmNodes = null;
+
   try {
     const ctx = getAudioContext();
     const now = ctx.currentTime;
 
-    currentAlarmNodes.gain.gain.cancelScheduledValues(now);
-    currentAlarmNodes.gain.gain.setValueAtTime(currentAlarmNodes.gain.gain.value || 0.2, now);
-    currentAlarmNodes.gain.gain.linearRampToValueAtTime(0.0001, now + 0.05);
+    // Immediately ramp down the gain
+    nodes.gain.gain.cancelScheduledValues(now);
+    nodes.gain.gain.setValueAtTime(nodes.gain.gain.value || 0.2, now);
+    nodes.gain.gain.linearRampToValueAtTime(0.0001, now + 0.02);
 
-    const nodesToClean = currentAlarmNodes;
+    // Stop oscillators immediately - no timeout delay
+    try {
+      nodes.mainOsc.stop(now + 0.03);
+      nodes.lfo.stop(now + 0.03);
+    } catch {
+      // May already be stopped
+    }
+
+    // Disconnect nodes after a short delay
     setTimeout(() => {
       try {
-        nodesToClean.mainOsc.stop();
-        nodesToClean.lfo.stop();
-        nodesToClean.mainOsc.disconnect();
-        nodesToClean.lfo.disconnect();
-        nodesToClean.lfoGain.disconnect();
-        nodesToClean.gain.disconnect();
+        nodes.mainOsc.disconnect();
+        nodes.lfo.disconnect();
+        nodes.lfoGain.disconnect();
+        nodes.gain.disconnect();
       } catch {
         // ignore
       }
-    }, 60);
-
-    currentAlarmNodes = null;
+    }, 50);
   } catch (error) {
     console.error('[Sound] Stop burst error:', error);
   }
 }
 
-function playBurst() {
-  if (!alarmPlaying || currentAlarmNodes) return;
+function playBurst(sessionId: number) {
+  // Double-check session ID and alarm state
+  if (!alarmPlaying || sessionId !== alarmSessionId || currentAlarmNodes) return;
 
   try {
     const ctx = getAudioContext();
@@ -108,19 +118,23 @@ function playBurst() {
   }
 }
 
-function runAlarmCycle() {
-  if (!alarmPlaying) return;
+function runAlarmCycle(sessionId: number) {
+  // Check if this session is still valid
+  if (!alarmPlaying || sessionId !== alarmSessionId) return;
 
   // Play for 1.5 seconds
-  playBurst();
+  playBurst(sessionId);
 
   const stopId = setTimeout(() => {
-    if (!alarmPlaying) return;
+    // Re-check session before stopping
+    if (!alarmPlaying || sessionId !== alarmSessionId) return;
     stopCurrentBurst();
 
     // Pause for 1 second, then repeat
     const nextId = setTimeout(() => {
-      if (alarmPlaying) runAlarmCycle();
+      if (alarmPlaying && sessionId === alarmSessionId) {
+        runAlarmCycle(sessionId);
+      }
     }, 1000);
 
     alarmTimeoutIds.add(nextId);
@@ -135,18 +149,30 @@ function startAlarmSound() {
 
   // Safety: clear any leftover timers from past cycles
   clearAlarmTimeouts();
+  stopCurrentBurst();
+
+  // Increment session ID to invalidate any stale callbacks
+  alarmSessionId++;
+  const currentSession = alarmSessionId;
 
   alarmPlaying = true;
-  runAlarmCycle();
+  runAlarmCycle(currentSession);
   notifyAllListeners();
 }
 
 function stopAlarmSound() {
   if (!alarmPlaying) return;
 
+  // First, mark as not playing and increment session to invalidate callbacks
   alarmPlaying = false;
+  alarmSessionId++;
+  
+  // Then clear all pending timeouts
   clearAlarmTimeouts();
+  
+  // Finally stop any currently playing audio
   stopCurrentBurst();
+  
   notifyAllListeners();
 }
 
