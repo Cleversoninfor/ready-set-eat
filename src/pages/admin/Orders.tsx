@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Loader2, Calendar, TrendingUp, Package, DollarSign, CheckCircle2, GripVertical, Volume2, VolumeX, Wifi, WifiOff, RefreshCw } from 'lucide-react';
-import { useNotificationSound } from '@/hooks/useNotificationSound';
+import { Loader2, Calendar, TrendingUp, Package, DollarSign, CheckCircle2, GripVertical, Wifi, WifiOff, RefreshCw } from 'lucide-react';
 import { useTitleNotification } from '@/hooks/useTitleNotification';
 import { PushNotificationToggle } from '@/components/admin/PushNotificationToggle';
+import { SoundNotificationToggle } from '@/components/admin/SoundNotificationToggle';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -298,7 +298,7 @@ const AdminOrders = () => {
   const { data: store } = useStoreConfig();
   const { data: orders, isLoading, refetch } = useAllOrders();
   const updateStatus = useUpdateUnifiedOrderStatus();
-  const { setEnabled, isEnabled } = useNotificationSound();
+  
 
   const [autoRefresh, setAutoRefresh] = useState(() => {
     const saved = localStorage.getItem('orders-auto-refresh');
@@ -365,9 +365,7 @@ const AdminOrders = () => {
     }
   };
 
-  const handleSoundToggle = (checked: boolean) => {
-    setEnabled(checked);
-  };
+  // Sound toggle is handled by <SoundNotificationToggle />
 
   // Filter orders by date
   const filteredOrders = useMemo(() => {
@@ -487,12 +485,9 @@ const AdminOrders = () => {
       {/* Filters and View Toggle */}
       <div className="flex flex-wrap items-center gap-2 sm:gap-4 mb-4 sm:mb-6">
         {/* Sound Toggle */}
-        <div className="flex items-center gap-2 bg-muted/50 rounded-lg px-3 py-2">
-          {isEnabled ? <Volume2 className="w-4 h-4 text-primary" /> : <VolumeX className="w-4 h-4 text-muted-foreground" />}
-          <Switch checked={isEnabled} onCheckedChange={handleSoundToggle} className="data-[state=checked]:bg-primary" />
-        </div>
+        <SoundNotificationToggle />
 
-        {/* Push Notification Toggle */}
+        {/* Browser Notification Toggle */}
         <PushNotificationToggle />
 
         {/* Auto Refresh Toggle */}

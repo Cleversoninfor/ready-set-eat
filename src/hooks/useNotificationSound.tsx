@@ -7,7 +7,10 @@ const listeners = new Set<() => void>();
 
 // Alarm state
 let alarmPlaying = false;
-let alarmTimeoutId: ReturnType<typeof setTimeout> | null = null;
+
+// We use multiple timeouts (on + off) per cycle; keep track so we can reliably stop.
+const alarmTimeoutIds = new Set<ReturnType<typeof setTimeout>>();
+
 let currentAlarmNodes: {
   mainOsc: OscillatorNode;
   lfo: OscillatorNode;
@@ -30,6 +33,11 @@ function safeResume(ctx: AudioContext) {
   if (ctx.state === 'suspended') {
     ctx.resume().catch(() => undefined);
   }
+}
+
+function clearAlarmTimeouts() {
+  alarmTimeoutIds.forEach((id) => clearTimeout(id));
+  alarmTimeoutIds.clear();
 }
 
 function stopCurrentBurst() {
@@ -106,22 +114,27 @@ function runAlarmCycle() {
   // Play for 1.5 seconds
   playBurst();
 
-  alarmTimeoutId = setTimeout(() => {
+  const stopId = setTimeout(() => {
     if (!alarmPlaying) return;
     stopCurrentBurst();
 
     // Pause for 1 second, then repeat
-    alarmTimeoutId = setTimeout(() => {
-      if (alarmPlaying) {
-        runAlarmCycle();
-      }
+    const nextId = setTimeout(() => {
+      if (alarmPlaying) runAlarmCycle();
     }, 1000);
+
+    alarmTimeoutIds.add(nextId);
   }, 1500);
+
+  alarmTimeoutIds.add(stopId);
 }
 
 function startAlarmSound() {
   if (alarmPlaying) return;
   if (!isCurrentlyEnabled) return;
+
+  // Safety: clear any leftover timers from past cycles
+  clearAlarmTimeouts();
 
   alarmPlaying = true;
   runAlarmCycle();
@@ -132,12 +145,7 @@ function stopAlarmSound() {
   if (!alarmPlaying) return;
 
   alarmPlaying = false;
-
-  if (alarmTimeoutId) {
-    clearTimeout(alarmTimeoutId);
-    alarmTimeoutId = null;
-  }
-
+  clearAlarmTimeouts();
   stopCurrentBurst();
   notifyAllListeners();
 }

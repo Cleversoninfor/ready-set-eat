@@ -32,19 +32,16 @@ import {
   Activity,
   Calendar,
   RefreshCw,
-  Volume2,
-  VolumeX,
-  Radio,
-  Wifi,
-  WifiOff
+   Radio,
+   Wifi,
+   WifiOff
 } from 'lucide-react';
 import { format, startOfDay, endOfDay, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, differenceInMinutes, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RechartsPieChart, Pie, Cell, BarChart, Bar } from 'recharts';
-import { useNotificationSound } from '@/hooks/useNotificationSound';
 import { useTitleNotification } from '@/hooks/useTitleNotification';
-import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { PushNotificationToggle } from '@/components/admin/PushNotificationToggle';
+import { SoundNotificationToggle } from '@/components/admin/SoundNotificationToggle';
 import { toast } from 'sonner';
 
 type Period = 'today' | 'week' | 'month';
@@ -91,8 +88,6 @@ export default function Dashboard() {
   const [lastRefresh, setLastRefresh] = useState(new Date());
   const [countdown, setCountdown] = useState(30);
   const lastOrderCountRef = useRef<number | null>(null);
-  const { setEnabled, isEnabled } = useNotificationSound();
-  const { notifyNewOrder, isEnabled: pushEnabled } = usePushNotifications();
 
   const getDateRange = (p: Period) => {
     const now = new Date();
@@ -301,9 +296,7 @@ export default function Dashboard() {
     }
   };
 
-  const handleSoundToggle = (checked: boolean) => {
-    setEnabled(checked);
-  };
+  // Sound toggle is handled by <SoundNotificationToggle />
 
   // Calculate stats
   const stats = useMemo(() => {
@@ -501,20 +494,9 @@ export default function Dashboard() {
           </div>
           <div className="flex flex-wrap items-center gap-3">
             {/* Sound Toggle */}
-            <div className="flex items-center gap-2 bg-muted/50 rounded-lg px-3 py-2">
-              {isEnabled ? (
-                <Volume2 className="w-4 h-4 text-primary" />
-              ) : (
-                <VolumeX className="w-4 h-4 text-muted-foreground" />
-              )}
-              <Switch
-                checked={isEnabled}
-                onCheckedChange={handleSoundToggle}
-                className="data-[state=checked]:bg-primary"
-              />
-            </div>
+            <SoundNotificationToggle />
 
-            {/* Push Notification Toggle */}
+            {/* Browser Notification Toggle */}
             <PushNotificationToggle />
 
             {/* Auto Refresh Toggle */}
