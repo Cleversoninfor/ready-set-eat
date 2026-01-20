@@ -109,6 +109,8 @@ export function useTableOrderMutations() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tables'] });
       queryClient.invalidateQueries({ queryKey: ['tables-with-orders'] });
+      // Ensure Admin "Pedidos" updates even if realtime isn't available
+      queryClient.invalidateQueries({ queryKey: ['all-orders'] });
       toast({ title: 'Mesa aberta!' });
     },
     onError: (error: Error) => {
@@ -155,6 +157,8 @@ export function useTableOrderMutations() {
       queryClient.invalidateQueries({ queryKey: ['table-order', variables.orderId] });
       queryClient.invalidateQueries({ queryKey: ['tables-with-orders'] });
       queryClient.invalidateQueries({ queryKey: ['kitchen-items'] });
+      // Ensure Admin "Pedidos" sees the order as soon as the first item is added
+      queryClient.invalidateQueries({ queryKey: ['all-orders'] });
       toast({ title: 'Item adicionado!' });
     },
     onError: (error: Error) => {
