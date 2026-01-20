@@ -84,7 +84,25 @@ const Checkout = () => {
 
   const savedData = loadCheckoutFromStorage();
 
-  const [deliveryType, setDeliveryType] = useState<DeliveryType>(savedData?.deliveryType || 'delivery');
+  // Determine available delivery types based on store config
+  const availableTypes = {
+    delivery: store?.mode_delivery_enabled ?? true,
+    pickup: store?.mode_pickup_enabled ?? true,
+    dine_in: store?.mode_dine_in_enabled ?? true,
+  };
+
+  // Get initial delivery type - use first available
+  const getInitialDeliveryType = (): DeliveryType => {
+    if (savedData?.deliveryType && availableTypes[savedData.deliveryType]) {
+      return savedData.deliveryType;
+    }
+    if (availableTypes.delivery) return 'delivery';
+    if (availableTypes.pickup) return 'pickup';
+    if (availableTypes.dine_in) return 'dine_in';
+    return 'delivery';
+  };
+
+  const [deliveryType, setDeliveryType] = useState<DeliveryType>(getInitialDeliveryType());
   const [deliveryData, setDeliveryData] = useState({
     name: savedData?.name || '',
     phone: savedData?.phone || '',
@@ -392,41 +410,47 @@ const Checkout = () => {
 
         {/* Delivery Type Tabs */}
         <div className="flex border-b border-border">
-          <button
-            onClick={() => setDeliveryType('delivery')}
-            className={cn(
-              "flex-1 py-3 text-center text-sm font-medium transition-colors",
-              deliveryType === 'delivery' 
-                ? "text-primary border-b-2 border-primary" 
-                : "text-muted-foreground"
-            )}
-          >
-            Entrega
-          </button>
-          <button
-            onClick={() => setDeliveryType('pickup')}
-            className={cn(
-              "flex-1 py-3 text-center text-sm font-medium transition-colors",
-              deliveryType === 'pickup' 
-                ? "text-primary border-b-2 border-primary" 
-                : "text-muted-foreground"
-            )}
-          >
-            Retirada
-          </button>
-          <button
-            onClick={() => setDeliveryType('dine_in')}
-            className={cn(
-              "flex-1 py-3 text-center text-sm font-medium transition-colors flex items-center justify-center gap-1",
-              deliveryType === 'dine_in' 
-                ? "text-primary border-b-2 border-primary" 
-                : "text-muted-foreground"
-            )}
-          >
-            <UtensilsCrossed className="h-4 w-4" />
-            <span className="hidden sm:inline">Consumo no local</span>
-            <span className="sm:hidden">Local</span>
-          </button>
+          {availableTypes.delivery && (
+            <button
+              onClick={() => setDeliveryType('delivery')}
+              className={cn(
+                "flex-1 py-3 text-center text-sm font-medium transition-colors",
+                deliveryType === 'delivery' 
+                  ? "text-primary border-b-2 border-primary" 
+                  : "text-muted-foreground"
+              )}
+            >
+              Entrega
+            </button>
+          )}
+          {availableTypes.pickup && (
+            <button
+              onClick={() => setDeliveryType('pickup')}
+              className={cn(
+                "flex-1 py-3 text-center text-sm font-medium transition-colors",
+                deliveryType === 'pickup' 
+                  ? "text-primary border-b-2 border-primary" 
+                  : "text-muted-foreground"
+              )}
+            >
+              Retirada
+            </button>
+          )}
+          {availableTypes.dine_in && (
+            <button
+              onClick={() => setDeliveryType('dine_in')}
+              className={cn(
+                "flex-1 py-3 text-center text-sm font-medium transition-colors flex items-center justify-center gap-1",
+                deliveryType === 'dine_in' 
+                  ? "text-primary border-b-2 border-primary" 
+                  : "text-muted-foreground"
+              )}
+            >
+              <UtensilsCrossed className="h-4 w-4" />
+              <span className="hidden sm:inline">Consumo no local</span>
+              <span className="sm:hidden">Local</span>
+            </button>
+          )}
         </div>
 
         <div className="p-4 space-y-6">

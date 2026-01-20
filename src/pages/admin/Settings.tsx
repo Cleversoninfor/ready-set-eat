@@ -10,6 +10,7 @@ import { ImageUpload } from '@/components/admin/ImageUpload';
 import { BrandSettings } from '@/components/admin/BrandSettings';
 import { BannerSettings } from '@/components/admin/BannerSettings';
 import { SubdomainSettings } from '@/components/admin/SubdomainSettings';
+import { OperationModes } from '@/components/admin/OperationModes';
 import { useStoreConfig, useUpdateStoreConfig } from '@/hooks/useStore';
 import { useBusinessHours, useUpdateBusinessHour, getDayName, BusinessHour } from '@/hooks/useBusinessHours';
 import { useToast } from '@/hooks/use-toast';
@@ -189,6 +190,9 @@ const AdminSettings = () => {
             <Switch checked={formData.is_open} onCheckedChange={toggleStoreStatus} />
           </div>
         </div>
+
+        {/* Operation Modes */}
+        <OperationModes />
 
         {/* Brand Customization */}
         <BrandSettings />

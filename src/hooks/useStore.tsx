@@ -35,6 +35,9 @@ export interface StoreConfig {
   floating_image_size_mobile: number | null;
   floating_image_position_mobile: number | null;
   floating_image_vertical_position_mobile: number | null;
+  mode_delivery_enabled: boolean | null;
+  mode_pickup_enabled: boolean | null;
+  mode_dine_in_enabled: boolean | null;
 }
 
 export function useStoreConfig() {
@@ -84,6 +87,9 @@ export function useStoreConfig() {
           floating_image_size_mobile: 100,
           floating_image_position_mobile: 50,
           floating_image_vertical_position_mobile: 70,
+          mode_delivery_enabled: true,
+          mode_pickup_enabled: true,
+          mode_dine_in_enabled: true,
         } as StoreConfig;
       }
       
