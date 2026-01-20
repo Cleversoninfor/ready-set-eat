@@ -1,13 +1,10 @@
 import { MessageCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import logoInfornexa from '@/assets/logo-infornexa-header.png';
 
 export function InfornexaHeader() {
-  const handleSupport = () => {
-    const whatsappNumber = '5581996465310';
-    const whatsappMessage = encodeURIComponent('Olá, preciso de suporte.');
-    window.open(`https://wa.me/${whatsappNumber}?text=${whatsappMessage}`, '_blank');
-  };
+  const whatsappNumber = '5581996465310';
+  const whatsappMessage = encodeURIComponent('Olá, preciso de suporte.');
+  const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
 
   return (
     <header 
@@ -26,14 +23,15 @@ export function InfornexaHeader() {
           </span>
         </div>
         
-        <Button
-          onClick={handleSupport}
-          size="sm"
-          className="bg-[#25D366] hover:bg-[#20BA5A] text-white gap-2"
+        <a
+          href={whatsappUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md bg-[#25D366] hover:bg-[#20BA5A] text-white transition-colors"
         >
           <MessageCircle className="h-4 w-4" />
           Suporte
-        </Button>
+        </a>
       </div>
     </header>
   );
