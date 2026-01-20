@@ -40,9 +40,13 @@ export interface UnifiedOrderItem {
 function mapTableStatus(status: string): UnifiedOrder['status'] {
   switch (status) {
     case 'open':
-      return 'pending'; // Changed from 'preparing' to 'pending' so dine-in orders appear in "Pendentes" column
+      return 'pending'; // Dine-in orders start in "Pendentes" column
+    case 'preparing':
+      return 'preparing'; // Kitchen moved to preparing
+    case 'ready':
+      return 'ready'; // Kitchen marked as ready
     case 'requesting_bill':
-      return 'ready';
+      return 'ready'; // Customer requesting bill - show in ready column
     case 'paid':
       return 'completed';
     case 'cancelled':

@@ -28,6 +28,14 @@ export function useOrdersRealtime(enabled: boolean = true) {
           queryClient.invalidateQueries({ queryKey: ["all-orders"] });
         }
       )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "table_order_items" },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["all-orders"] });
+          queryClient.invalidateQueries({ queryKey: ["kitchen-items"] });
+        }
+      )
       .subscribe();
 
     return () => {
