@@ -965,36 +965,6 @@ export default function Dashboard() {
               </Card>
             </div>
 
-            {/* Order Status Distribution */}
-            {stats.orderStatusData.length > 0 && (
-              <Card className="animate-fade-in">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Activity className="w-5 h-5 text-primary" />
-                    Status dos Pedidos (Delivery)
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-[200px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={stats.orderStatusData} layout="vertical">
-                        <CartesianGrid strokeDasharray="3 3" className="stroke-border" horizontal={false} />
-                        <XAxis type="number" />
-                        <YAxis type="category" dataKey="status" width={100} />
-                        <Tooltip 
-                          contentStyle={{ 
-                            backgroundColor: 'hsl(var(--card))', 
-                            border: '1px solid hsl(var(--border))',
-                            borderRadius: '8px'
-                          }}
-                        />
-                        <Bar dataKey="count" fill="hsl(45, 100%, 51%)" radius={[0, 4, 4, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
 
             {/* Quick Stats Footer */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
