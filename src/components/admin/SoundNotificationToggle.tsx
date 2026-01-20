@@ -10,12 +10,16 @@ interface SoundNotificationToggleProps {
 export function SoundNotificationToggle({ variant = 'switch' }: SoundNotificationToggleProps) {
   const { isEnabled, setEnabled, stopAlarm, isAlarmPlaying } = useNotificationSound();
 
-  const handleToggle = () => {
-    console.log('[SoundNotificationToggle] Toggle clicked, current state:', isEnabled);
-    const next = !isEnabled;
-    setEnabled(next);
-    if (!next && isAlarmPlaying) stopAlarm();
-    console.log('[SoundNotificationToggle] New state:', next);
+  const handleToggle = (checked: boolean) => {
+    console.log('[SoundNotificationToggle] Toggle clicked, setting to:', checked);
+    setEnabled(checked);
+    if (!checked && isAlarmPlaying) {
+      stopAlarm();
+    }
+  };
+
+  const handleButtonClick = () => {
+    handleToggle(!isEnabled);
   };
 
   if (variant === 'button') {
@@ -23,7 +27,7 @@ export function SoundNotificationToggle({ variant = 'switch' }: SoundNotificatio
       <Button
         variant={isEnabled ? 'default' : 'outline'}
         size="sm"
-        onClick={handleToggle}
+        onClick={handleButtonClick}
         className="gap-2"
         title={isEnabled ? 'Som de notificações ativado' : 'Som de notificações desativado'}
       >
