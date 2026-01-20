@@ -88,8 +88,12 @@ function playBeep() {
   }
 }
 
-function startAlarmSound() {
-  if (alarmPlaying) return;
+// Intermittent alarm state
+let alarmIntervalId: ReturnType<typeof setInterval> | null = null;
+let isAlarmSoundOn = false;
+
+function playAlarmBurst() {
+  if (!alarmPlaying || alarmNodes) return;
 
   try {
     const ctx = getAudioContext();
@@ -123,53 +127,91 @@ function startAlarmSound() {
     lfo.start();
 
     alarmNodes = { mainOsc, lfo, lfoGain, gain };
-    alarmPlaying = true;
+    isAlarmSoundOn = true;
   } catch (error) {
-    console.error('[Sound] Alarm start error:', error);
+    console.error('[Sound] Alarm burst start error:', error);
   }
 }
 
-function stopAlarmSound() {
-  if (!alarmPlaying) return;
+function stopAlarmBurst() {
+  if (!alarmNodes) return;
 
   try {
     const ctx = getAudioContext();
     const now = ctx.currentTime;
 
-    if (alarmNodes) {
-      // fade out
-      alarmNodes.gain.gain.cancelScheduledValues(now);
-      alarmNodes.gain.gain.setValueAtTime(alarmNodes.gain.gain.value || 0.2, now);
-      alarmNodes.gain.gain.linearRampToValueAtTime(0.0001, now + 0.06);
+    // fade out
+    alarmNodes.gain.gain.cancelScheduledValues(now);
+    alarmNodes.gain.gain.setValueAtTime(alarmNodes.gain.gain.value || 0.2, now);
+    alarmNodes.gain.gain.linearRampToValueAtTime(0.0001, now + 0.06);
 
-      setTimeout(() => {
-        try {
-          alarmNodes?.mainOsc.stop();
-          alarmNodes?.lfo.stop();
-        } catch {
-          // ignore
-        }
+    const nodesToClean = alarmNodes;
+    setTimeout(() => {
+      try {
+        nodesToClean.mainOsc.stop();
+        nodesToClean.lfo.stop();
+      } catch {
+        // ignore
+      }
 
-        try {
-          alarmNodes?.mainOsc.disconnect();
-          alarmNodes?.lfo.disconnect();
-          alarmNodes?.lfoGain.disconnect();
-          alarmNodes?.gain.disconnect();
-        } catch {
-          // ignore
-        }
+      try {
+        nodesToClean.mainOsc.disconnect();
+        nodesToClean.lfo.disconnect();
+        nodesToClean.lfoGain.disconnect();
+        nodesToClean.gain.disconnect();
+      } catch {
+        // ignore
+      }
+    }, 80);
 
-        alarmNodes = null;
-        alarmPlaying = false;
-      }, 90);
-    } else {
-      alarmPlaying = false;
-    }
-  } catch (error) {
-    console.error('[Sound] Alarm stop error:', error);
     alarmNodes = null;
-    alarmPlaying = false;
+    isAlarmSoundOn = false;
+  } catch (error) {
+    console.error('[Sound] Alarm burst stop error:', error);
   }
+}
+
+function startAlarmSound() {
+  if (alarmPlaying) return;
+
+  alarmPlaying = true;
+
+  // Start the intermittent pattern: 1.5s on, 1s off
+  const runCycle = () => {
+    if (!alarmPlaying) return;
+
+    // Play for 1.5 seconds
+    playAlarmBurst();
+
+    setTimeout(() => {
+      if (!alarmPlaying) return;
+      stopAlarmBurst();
+
+      // Pause for 1 second, then repeat
+      setTimeout(() => {
+        if (alarmPlaying) {
+          runCycle();
+        }
+      }, 1000);
+    }, 1500);
+  };
+
+  runCycle();
+}
+
+function stopAlarmSound() {
+  if (!alarmPlaying) return;
+
+  alarmPlaying = false;
+
+  // Clear any intervals
+  if (alarmIntervalId) {
+    clearInterval(alarmIntervalId);
+    alarmIntervalId = null;
+  }
+
+  // Stop current burst if playing
+  stopAlarmBurst();
 }
 
 function setGlobalEnabled(enabled: boolean) {

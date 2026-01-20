@@ -4,6 +4,7 @@ import { ArrowLeft, Loader2, Clock, Banknote, CreditCard, QrCode, ChevronRight, 
 import { Helmet } from 'react-helmet-async';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { useCart } from '@/hooks/useCart';
 import { useToast } from '@/hooks/use-toast';
 import { useStoreConfig } from '@/hooks/useStore';
@@ -33,6 +34,7 @@ interface CheckoutFormData {
   street: string;
   number: string;
   neighborhood: string;
+  complement: string;
   selectedPayment: DisplayPaymentMethod | null;
 }
 
@@ -78,6 +80,7 @@ const Checkout = () => {
     street: savedData?.street || '',
     number: savedData?.number || '',
     neighborhood: savedData?.neighborhood || '',
+    complement: (savedData as any)?.complement || '',
   });
   const [selectedPayment, setSelectedPayment] = useState<DisplayPaymentMethod | null>(savedData?.selectedPayment || null);
   const [changeFor, setChangeFor] = useState('');
@@ -94,6 +97,7 @@ const Checkout = () => {
       street: deliveryData.street,
       number: deliveryData.number,
       neighborhood: deliveryData.neighborhood,
+      complement: deliveryData.complement,
       selectedPayment,
     });
   }, [deliveryType, deliveryData, selectedPayment]);
@@ -228,6 +232,7 @@ const Checkout = () => {
           address_street: deliveryType === 'delivery' ? deliveryData.street : 'Retirada no local',
           address_number: deliveryType === 'delivery' ? deliveryData.number : '-',
           address_neighborhood: deliveryType === 'delivery' ? deliveryData.neighborhood : '-',
+          address_complement: deliveryType === 'delivery' ? deliveryData.complement || null : null,
           total_amount: finalTotal,
           payment_method: paymentMethod,
           change_for: changeForValue,
@@ -402,6 +407,16 @@ const Checkout = () => {
                       className="mt-1 bg-muted/50 border-0"
                     />
                   </div>
+                </div>
+                <div className="mt-4">
+                  <label className="text-sm text-muted-foreground">Complemento / Ponto de referência</label>
+                  <Textarea
+                    placeholder="Ex: Apartamento 101, próximo ao mercado, casa com portão verde..."
+                    value={deliveryData.complement}
+                    onChange={(e) => setDeliveryData({ ...deliveryData, complement: e.target.value })}
+                    className="mt-1 bg-muted/50 border-0 min-h-[80px] resize-none"
+                    rows={3}
+                  />
                 </div>
               </div>
             </section>
