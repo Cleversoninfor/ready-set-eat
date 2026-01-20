@@ -30,6 +30,7 @@ import { useStoreConfig } from '@/hooks/useStore';
 import { useTheme } from '@/hooks/useTheme';
 import { cn } from '@/lib/utils';
 import { GlobalOrderNotification } from './GlobalOrderNotification';
+import { InfornexaHeader } from './InfornexaHeader';
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -161,6 +162,9 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
 
       {/* Global Order Notification */}
       <GlobalOrderNotification />
+
+      {/* Infornexa Header */}
+      <InfornexaHeader />
 
       <div className="min-h-screen bg-background flex">
         {/* Mobile Sidebar Overlay */}
