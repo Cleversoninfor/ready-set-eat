@@ -9,9 +9,18 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { useStoreConfig } from '@/hooks/useStore';
 import { useAllOrders, useUnifiedOrderItems, useUpdateUnifiedOrderStatus, UnifiedOrder } from '@/hooks/useAllOrders';
+import { useOrdersRealtime } from '@/hooks/useOrdersRealtime';
 import { OrderDetailModal } from '@/components/orders/OrderDetailModal';
 import { Order } from '@/hooks/useOrders';
 import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval, subDays } from 'date-fns';
@@ -51,11 +60,14 @@ function DraggableOrderCard({ order, store, onOpenDetails }: { order: UnifiedOrd
     data: { order },
   });
 
-  const style = transform ? {
-    transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-    opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 1000 : 1,
-  } : undefined;
+  const style =
+    transform
+      ? {
+          transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+          opacity: isDragging ? 0.5 : 1,
+          zIndex: isDragging ? 1000 : 1,
+        }
+      : undefined;
 
   return (
     <div ref={setNodeRef} style={style} {...attributes}>
@@ -69,18 +81,15 @@ function DroppableColumn({ id, children, color, label, count }: { id: string; ch
   const { isOver, setNodeRef } = useDroppable({ id });
 
   return (
-    <div 
-      ref={setNodeRef} 
-      className={`rounded-xl sm:rounded-2xl ${color} p-3 sm:p-4 min-w-0 transition-all ${isOver ? 'ring-2 ring-primary ring-offset-2' : ''}`}
-    >
+    <div ref={setNodeRef} className={`rounded-xl sm:rounded-2xl ${color} p-3 sm:p-4 min-w-0 transition-all ${isOver ? 'ring-2 ring-primary ring-offset-2' : ''}`}>
       <div className="flex items-center justify-between mb-3 sm:mb-4">
         <h2 className="font-bold text-foreground text-sm sm:text-base">{label}</h2>
-        <Badge variant="secondary" className="text-xs">{count}</Badge>
+        <Badge variant="secondary" className="text-xs">
+          {count}
+        </Badge>
       </div>
-      
-      <div className="space-y-3 sm:space-y-4 max-h-[400px] sm:max-h-[600px] overflow-y-auto min-h-[100px]">
-        {children}
-      </div>
+
+      <div className="space-y-3 sm:space-y-4 max-h-[400px] sm:max-h-[600px] overflow-y-auto min-h-[100px]">{children}</div>
     </div>
   );
 }
@@ -90,8 +99,7 @@ function OrderCardContent({ order, store, onOpenDetails, dragListeners }: { orde
   const { data: items } = useUnifiedOrderItems(order.id, order.type);
   const updateStatus = useUpdateUnifiedOrderStatus();
 
-  const formatCurrency = (value: number) =>
-    Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const formatCurrency = (value: number) => Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
   const getPaymentLabel = (method: string | null) => {
     switch (method) {
@@ -115,11 +123,11 @@ function OrderCardContent({ order, store, onOpenDetails, dragListeners }: { orde
 
   const sendPixCharge = (e: React.MouseEvent) => {
     e.stopPropagation();
-    
+
     // Use custom message template or default
     const defaultMessage = `Olá {nome}! 🍔\n\nPedido #{pedido} recebido!\n\nTotal: {total}\n\n💠 Chave Pix: {chave_pix} ({tipo_chave})\n\nAguardamos o comprovante para iniciar o preparo!`;
     const template = store?.pix_message || defaultMessage;
-    
+
     // Replace placeholders
     const message = template
       .replace(/{nome}/g, order.customer_name)
@@ -127,7 +135,7 @@ function OrderCardContent({ order, store, onOpenDetails, dragListeners }: { orde
       .replace(/{total}/g, formatCurrency(order.total_amount))
       .replace(/{chave_pix}/g, store?.pix_key || '')
       .replace(/{tipo_chave}/g, store?.pix_key_type || 'Chave');
-    
+
     window.open(`https://wa.me/55${order.customer_phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`, '_blank');
   };
 
@@ -141,7 +149,7 @@ function OrderCardContent({ order, store, onOpenDetails, dragListeners }: { orde
       };
       return tableFlow[status] || null;
     }
-    
+
     const flow: Record<string, UnifiedOrder['status']> = {
       pending: 'preparing',
       preparing: 'ready',
@@ -160,7 +168,7 @@ function OrderCardContent({ order, store, onOpenDetails, dragListeners }: { orde
       };
       return tableLabels[status];
     }
-    
+
     const labels: Record<string, string> = {
       pending: 'Aceitar',
       preparing: 'Pronto',
@@ -186,24 +194,24 @@ function OrderCardContent({ order, store, onOpenDetails, dragListeners }: { orde
       <div className="flex items-start justify-between gap-2 mb-3">
         <div className="flex items-center gap-2 min-w-0 flex-1">
           {dragListeners && (
-            <div {...dragListeners} className="cursor-grab active:cursor-grabbing p-1 -ml-1 text-muted-foreground hover:text-foreground" onClick={(e) => e.stopPropagation()}>
+            <div
+              {...dragListeners}
+              className="cursor-grab active:cursor-grabbing p-1 -ml-1 text-muted-foreground hover:text-foreground"
+              onClick={(e) => e.stopPropagation()}
+            >
               <GripVertical className="h-4 w-4" />
             </div>
           )}
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <p className="font-bold text-base sm:text-lg text-foreground">
-                {order.type === 'table' ? `Mesa #${order.table_number}` : `#${order.id}`}
-              </p>
+              <p className="font-bold text-base sm:text-lg text-foreground">{order.type === 'table' ? `Mesa #${order.table_number}` : `#${order.id}`}</p>
               <Badge variant="outline" className="text-[10px]">
                 {getOrderTypeLabel()}
               </Badge>
             </div>
             <p className="text-xs sm:text-sm text-muted-foreground truncate">{order.customer_name}</p>
             {isCompleted && (
-              <p className="text-xs text-muted-foreground mt-1">
-                {format(new Date(order.updated_at), "dd/MM 'às' HH:mm", { locale: ptBR })}
-              </p>
+              <p className="text-xs text-muted-foreground mt-1">{format(new Date(order.updated_at), "dd/MM 'às' HH:mm", { locale: ptBR })}</p>
             )}
           </div>
         </div>
@@ -221,9 +229,7 @@ function OrderCardContent({ order, store, onOpenDetails, dragListeners }: { orde
             <span className="text-foreground">
               {item.quantity}x {item.product_name}
             </span>
-            {item.observation && (
-              <p className="text-xs text-warning">📝 {item.observation}</p>
-            )}
+            {item.observation && <p className="text-xs text-warning">📝 {item.observation}</p>}
           </div>
         ))}
       </div>
@@ -232,35 +238,19 @@ function OrderCardContent({ order, store, onOpenDetails, dragListeners }: { orde
       <div className="border-t border-border pt-3 space-y-2">
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">Total</span>
-          <span className="font-bold text-foreground">
-            {formatCurrency(order.total_amount)}
-          </span>
+          <span className="font-bold text-foreground">{formatCurrency(order.total_amount)}</span>
         </div>
 
         {!isCompleted && (
           <div className="flex gap-2">
             {order.type === 'delivery' && order.payment_method === 'pix' && order.status === 'pending' && (
-              <Button
-                variant="whatsapp"
-                size="sm"
-                className="flex-1"
-                onClick={sendPixCharge}
-              >
+              <Button variant="whatsapp" size="sm" className="flex-1" onClick={sendPixCharge}>
                 Cobrar PIX
               </Button>
             )}
             {getNextStatus(order.status) && (
-              <Button
-                size="sm"
-                className="flex-1"
-                onClick={handleStatusUpdate}
-                disabled={updateStatus.isPending}
-              >
-                {updateStatus.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  getNextStatusLabel(order.status)
-                )}
+              <Button size="sm" className="flex-1" onClick={handleStatusUpdate} disabled={updateStatus.isPending}>
+                {updateStatus.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : getNextStatusLabel(order.status)}
               </Button>
             )}
           </div>
@@ -277,10 +267,16 @@ function OrderCardContent({ order, store, onOpenDetails, dragListeners }: { orde
   );
 }
 
-function StatsCard({ title, value, icon: Icon, trend, color }: { 
-  title: string; 
-  value: string; 
-  icon: typeof Package; 
+function StatsCard({
+  title,
+  value,
+  icon: Icon,
+  trend,
+  color,
+}: {
+  title: string;
+  value: string;
+  icon: typeof Package;
   trend?: string;
   color: string;
 }) {
@@ -311,9 +307,13 @@ const AdminOrders = () => {
   const { data: store } = useStoreConfig();
   const { data: orders, isLoading, refetch } = useAllOrders();
   const updateStatus = useUpdateUnifiedOrderStatus();
-  const { playNotificationSound, setEnabled, isEnabled } = useNotificationSound();
+  const { playNotificationSound, startAlarm, stopAlarm, setEnabled, isEnabled, isAlarmPlaying } = useNotificationSound();
   const { notifyNewOrder, isEnabled: pushEnabled } = usePushNotifications();
   const lastOrderCountRef = useRef<number | null>(null);
+
+  const [newOrderDialogOpen, setNewOrderDialogOpen] = useState(false);
+  const [lastNotifiedPendingCount, setLastNotifiedPendingCount] = useState(0);
+
   const [autoRefresh, setAutoRefresh] = useState(() => {
     const saved = localStorage.getItem('orders-auto-refresh');
     return saved !== 'false';
@@ -333,29 +333,32 @@ const AdminOrders = () => {
     })
   );
 
+  // Realtime updates (no need to reload the page)
+  useOrdersRealtime(true);
+
   // Calculate pending count
-  const pendingCount = useMemo(() => 
-    orders?.filter(o => o.status === 'pending').length || 0,
-    [orders]
-  );
+  const pendingCount = useMemo(() => orders?.filter((o) => o.status === 'pending').length || 0, [orders]);
 
   // Title notification for pending orders
   useTitleNotification(pendingCount, 'Pedidos');
 
-  // Notify new orders - play sound once when new order arrives
+  // New orders behavior:
+  // - open a blocking popup
+  // - keep a loud alarm playing until user clicks OK
   useEffect(() => {
     if (lastOrderCountRef.current !== null && pendingCount > lastOrderCountRef.current) {
+      setLastNotifiedPendingCount(pendingCount);
+      setNewOrderDialogOpen(true);
+
       toast.success('Novo pedido recebido!', {
         description: `Você tem ${pendingCount} pedido(s) pendente(s)`,
         duration: 5000,
       });
-      
-      // Play notification sound once
+
       if (isEnabled) {
-        playNotificationSound();
+        startAlarm();
       }
-      
-      // Send push notification
+
       if (pushEnabled) {
         notifyNewOrder(pendingCount);
       }
@@ -364,7 +367,14 @@ const AdminOrders = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingCount, pushEnabled, isEnabled]);
 
-  // Auto-refresh logic
+  // Safety: if sound gets disabled while alarm is playing
+  useEffect(() => {
+    if (!isEnabled && isAlarmPlaying) {
+      stopAlarm();
+    }
+  }, [isEnabled, isAlarmPlaying, stopAlarm]);
+
+  // Auto-refresh logic (kept as-is; realtime already helps)
   const handleRefresh = useCallback(() => {
     refetch();
     setLastRefresh(new Date());
@@ -386,7 +396,7 @@ const AdminOrders = () => {
     if (!autoRefresh) return;
 
     const timer = setInterval(() => {
-      setCountdown(prev => (prev > 0 ? prev - 1 : 30));
+      setCountdown((prev) => (prev > 0 ? prev - 1 : 30));
     }, 1000);
 
     return () => clearInterval(timer);
@@ -408,10 +418,15 @@ const AdminOrders = () => {
     }
   };
 
+  const handleAcknowledgeNewOrder = () => {
+    stopAlarm();
+    setNewOrderDialogOpen(false);
+  };
+
   // Filter orders by date
   const filteredOrders = useMemo(() => {
     if (!orders) return [];
-    
+
     const now = new Date();
     let start: Date;
     let end: Date;
@@ -433,17 +448,15 @@ const AdminOrders = () => {
         return orders;
     }
 
-    return orders.filter(order => 
-      isWithinInterval(new Date(order.created_at), { start, end })
-    );
+    return orders.filter((order) => isWithinInterval(new Date(order.created_at), { start, end }));
   }, [orders, dateFilter]);
 
   // Calculate statistics
   const stats = useMemo(() => {
     const totalOrders = filteredOrders.length;
     const totalRevenue = filteredOrders.reduce((sum, o) => sum + Number(o.total_amount), 0);
-    const completedOrders = filteredOrders.filter(o => o.status === 'completed').length;
-    const pendingOrders = filteredOrders.filter(o => o.status === 'pending').length;
+    const completedOrders = filteredOrders.filter((o) => o.status === 'completed').length;
+    const pendingOrders = filteredOrders.filter((o) => o.status === 'pending').length;
     const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
     return { totalOrders, totalRevenue, completedOrders, pendingOrders, avgOrderValue };
@@ -452,16 +465,14 @@ const AdminOrders = () => {
   // Chart data for orders over time
   const ordersOverTime = useMemo(() => {
     if (!orders) return [];
-    
+
     const last7Days = Array.from({ length: 7 }, (_, i) => {
       const date = subDays(new Date(), 6 - i);
       return {
         date: format(date, 'dd/MM'),
-        pedidos: orders.filter(o => 
-          format(new Date(o.created_at), 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
-        ).length,
+        pedidos: orders.filter((o) => format(new Date(o.created_at), 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')).length,
         receita: orders
-          .filter(o => format(new Date(o.created_at), 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd'))
+          .filter((o) => format(new Date(o.created_at), 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd'))
           .reduce((sum, o) => sum + Number(o.total_amount), 0),
       };
     });
@@ -472,7 +483,7 @@ const AdminOrders = () => {
   // Payment methods distribution
   const paymentDistribution = useMemo(() => {
     const methods = { pix: 0, money: 0, card: 0 };
-    filteredOrders.forEach(o => {
+    filteredOrders.forEach((o) => {
       if (methods[o.payment_method as keyof typeof methods] !== undefined) {
         methods[o.payment_method as keyof typeof methods]++;
       }
@@ -481,19 +492,18 @@ const AdminOrders = () => {
       { name: 'PIX', value: methods.pix, color: '#00BFFF' },
       { name: 'Dinheiro', value: methods.money, color: '#32CD32' },
       { name: 'Cartão', value: methods.card, color: '#9370DB' },
-    ].filter(item => item.value > 0);
+    ].filter((item) => item.value > 0);
   }, [filteredOrders]);
 
   // Status distribution for bar chart
   const statusDistribution = useMemo(() => {
-    return columns.map(col => ({
+    return columns.map((col) => ({
       name: col.label,
-      quantidade: filteredOrders.filter(o => o.status === col.id).length,
+      quantidade: filteredOrders.filter((o) => o.status === col.id).length,
     }));
   }, [filteredOrders]);
 
-  const formatCurrency = (value: number) =>
-    Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const formatCurrency = (value: number) => Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
   const handleDragStart = (event: DragStartEvent) => {
     const order = (event.active.data.current as any)?.order as UnifiedOrder;
@@ -507,11 +517,9 @@ const AdminOrders = () => {
     if (!over) return;
 
     const activeId = active.id as string;
-    const [orderType, orderId] = activeId.includes('-') 
-      ? [activeId.split('-')[0] as 'delivery' | 'table', parseInt(activeId.split('-')[1])]
-      : ['delivery' as const, parseInt(activeId)];
+    const [orderType, orderId] = activeId.includes('-') ? [activeId.split('-')[0] as 'delivery' | 'table', parseInt(activeId.split('-')[1])] : ['delivery' as const, parseInt(activeId)];
     const newStatus = over.id as OrderStatus;
-    const order = filteredOrders.find(o => o.id === orderId && o.type === orderType);
+    const order = filteredOrders.find((o) => o.id === orderId && o.type === orderType);
 
     if (order && order.status !== newStatus) {
       updateStatus.mutate({ orderId, status: newStatus, orderType: order.type });
@@ -530,20 +538,25 @@ const AdminOrders = () => {
 
   return (
     <AdminLayout title="Pedidos">
+      {/* New Order Popup */}
+      <AlertDialog open={newOrderDialogOpen} onOpenChange={(open) => setNewOrderDialogOpen(open)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Novo pedido recebido</AlertDialogTitle>
+            <AlertDialogDescription>
+              Você tem {lastNotifiedPendingCount} pedido(s) pendente(s). Clique em OK para silenciar o alerta.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogAction onClick={handleAcknowledgeNewOrder}>OK</AlertDialogAction>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Filters and View Toggle */}
       <div className="flex flex-wrap items-center gap-2 sm:gap-4 mb-4 sm:mb-6">
         {/* Sound Toggle */}
         <div className="flex items-center gap-2 bg-muted/50 rounded-lg px-3 py-2">
-          {isEnabled ? (
-            <Volume2 className="w-4 h-4 text-primary" />
-          ) : (
-            <VolumeX className="w-4 h-4 text-muted-foreground" />
-          )}
-          <Switch
-            checked={isEnabled}
-            onCheckedChange={handleSoundToggle}
-            className="data-[state=checked]:bg-primary"
-          />
+          {isEnabled ? <Volume2 className="w-4 h-4 text-primary" /> : <VolumeX className="w-4 h-4 text-muted-foreground" />}
+          <Switch checked={isEnabled} onCheckedChange={handleSoundToggle} className="data-[state=checked]:bg-primary" />
         </div>
 
         {/* Push Notification Toggle */}
@@ -551,27 +564,12 @@ const AdminOrders = () => {
 
         {/* Auto Refresh Toggle */}
         <div className="flex items-center gap-2 bg-muted/50 rounded-lg px-3 py-2">
-          {autoRefresh ? (
-            <Wifi className="w-4 h-4 text-green-500 animate-pulse" />
-          ) : (
-            <WifiOff className="w-4 h-4 text-muted-foreground" />
-          )}
-          <Switch
-            checked={autoRefresh}
-            onCheckedChange={handleAutoRefreshToggle}
-            className="data-[state=checked]:bg-green-500"
-          />
-          {autoRefresh && (
-            <span className="text-xs text-muted-foreground w-6">{countdown}s</span>
-          )}
+          {autoRefresh ? <Wifi className="w-4 h-4 text-green-500 animate-pulse" /> : <WifiOff className="w-4 h-4 text-muted-foreground" />}
+          <Switch checked={autoRefresh} onCheckedChange={handleAutoRefreshToggle} className="data-[state=checked]:bg-green-500" />
+          {autoRefresh && <span className="text-xs text-muted-foreground w-6">{countdown}s</span>}
         </div>
 
-        <Button
-          variant="outline" 
-          size="sm" 
-          onClick={handleRefresh}
-          className="gap-2"
-        >
+        <Button variant="outline" size="sm" onClick={handleRefresh} className="gap-2">
           <RefreshCw className="w-4 h-4" />
           Atualizar
         </Button>
@@ -590,21 +588,11 @@ const AdminOrders = () => {
         </Select>
 
         <div className="flex gap-1 sm:gap-2 ml-auto">
-          <Button
-            variant={viewMode === 'kanban' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setViewMode('kanban')}
-            className="px-2 sm:px-3"
-          >
+          <Button variant={viewMode === 'kanban' ? 'default' : 'outline'} size="sm" onClick={() => setViewMode('kanban')} className="px-2 sm:px-3">
             <Package className="h-4 w-4 sm:mr-2" />
             <span className="hidden sm:inline">Kanban</span>
           </Button>
-          <Button
-            variant={viewMode === 'stats' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setViewMode('stats')}
-            className="px-2 sm:px-3"
-          >
+          <Button variant={viewMode === 'stats' ? 'default' : 'outline'} size="sm" onClick={() => setViewMode('stats')} className="px-2 sm:px-3">
             <TrendingUp className="h-4 w-4 sm:mr-2" />
             <span className="hidden sm:inline">Estatísticas</span>
           </Button>
@@ -622,30 +610,10 @@ const AdminOrders = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-6">
-        <StatsCard 
-          title="Total Pedidos" 
-          value={stats.totalOrders.toString()} 
-          icon={Package}
-          color="bg-primary"
-        />
-        <StatsCard 
-          title="Receita" 
-          value={formatCurrency(stats.totalRevenue)} 
-          icon={DollarSign}
-          color="bg-green-500"
-        />
-        <StatsCard 
-          title="Finalizados" 
-          value={stats.completedOrders.toString()} 
-          icon={CheckCircle2}
-          color="bg-blue-500"
-        />
-        <StatsCard 
-          title="Ticket Médio" 
-          value={formatCurrency(stats.avgOrderValue)} 
-          icon={TrendingUp}
-          color="bg-purple-500"
-        />
+        <StatsCard title="Total Pedidos" value={stats.totalOrders.toString()} icon={Package} color="bg-primary" />
+        <StatsCard title="Receita" value={formatCurrency(stats.totalRevenue)} icon={DollarSign} color="bg-green-500" />
+        <StatsCard title="Finalizados" value={stats.completedOrders.toString()} icon={CheckCircle2} color="bg-blue-500" />
+        <StatsCard title="Ticket Médio" value={formatCurrency(stats.avgOrderValue)} icon={TrendingUp} color="bg-purple-500" />
       </div>
 
       {viewMode === 'stats' && (
@@ -662,20 +630,14 @@ const AdminOrders = () => {
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                     <XAxis dataKey="date" className="text-xs" />
                     <YAxis className="text-xs" />
-                    <Tooltip 
-                      contentStyle={{ 
+                    <Tooltip
+                      contentStyle={{
                         backgroundColor: 'hsl(var(--card))',
                         border: '1px solid hsl(var(--border))',
                         borderRadius: '8px',
                       }}
                     />
-                    <Area 
-                      type="monotone" 
-                      dataKey="pedidos" 
-                      stroke="hsl(var(--primary))" 
-                      fill="hsl(var(--primary))" 
-                      fillOpacity={0.2}
-                    />
+                    <Area type="monotone" dataKey="pedidos" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.2} />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
@@ -694,21 +656,15 @@ const AdminOrders = () => {
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                     <XAxis dataKey="date" className="text-xs" />
                     <YAxis className="text-xs" tickFormatter={(v) => `R$${v}`} />
-                    <Tooltip 
+                    <Tooltip
                       formatter={(value: number) => formatCurrency(value)}
-                      contentStyle={{ 
+                      contentStyle={{
                         backgroundColor: 'hsl(var(--card))',
                         border: '1px solid hsl(var(--border))',
                         borderRadius: '8px',
                       }}
                     />
-                    <Area 
-                      type="monotone" 
-                      dataKey="receita" 
-                      stroke="hsl(142, 76%, 36%)" 
-                      fill="hsl(142, 76%, 36%)" 
-                      fillOpacity={0.2}
-                    />
+                    <Area type="monotone" dataKey="receita" stroke="hsl(142, 76%, 36%)" fill="hsl(142, 76%, 36%)" fillOpacity={0.2} />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
@@ -759,8 +715,8 @@ const AdminOrders = () => {
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                     <XAxis dataKey="name" className="text-xs" />
                     <YAxis className="text-xs" />
-                    <Tooltip 
-                      contentStyle={{ 
+                    <Tooltip
+                      contentStyle={{
                         backgroundColor: 'hsl(var(--card))',
                         border: '1px solid hsl(var(--border))',
                         borderRadius: '8px',
@@ -777,37 +733,20 @@ const AdminOrders = () => {
 
       {/* Kanban View with Drag and Drop */}
       {viewMode === 'kanban' && (
-        <DndContext
-          sensors={sensors}
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-        >
+        <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3 sm:gap-6">
             {columns.map((column) => {
-              const columnOrders = filteredOrders.filter(o => o.status === column.id);
-              
+              const columnOrders = filteredOrders.filter((o) => o.status === column.id);
+
               return (
-                <DroppableColumn
-                  key={column.id}
-                  id={column.id}
-                  color={column.color}
-                  label={column.label}
-                  count={columnOrders.length}
-                >
+                <DroppableColumn key={column.id} id={column.id} color={column.color} label={column.label} count={columnOrders.length}>
                   {columnOrders.map((order) => (
-                    <DraggableOrderCard
-                      key={order.id}
-                      order={order}
-                      store={store}
-                      onOpenDetails={setSelectedOrder}
-                    />
+                    <DraggableOrderCard key={order.id} order={order} store={store} onOpenDetails={setSelectedOrder} />
                   ))}
 
                   {columnOrders.length === 0 && (
                     <div className="py-8 sm:py-12 text-center">
-                      <p className="text-muted-foreground text-sm">
-                        Nenhum pedido
-                      </p>
+                      <p className="text-muted-foreground text-sm">Nenhum pedido</p>
                     </div>
                   )}
                 </DroppableColumn>
@@ -818,11 +757,7 @@ const AdminOrders = () => {
           <DragOverlay>
             {activeOrder && (
               <div className="opacity-90">
-                <OrderCardContent
-                  order={activeOrder}
-                  store={store}
-                  onOpenDetails={() => {}}
-                />
+                <OrderCardContent order={activeOrder} store={store} onOpenDetails={() => {}} />
               </div>
             )}
           </DragOverlay>
@@ -830,13 +765,10 @@ const AdminOrders = () => {
       )}
 
       {/* Order Detail Modal */}
-      <OrderDetailModal 
-        order={selectedOrder} 
-        open={!!selectedOrder} 
-        onOpenChange={(open) => !open && setSelectedOrder(null)} 
-      />
+      <OrderDetailModal order={selectedOrder} open={!!selectedOrder} onOpenChange={(open) => !open && setSelectedOrder(null)} />
     </AdminLayout>
   );
 };
 
 export default AdminOrders;
+
