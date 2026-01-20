@@ -43,16 +43,10 @@ export function KitchenOrderCard({ order }: KitchenOrderCardProps) {
   const handleStatusChange = async (newStatus: 'preparing' | 'ready') => {
     setIsUpdating(true);
     try {
-      // Update all items in this order, passing tableOrderId for table orders
+      // Update all items in this order
       await Promise.all(
         order.items.map(item => 
-          updateItemStatus(
-            item.id, 
-            newStatus, 
-            item.order_type, 
-            item.order_id || undefined,
-            item.table_order_id || undefined
-          )
+          updateItemStatus(item.id, newStatus, item.order_type, item.order_id || undefined)
         )
       );
     } finally {
