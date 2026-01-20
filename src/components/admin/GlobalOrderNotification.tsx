@@ -61,8 +61,13 @@ export function GlobalOrderNotification() {
   }, [soundEnabled, newOrderDialogOpen, stopAlarm]);
 
   const handleAcknowledgeNewOrder = () => {
+    console.log('[GlobalOrderNotification] OK clicked, stopping alarm');
+    // Stop alarm immediately and synchronously
     stopAlarm();
-    setNewOrderDialogOpen(false);
+    // Small delay to ensure audio context is fully stopped before closing dialog
+    setTimeout(() => {
+      setNewOrderDialogOpen(false);
+    }, 50);
   };
 
   // Don't render on kitchen page

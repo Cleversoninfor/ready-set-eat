@@ -161,18 +161,30 @@ function startAlarmSound() {
 }
 
 function stopAlarmSound() {
-  if (!alarmPlaying) return;
-
+  console.log('[Sound] stopAlarmSound called, alarmPlaying:', alarmPlaying);
+  
+  // Always try to stop, even if alarmPlaying is false (defensive)
   // First, mark as not playing and increment session to invalidate callbacks
   alarmPlaying = false;
   alarmSessionId++;
   
-  // Then clear all pending timeouts
+  // Then clear all pending timeouts IMMEDIATELY
   clearAlarmTimeouts();
   
-  // Finally stop any currently playing audio
+  // Finally stop any currently playing audio SYNCHRONOUSLY
   stopCurrentBurst();
   
+  // Close and recreate audio context to ensure clean slate
+  if (audioContext) {
+    try {
+      audioContext.close().catch(() => {});
+    } catch {
+      // ignore
+    }
+    audioContext = null;
+  }
+  
+  console.log('[Sound] Alarm stopped, session:', alarmSessionId);
   notifyAllListeners();
 }
 
