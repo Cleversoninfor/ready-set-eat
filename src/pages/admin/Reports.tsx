@@ -13,14 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
-
-// Extend jsPDF type for autoTable
-declare module 'jspdf' {
-  interface jsPDF {
-    autoTable: (options: any) => jsPDF;
-  }
-}
+import autoTable from 'jspdf-autotable';
 
 interface OrderReport {
   id: number;
@@ -209,7 +202,7 @@ const AdminReports = () => {
       doc.text(`Ticket Médio: ${formatCurrency(stats.avgTicket)}`, 14, 54);
 
       // Table
-      doc.autoTable({
+      autoTable(doc, {
         startY: 62,
         head: [['ID', 'Data', 'Tipo', 'Cliente/Mesa', 'Valor', 'Pagamento', 'Status']],
         body: allReports.map((order) => [
