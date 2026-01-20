@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Loader2, Clock, Banknote, CreditCard, QrCode, ChevronRight, Pencil, Trash2, Plus, Minus, Tag, X, AlertCircle, Store, MapPin } from 'lucide-react';
+import { ArrowLeft, Loader2, Clock, Banknote, CreditCard, QrCode, ChevronRight, Pencil, Trash2, Plus, Minus, Tag, X, AlertCircle, Store, MapPin, UtensilsCrossed } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,10 +13,13 @@ import { useValidateCoupon, calculateDiscount, Coupon } from '@/hooks/useCoupons
 import { saveLastOrderId } from '@/components/order/FloatingOrderButton';
 import { useBusinessHours, isStoreCurrentlyOpen } from '@/hooks/useBusinessHours';
 import { AddressSelector } from '@/components/checkout/AddressSelector';
+import { TableSelector } from '@/components/checkout/TableSelector';
+import { useCreateDineInOrder } from '@/hooks/useDineInOrder';
 import { PaymentMethod } from '@/types';
 import { cn } from '@/lib/utils';
 
 type DisplayPaymentMethod = 'money' | 'debit' | 'credit' | 'pix';
+type DeliveryType = 'delivery' | 'pickup' | 'dine_in';
 
 const CHECKOUT_STORAGE_KEY = 'delivery-checkout';
 
@@ -27,8 +30,14 @@ const paymentOptions: { id: DisplayPaymentMethod; dbValue: PaymentMethod; label:
   { id: 'pix', dbValue: 'pix', label: 'Pix', icon: QrCode },
 ];
 
+interface SelectedTable {
+  id: string;
+  number: number;
+  name: string | null;
+}
+
 interface CheckoutFormData {
-  deliveryType: 'delivery' | 'pickup';
+  deliveryType: DeliveryType;
   name: string;
   phone: string;
   street: string;
@@ -36,6 +45,7 @@ interface CheckoutFormData {
   neighborhood: string;
   complement: string;
   selectedPayment: DisplayPaymentMethod | null;
+  selectedTable: SelectedTable | null;
 }
 
 function loadCheckoutFromStorage(): CheckoutFormData | null {
@@ -69,11 +79,12 @@ const Checkout = () => {
   const { data: store } = useStoreConfig();
   const { data: businessHours } = useBusinessHours();
   const createOrder = useCreateOrder();
+  const createDineInOrder = useCreateDineInOrder();
   const validateCoupon = useValidateCoupon();
 
   const savedData = loadCheckoutFromStorage();
 
-  const [deliveryType, setDeliveryType] = useState<'delivery' | 'pickup'>(savedData?.deliveryType || 'delivery');
+  const [deliveryType, setDeliveryType] = useState<DeliveryType>(savedData?.deliveryType || 'delivery');
   const [deliveryData, setDeliveryData] = useState({
     name: savedData?.name || '',
     phone: savedData?.phone || '',
@@ -83,6 +94,7 @@ const Checkout = () => {
     complement: (savedData as any)?.complement || '',
   });
   const [selectedPayment, setSelectedPayment] = useState<DisplayPaymentMethod | null>(savedData?.selectedPayment || null);
+  const [selectedTable, setSelectedTable] = useState<SelectedTable | null>(savedData?.selectedTable || null);
   const [changeFor, setChangeFor] = useState('');
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
@@ -99,8 +111,9 @@ const Checkout = () => {
       neighborhood: deliveryData.neighborhood,
       complement: deliveryData.complement,
       selectedPayment,
+      selectedTable,
     });
-  }, [deliveryType, deliveryData, selectedPayment]);
+  }, [deliveryType, deliveryData, selectedPayment, selectedTable]);
 
   const deliveryFee = deliveryType === 'delivery' ? Number(store?.delivery_fee || 5.99) : 0;
 
@@ -200,12 +213,59 @@ const Checkout = () => {
       toast({ title: 'Preencha o endereço completo', variant: 'destructive' });
       return;
     }
-    if (!selectedPayment) {
+    
+    // Validate table selection for dine-in
+    if (deliveryType === 'dine_in' && !selectedTable) {
+      toast({ title: 'Selecione uma mesa', variant: 'destructive' });
+      return;
+    }
+    
+    // Payment is only required for delivery/pickup
+    if (deliveryType !== 'dine_in' && !selectedPayment) {
       toast({ title: 'Selecione a forma de pagamento', variant: 'destructive' });
       return;
     }
 
-    // Validate change_for input
+    // Handle dine-in order differently
+    if (deliveryType === 'dine_in') {
+      try {
+        const order = await createDineInOrder.mutateAsync({
+          tableId: selectedTable!.id,
+          customerName: deliveryData.name,
+          customerPhone: deliveryData.phone,
+          items: items.map((item) => ({
+            productId: item.product.id,
+            productName: item.product.name,
+            quantity: item.quantity,
+            unitPrice: item.product.price,
+            observation: item.observation || null,
+          })),
+        });
+
+        console.log('[Checkout] Dine-in order created successfully:', order);
+        
+        clearCart();
+        clearCheckoutStorage();
+        
+        navigate('/dine-in-success', { 
+          state: { 
+            tableNumber: selectedTable!.number,
+            tableName: selectedTable!.name,
+            orderId: order.id 
+          } 
+        });
+      } catch (error: any) {
+        console.error('Erro ao enviar pedido (dine-in):', error);
+        toast({
+          title: 'Erro ao enviar pedido',
+          description: error?.message || 'Tente novamente em alguns instantes.',
+          variant: 'destructive',
+        });
+      }
+      return;
+    }
+
+    // Validate change_for input for delivery/pickup
     const changeForValue =
       selectedPayment === 'money' && changeFor
         ? parseMoneyInputToNumber(changeFor)
@@ -335,7 +395,7 @@ const Checkout = () => {
           <button
             onClick={() => setDeliveryType('delivery')}
             className={cn(
-              "flex-1 py-3 text-center font-medium transition-colors",
+              "flex-1 py-3 text-center text-sm font-medium transition-colors",
               deliveryType === 'delivery' 
                 ? "text-primary border-b-2 border-primary" 
                 : "text-muted-foreground"
@@ -346,13 +406,26 @@ const Checkout = () => {
           <button
             onClick={() => setDeliveryType('pickup')}
             className={cn(
-              "flex-1 py-3 text-center font-medium transition-colors",
+              "flex-1 py-3 text-center text-sm font-medium transition-colors",
               deliveryType === 'pickup' 
                 ? "text-primary border-b-2 border-primary" 
                 : "text-muted-foreground"
             )}
           >
             Retirada
+          </button>
+          <button
+            onClick={() => setDeliveryType('dine_in')}
+            className={cn(
+              "flex-1 py-3 text-center text-sm font-medium transition-colors flex items-center justify-center gap-1",
+              deliveryType === 'dine_in' 
+                ? "text-primary border-b-2 border-primary" 
+                : "text-muted-foreground"
+            )}
+          >
+            <UtensilsCrossed className="h-4 w-4" />
+            <span className="hidden sm:inline">Consumo no local</span>
+            <span className="sm:hidden">Local</span>
           </button>
         </div>
 
@@ -440,6 +513,39 @@ const Checkout = () => {
             </section>
           )}
 
+          {/* Dine-in Table Selection */}
+          {deliveryType === 'dine_in' && (
+            <section className="bg-card rounded-2xl p-4 shadow-card">
+              <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+                <UtensilsCrossed className="h-5 w-5 text-primary" />
+                Selecione sua mesa
+              </h3>
+              <TableSelector
+                selectedTableId={selectedTable?.id || null}
+                onTableSelect={(table) => setSelectedTable({
+                  id: table.id,
+                  number: table.number,
+                  name: table.name,
+                })}
+              />
+              {selectedTable && (
+                <div className="mt-4 p-3 bg-primary/10 rounded-xl flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold">
+                    {selectedTable.number}
+                  </div>
+                  <div>
+                    <p className="font-medium text-foreground">
+                      Mesa {selectedTable.number} selecionada
+                    </p>
+                    {selectedTable.name && (
+                      <p className="text-sm text-muted-foreground">{selectedTable.name}</p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </section>
+          )}
+
           {/* Customer Data Section */}
           <section className="space-y-2">
             <h3 className="font-semibold text-foreground">Dados do cliente</h3>
@@ -467,49 +573,60 @@ const Checkout = () => {
             </div>
           </section>
 
-          {/* Payment Method Section */}
-          <section className="space-y-2">
-            <h3 className="font-semibold text-foreground">Método de pagamento</h3>
-            <div className="grid grid-cols-2 gap-3">
-              {paymentOptions.map((option) => (
-                <button
-                  key={option.id}
-                  onClick={() => setSelectedPayment(option.id)}
-                  className={cn(
-                    "flex items-center gap-2 p-4 rounded-xl border-2 transition-colors",
-                    selectedPayment === option.id
-                      ? "border-primary bg-primary/10"
-                      : "border-border bg-card"
-                  )}
-                >
-                  <option.icon className={cn(
-                    "h-5 w-5",
-                    selectedPayment === option.id ? "text-primary" : "text-muted-foreground"
-                  )} />
-                  <span className={cn(
-                    "text-sm font-medium",
-                    selectedPayment === option.id ? "text-foreground" : "text-muted-foreground"
-                  )}>
-                    {option.label}
-                  </span>
-                </button>
-              ))}
-            </div>
-            
-            {selectedPayment === 'money' && (
-              <div className="animate-slide-up rounded-xl bg-primary/10 p-4 mt-3">
-                <label className="text-sm font-medium text-primary">Troco para quanto?</label>
-                <Input
-                  type="text"
-                  inputMode="decimal"
-                  placeholder="R$ 50,00"
-                  value={changeFor}
-                  onChange={(e) => setChangeFor(e.target.value)}
-                  className="mt-2 bg-card border-primary/30"
-                />
+          {/* Payment Method Section - Not shown for dine-in */}
+          {deliveryType !== 'dine_in' && (
+            <section className="space-y-2">
+              <h3 className="font-semibold text-foreground">Método de pagamento</h3>
+              <div className="grid grid-cols-2 gap-3">
+                {paymentOptions.map((option) => (
+                  <button
+                    key={option.id}
+                    onClick={() => setSelectedPayment(option.id)}
+                    className={cn(
+                      "flex items-center gap-2 p-4 rounded-xl border-2 transition-colors",
+                      selectedPayment === option.id
+                        ? "border-primary bg-primary/10"
+                        : "border-border bg-card"
+                    )}
+                  >
+                    <option.icon className={cn(
+                      "h-5 w-5",
+                      selectedPayment === option.id ? "text-primary" : "text-muted-foreground"
+                    )} />
+                    <span className={cn(
+                      "text-sm font-medium",
+                      selectedPayment === option.id ? "text-foreground" : "text-muted-foreground"
+                    )}>
+                      {option.label}
+                    </span>
+                  </button>
+                ))}
               </div>
-            )}
-          </section>
+              
+              {selectedPayment === 'money' && (
+                <div className="animate-slide-up rounded-xl bg-primary/10 p-4 mt-3">
+                  <label className="text-sm font-medium text-primary">Troco para quanto?</label>
+                  <Input
+                    type="text"
+                    inputMode="decimal"
+                    placeholder="R$ 50,00"
+                    value={changeFor}
+                    onChange={(e) => setChangeFor(e.target.value)}
+                    className="mt-2 bg-card border-primary/30"
+                  />
+                </div>
+              )}
+            </section>
+          )}
+
+          {/* Dine-in info */}
+          {deliveryType === 'dine_in' && (
+            <div className="p-4 bg-primary/10 border border-primary/30 rounded-xl">
+              <p className="text-sm text-foreground">
+                💳 O pagamento será realizado na mesa após consumir.
+              </p>
+            </div>
+          )}
 
           {/* Order Summary Section */}
           <section className="space-y-3">
@@ -662,25 +779,31 @@ const Checkout = () => {
             </div>
           </div>
 
-          {/* Delivery Estimate */}
-          <div className="flex items-center gap-3 p-4 bg-card rounded-2xl shadow-card">
-            <Clock className="h-5 w-5 text-muted-foreground" />
-            <div>
-              <p className="text-xs text-primary font-medium uppercase">Previsão de entrega</p>
-              <p className="font-semibold text-foreground">30-45 min</p>
+          {/* Delivery Estimate - show different message for dine-in */}
+          {deliveryType !== 'dine_in' && (
+            <div className="flex items-center gap-3 p-4 bg-card rounded-2xl shadow-card">
+              <Clock className="h-5 w-5 text-muted-foreground" />
+              <div>
+                <p className="text-xs text-primary font-medium uppercase">
+                  {deliveryType === 'delivery' ? 'Previsão de entrega' : 'Previsão de preparo'}
+                </p>
+                <p className="font-semibold text-foreground">
+                  {deliveryType === 'delivery' ? '30-45 min' : '15-25 min'}
+                </p>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Submit Button */}
         <div className="fixed bottom-0 left-0 right-0 bg-background p-4 pb-6 border-t border-border">
           <Button
             onClick={handleSubmit}
-            disabled={createOrder.isPending || !canOrder}
+            disabled={createOrder.isPending || createDineInOrder.isPending || !canOrder}
             size="xl"
             className="w-full rounded-full"
           >
-            {createOrder.isPending ? (
+            {(createOrder.isPending || createDineInOrder.isPending) ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
                 Enviando...
@@ -689,6 +812,8 @@ const Checkout = () => {
               'Loja Fechada'
             ) : isBelowMinimum ? (
               `Faltam ${formatCurrency(minOrderValue - subtotal)}`
+            ) : deliveryType === 'dine_in' ? (
+              `Enviar Pedido para Mesa • ${formatCurrency(subtotal)}`
             ) : (
               `Finalizar Pedido • ${formatCurrency(finalTotal)}`
             )}
