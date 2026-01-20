@@ -6,6 +6,7 @@ interface DineInOrderData {
   tableId: string;
   customerName: string;
   customerPhone: string;
+  existingOrderId?: number | null;
   items: {
     productId?: string;
     productName: string;
@@ -21,7 +22,64 @@ export function useCreateDineInOrder() {
 
   return useMutation({
     mutationFn: async (data: DineInOrderData) => {
-      // 1. Create table order
+      let orderId = data.existingOrderId;
+
+      // If there's an existing order, add items to it
+      if (orderId) {
+        // Verify the order is still open
+        const { data: existingOrder, error: checkError } = await supabase
+          .from('table_orders')
+          .select('id, status, subtotal, total_amount')
+          .eq('id', orderId)
+          .eq('status', 'open')
+          .single();
+
+        if (checkError || !existingOrder) {
+          // Order is no longer open, create a new one
+          orderId = null;
+        } else {
+          // Add items to existing order
+          const itemsToInsert = data.items.map((item) => ({
+            table_order_id: orderId!,
+            product_id: item.productId || null,
+            product_name: item.productName,
+            quantity: item.quantity,
+            unit_price: item.unitPrice,
+            observation: item.observation || null,
+            status: 'pending',
+          }));
+
+          const { error: itemsError } = await supabase
+            .from('table_order_items')
+            .insert(itemsToInsert);
+
+          if (itemsError) throw itemsError;
+
+          // Recalculate totals
+          const { data: allItems, error: itemsFetchError } = await supabase
+            .from('table_order_items')
+            .select('quantity, unit_price')
+            .eq('table_order_id', orderId!);
+
+          if (itemsFetchError) throw itemsFetchError;
+
+          const newSubtotal = (allItems || []).reduce(
+            (sum, item) => sum + (item.quantity * item.unit_price),
+            0
+          );
+
+          const { error: updateError } = await supabase
+            .from('table_orders')
+            .update({ subtotal: newSubtotal, total_amount: newSubtotal })
+            .eq('id', orderId!);
+
+          if (updateError) throw updateError;
+
+          return { id: orderId!, isExisting: true };
+        }
+      }
+
+      // Create new order if no existing order
       const { data: order, error: orderError } = await supabase
         .from('table_orders')
         .insert({
@@ -42,7 +100,7 @@ export function useCreateDineInOrder() {
 
       if (orderError) throw orderError;
 
-      // 2. Add items to the order
+      // Add items to the order
       const itemsToInsert = data.items.map((item) => ({
         table_order_id: order.id,
         product_id: item.productId || null,
@@ -59,7 +117,7 @@ export function useCreateDineInOrder() {
 
       if (itemsError) throw itemsError;
 
-      // 3. Calculate and update totals
+      // Calculate and update totals
       const subtotal = data.items.reduce(
         (sum, item) => sum + item.quantity * item.unitPrice,
         0
@@ -72,7 +130,7 @@ export function useCreateDineInOrder() {
 
       if (updateError) throw updateError;
 
-      // 4. Update table status
+      // Update table status
       const { error: tableError } = await supabase
         .from('tables')
         .update({
@@ -83,17 +141,20 @@ export function useCreateDineInOrder() {
 
       if (tableError) throw tableError;
 
-      return order;
+      return { id: order.id, isExisting: false };
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['tables'] });
       queryClient.invalidateQueries({ queryKey: ['tables-with-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['tables-for-dine-in'] });
       queryClient.invalidateQueries({ queryKey: ['available-tables-public'] });
       queryClient.invalidateQueries({ queryKey: ['kitchen-items'] });
       queryClient.invalidateQueries({ queryKey: ['all-orders'] });
       toast({
-        title: '🎉 Pedido enviado!',
-        description: 'Seu pedido foi recebido e está sendo preparado.',
+        title: result.isExisting ? '🍽️ Itens adicionados!' : '🎉 Pedido enviado!',
+        description: result.isExisting 
+          ? 'Novos itens foram adicionados ao seu pedido.'
+          : 'Seu pedido foi recebido e está sendo preparado.',
       });
     },
     onError: (error: Error) => {
