@@ -99,35 +99,37 @@ export function useAllOrders() {
         updated_at: order.updated_at,
       }));
 
-      // Transform table orders
-      const unifiedTable: UnifiedOrder[] = (tableOrders || []).map((order: any) => {
-        const itemStatuses = (order.items || []).map((it: any) => it.status);
+      // Transform table orders - only include orders that have items
+      const unifiedTable: UnifiedOrder[] = (tableOrders || [])
+        .filter((order: any) => order.items && order.items.length > 0)
+        .map((order: any) => {
+          const itemStatuses = (order.items || []).map((it: any) => it.status);
 
-        return {
-          id: order.id,
-          type: 'table' as const,
-          customer_name: order.table?.name 
-            ? `Mesa ${order.table.number} - ${order.table.name}` 
-            : `Mesa ${order.table?.number || '?'}`,
-          customer_phone: null,
-          address_street: null,
-          address_number: null,
-          address_neighborhood: null,
-          address_complement: null,
-          address_reference: null,
-          total_amount: order.total_amount || 0,
-          status: mapTableStatus(order.status, itemStatuses),
-          payment_method: order.payment_method,
-          change_for: null,
-          created_at: order.opened_at || order.created_at,
-          updated_at: order.updated_at,
-          table_id: order.table_id,
-          table_number: order.table?.number,
-          table_name: order.table?.name,
-          waiter_name: order.waiter_name,
-          customer_count: order.customer_count,
-        };
-      });
+          return {
+            id: order.id,
+            type: 'table' as const,
+            customer_name: order.table?.name 
+              ? `Mesa ${order.table.number} - ${order.table.name}` 
+              : `Mesa ${order.table?.number || '?'}`,
+            customer_phone: null,
+            address_street: null,
+            address_number: null,
+            address_neighborhood: null,
+            address_complement: null,
+            address_reference: null,
+            total_amount: order.total_amount || 0,
+            status: mapTableStatus(order.status, itemStatuses),
+            payment_method: order.payment_method,
+            change_for: null,
+            created_at: order.opened_at || order.created_at,
+            updated_at: order.updated_at,
+            table_id: order.table_id,
+            table_number: order.table?.number,
+            table_name: order.table?.name,
+            waiter_name: order.waiter_name,
+            customer_count: order.customer_count,
+          };
+        });
 
       // Combine and sort by creation date
       const allOrders = [...unifiedDelivery, ...unifiedTable].sort(
