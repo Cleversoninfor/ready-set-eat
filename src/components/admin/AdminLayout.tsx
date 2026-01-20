@@ -20,7 +20,8 @@ import {
   ExternalLink,
   Eye,
   MapPin,
-  BarChart3
+  BarChart3,
+  DatabaseBackup
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -67,6 +68,7 @@ const navGroups = [
       { id: 'delivery-zones', label: 'Taxas de Entrega', icon: MapPin, path: '/admin/delivery-zones' },
       { id: 'hours', label: 'Horários', icon: Clock, path: '/admin/hours' },
       { id: 'settings', label: 'Configurações', icon: Settings, path: '/admin/settings' },
+      { id: 'backup', label: 'Backup', icon: DatabaseBackup, path: '/admin/backup' },
     ]
   },
   {
