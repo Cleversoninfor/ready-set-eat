@@ -149,9 +149,9 @@ export function ProductModal({
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto">
           {/* Image Header with Close Button */}
-          <div className="relative h-56 sm:h-64 w-full bg-muted">
+          <div className="relative h-56 sm:h-64 w-full bg-muted flex items-center justify-center">
             {product.image_url ? (
-              <img src={product.image_url} alt={product.name} className="h-full w-full object-cover" />
+              <img src={product.image_url} alt={product.name} className="h-full w-full object-contain" />
             ) : (
               <div className="h-full w-full flex items-center justify-center">
                 <span className="text-6xl">🍔</span>
