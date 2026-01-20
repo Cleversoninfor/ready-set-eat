@@ -34,6 +34,7 @@ interface SelectedTable {
   id: string;
   number: number;
   name: string | null;
+  current_order_id?: number | null;
 }
 
 interface CheckoutFormData {
@@ -251,6 +252,7 @@ const Checkout = () => {
           tableId: selectedTable!.id,
           customerName: deliveryData.name,
           customerPhone: deliveryData.phone,
+          existingOrderId: selectedTable!.current_order_id || null,
           items: items.map((item) => ({
             productId: item.product.id,
             productName: item.product.name,
@@ -550,6 +552,7 @@ const Checkout = () => {
                   id: table.id,
                   number: table.number,
                   name: table.name,
+                  current_order_id: table.current_order_id,
                 })}
               />
               {selectedTable && (
