@@ -105,7 +105,23 @@ export function isStoreCurrentlyOpen(hours: BusinessHour[]): boolean {
   
   if (!todayHours || !todayHours.is_active) return false;
   
-  return currentTime >= todayHours.open_time && currentTime <= todayHours.close_time;
+  const openTime = todayHours.open_time;
+  const closeTime = todayHours.close_time;
+  
+  // Handle midnight (00:00) as end of day - treat it as 24:00 for comparison
+  if (closeTime === '00:00') {
+    // Store is open from open_time until midnight
+    return currentTime >= openTime;
+  }
+  
+  // Handle overnight hours (e.g., 18:00 to 02:00)
+  if (closeTime < openTime) {
+    // Store spans midnight - open if current time is after open OR before close
+    return currentTime >= openTime || currentTime <= closeTime;
+  }
+  
+  // Normal hours (e.g., 08:00 to 22:00)
+  return currentTime >= openTime && currentTime <= closeTime;
 }
 
 // Hook to check if store is open
