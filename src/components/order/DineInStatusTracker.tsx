@@ -1,4 +1,4 @@
-import { Clock, ChefHat, UtensilsCrossed, CheckCircle2, CreditCard } from 'lucide-react';
+import { Clock, ChefHat, UtensilsCrossed, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface DineInStatusTrackerProps {
@@ -25,12 +25,6 @@ const steps = [
     icon: UtensilsCrossed 
   },
   { 
-    id: 'requesting_bill', 
-    label: 'Conta Solicitada', 
-    description: 'Aguardando pagamento',
-    icon: CreditCard 
-  },
-  { 
     id: 'paid', 
     label: 'Finalizado', 
     description: 'Pedido concluído',
@@ -42,12 +36,16 @@ const steps = [
 function getStatusIndex(status: string): number {
   // For table orders, we map statuses
   switch (status) {
+    case 'pending':
+      return 0;
     case 'open':
-      return 1; // preparing
+    case 'preparing':
+      return 1;
+    case 'ready':
     case 'requesting_bill':
-      return 3;
+      return 2;
     case 'paid':
-      return 4;
+      return 3;
     case 'cancelled':
       return -1;
     default:
