@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Loader2, Store, Phone, CreditCard, Truck, MapPin, Clock, MessageSquare } from 'lucide-react';
+import { Loader2, Store, Phone, CreditCard, MapPin, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -338,39 +338,6 @@ const AdminSettings = () => {
             </div>
           </div>
 
-          {/* Delivery */}
-          <div className="bg-card rounded-xl p-4 sm:p-6 shadow-card space-y-4">
-            <h3 className="font-semibold text-foreground flex items-center gap-2 text-sm sm:text-base">
-              <Truck className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-              Entrega
-            </h3>
-
-            <div>
-              <label className="text-xs sm:text-sm text-muted-foreground">Taxa de Entrega (R$)</label>
-              <Input value={formData.delivery_fee} onChange={e => setFormData({
-              ...formData,
-              delivery_fee: e.target.value
-            })} placeholder="5,00" className="mt-1" />
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-xs sm:text-sm text-muted-foreground">Tempo Mínimo (min)</label>
-                <Input type="number" value={formData.delivery_time_min} onChange={e => setFormData({
-                ...formData,
-                delivery_time_min: e.target.value
-              })} placeholder="30" className="mt-1" />
-              </div>
-              <div>
-                <label className="text-xs sm:text-sm text-muted-foreground">Tempo Máximo (min)</label>
-                <Input type="number" value={formData.delivery_time_max} onChange={e => setFormData({
-                ...formData,
-                delivery_time_max: e.target.value
-              })} placeholder="45" className="mt-1" />
-              </div>
-            </div>
-            <p className="text-xs text-muted-foreground">Exibido como "{formData.delivery_time_min || 30}-{formData.delivery_time_max || 45} min" no cardápio</p>
-          </div>
 
           {/* Submit Button */}
           <Button type="submit" size="lg" className="w-full" disabled={updateStore.isPending}>

@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Plus, Edit, Trash2, MapPin, Loader2, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Plus, Edit, Trash2, MapPin, Loader2, ToggleLeft, ToggleRight, Truck, Clock, ShoppingBag } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,11 +13,13 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useDeliveryZones, DeliveryZone } from '@/hooks/useDeliveryZones';
 import { useStoreConfig, useUpdateStoreConfig } from '@/hooks/useStore';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { useToast } from '@/hooks/use-toast';
 
 export default function DeliveryZones() {
   const { zones, isLoading, createZone, updateZone, deleteZone } = useDeliveryZones();
-  const { data: store } = useStoreConfig();
+  const { data: store, isLoading: isLoadingStore } = useStoreConfig();
   const updateStore = useUpdateStoreConfig();
+  const { toast } = useToast();
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingZone, setEditingZone] = useState<DeliveryZone | null>(null);
@@ -29,6 +31,25 @@ export default function DeliveryZones() {
     min_order_value: '',
     is_active: true,
   });
+
+  // Delivery settings form
+  const [deliverySettings, setDeliverySettings] = useState({
+    delivery_fee: '',
+    delivery_time_min: '',
+    delivery_time_max: '',
+    min_order_value: '',
+  });
+
+  useEffect(() => {
+    if (store) {
+      setDeliverySettings({
+        delivery_fee: store.delivery_fee?.toString() || '',
+        delivery_time_min: store.delivery_time_min?.toString() || '30',
+        delivery_time_max: store.delivery_time_max?.toString() || '45',
+        min_order_value: store.min_order_value?.toString() || '',
+      });
+    }
+  }, [store]);
 
   const deliveryFeeMode = store?.delivery_fee_mode || 'fixed';
 
@@ -80,6 +101,22 @@ export default function DeliveryZones() {
     }
   };
 
+  const handleSaveDeliverySettings = async () => {
+    if (!store?.id) return;
+    try {
+      await updateStore.mutateAsync({
+        id: store.id,
+        delivery_fee: parseFloat(deliverySettings.delivery_fee.replace(',', '.')) || 0,
+        delivery_time_min: parseInt(deliverySettings.delivery_time_min) || 30,
+        delivery_time_max: parseInt(deliverySettings.delivery_time_max) || 45,
+        min_order_value: parseFloat(deliverySettings.min_order_value.replace(',', '.')) || 0,
+      });
+      toast({ title: 'Configurações de entrega salvas!' });
+    } catch (error: any) {
+      toast({ title: 'Erro ao salvar', description: error.message, variant: 'destructive' });
+    }
+  };
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
   };
@@ -101,6 +138,97 @@ export default function DeliveryZones() {
       </Helmet>
 
       <div className="space-y-6">
+        {/* Configurações Gerais de Entrega */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Truck className="h-5 w-5" />
+              Configurações de Entrega
+            </CardTitle>
+            <CardDescription>
+              Configure taxa, tempo de entrega e pedido mínimo
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="delivery_fee" className="flex items-center gap-2">
+                  <Truck className="h-4 w-4 text-muted-foreground" />
+                  Taxa de Entrega (R$)
+                </Label>
+                <Input
+                  id="delivery_fee"
+                  value={deliverySettings.delivery_fee}
+                  onChange={(e) => setDeliverySettings({ ...deliverySettings, delivery_fee: e.target.value })}
+                  placeholder="5,00"
+                />
+                <p className="text-xs text-muted-foreground">Usada quando o modo for Taxa Fixa</p>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="min_order_value" className="flex items-center gap-2">
+                  <ShoppingBag className="h-4 w-4 text-muted-foreground" />
+                  Pedido Mínimo (R$)
+                </Label>
+                <Input
+                  id="min_order_value"
+                  value={deliverySettings.min_order_value}
+                  onChange={(e) => setDeliverySettings({ ...deliverySettings, min_order_value: e.target.value })}
+                  placeholder="20,00"
+                />
+                <p className="text-xs text-muted-foreground">Valor mínimo para aceitar pedidos</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="delivery_time_min" className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                  Tempo Mínimo (min)
+                </Label>
+                <Input
+                  id="delivery_time_min"
+                  type="number"
+                  value={deliverySettings.delivery_time_min}
+                  onChange={(e) => setDeliverySettings({ ...deliverySettings, delivery_time_min: e.target.value })}
+                  placeholder="30"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="delivery_time_max" className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                  Tempo Máximo (min)
+                </Label>
+                <Input
+                  id="delivery_time_max"
+                  type="number"
+                  value={deliverySettings.delivery_time_max}
+                  onChange={(e) => setDeliverySettings({ ...deliverySettings, delivery_time_max: e.target.value })}
+                  placeholder="45"
+                />
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Exibido como "{deliverySettings.delivery_time_min || 30}-{deliverySettings.delivery_time_max || 45} min" no cardápio
+            </p>
+
+            <Button 
+              onClick={handleSaveDeliverySettings} 
+              className="w-full"
+              disabled={updateStore.isPending}
+            >
+              {updateStore.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Salvando...
+                </>
+              ) : (
+                'Salvar Configurações'
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+
         {/* Modo de Taxa */}
         <Card>
           <CardHeader>
