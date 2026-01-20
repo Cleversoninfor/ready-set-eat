@@ -11,9 +11,11 @@ export function SoundNotificationToggle({ variant = 'switch' }: SoundNotificatio
   const { isEnabled, setEnabled, stopAlarm, isAlarmPlaying } = useNotificationSound();
 
   const handleToggle = () => {
+    console.log('[SoundNotificationToggle] Toggle clicked, current state:', isEnabled);
     const next = !isEnabled;
     setEnabled(next);
     if (!next && isAlarmPlaying) stopAlarm();
+    console.log('[SoundNotificationToggle] New state:', next);
   };
 
   if (variant === 'button') {
