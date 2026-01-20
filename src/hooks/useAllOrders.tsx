@@ -36,24 +36,22 @@ export interface UnifiedOrderItem {
   observation: string | null;
 }
 
-// Map table order status to unified status
-function mapTableStatus(status: string): UnifiedOrder['status'] {
-  switch (status) {
-    case 'open':
-      return 'pending'; // Dine-in orders start in "Pendentes" column
-    case 'preparing':
-      return 'preparing'; // Kitchen moved to preparing
-    case 'ready':
-      return 'ready'; // Kitchen marked as ready
-    case 'requesting_bill':
-      return 'ready'; // Customer requesting bill - show in ready column
-    case 'paid':
-      return 'completed';
-    case 'cancelled':
-      return 'cancelled';
-    default:
-      return 'pending';
-  }
+// Map table order + items to unified status
+function mapTableStatus(tableOrderStatus: string, itemStatuses: Array<string | null | undefined>): UnifiedOrder['status'] {
+  // Final statuses driven by the table order itself
+  if (tableOrderStatus === 'paid') return 'completed';
+  if (tableOrderStatus === 'cancelled') return 'cancelled';
+
+  const statuses = (itemStatuses || []).map((s) => s || 'pending');
+
+  // If any item is preparing, show preparing
+  if (statuses.some((s) => s === 'preparing')) return 'preparing';
+
+  // If there are items and ALL are ready/delivered, show ready
+  if (statuses.length > 0 && statuses.every((s) => s === 'ready' || s === 'delivered')) return 'ready';
+
+  // Default: pending
+  return 'pending';
 }
 
 export function useAllOrders() {
@@ -68,15 +66,16 @@ export function useAllOrders() {
 
       if (deliveryError) throw deliveryError;
 
-      // Fetch table orders with table info (specify FK to avoid ambiguity)
-      // Include all active statuses so the admin board reflects kitchen + payment flow
+      // Fetch table orders with table info + item statuses (specify FK to avoid ambiguity)
       const { data: tableOrders, error: tableError } = await supabase
         .from('table_orders')
         .select(`
           *,
-          table:tables!table_orders_table_id_fkey(id, number, name)
+          table:tables!table_orders_table_id_fkey(id, number, name),
+          items:table_order_items(status)
         `)
-        .in('status', ['open', 'preparing', 'ready', 'requesting_bill', 'paid'])
+        // Kitchen flow uses open/requesting_bill; paid is kept for history
+        .in('status', ['open', 'requesting_bill', 'paid', 'cancelled'])
         .order('opened_at', { ascending: false });
 
       if (tableError) throw tableError;
@@ -101,30 +100,34 @@ export function useAllOrders() {
       }));
 
       // Transform table orders
-      const unifiedTable: UnifiedOrder[] = (tableOrders || []).map((order: any) => ({
-        id: order.id,
-        type: 'table' as const,
-        customer_name: order.table?.name 
-          ? `Mesa ${order.table.number} - ${order.table.name}` 
-          : `Mesa ${order.table?.number || '?'}`,
-        customer_phone: null,
-        address_street: null,
-        address_number: null,
-        address_neighborhood: null,
-        address_complement: null,
-        address_reference: null,
-        total_amount: order.total_amount || 0,
-        status: mapTableStatus(order.status),
-        payment_method: order.payment_method,
-        change_for: null,
-        created_at: order.opened_at || order.created_at,
-        updated_at: order.updated_at,
-        table_id: order.table_id,
-        table_number: order.table?.number,
-        table_name: order.table?.name,
-        waiter_name: order.waiter_name,
-        customer_count: order.customer_count,
-      }));
+      const unifiedTable: UnifiedOrder[] = (tableOrders || []).map((order: any) => {
+        const itemStatuses = (order.items || []).map((it: any) => it.status);
+
+        return {
+          id: order.id,
+          type: 'table' as const,
+          customer_name: order.table?.name 
+            ? `Mesa ${order.table.number} - ${order.table.name}` 
+            : `Mesa ${order.table?.number || '?'}`,
+          customer_phone: null,
+          address_street: null,
+          address_number: null,
+          address_neighborhood: null,
+          address_complement: null,
+          address_reference: null,
+          total_amount: order.total_amount || 0,
+          status: mapTableStatus(order.status, itemStatuses),
+          payment_method: order.payment_method,
+          change_for: null,
+          created_at: order.opened_at || order.created_at,
+          updated_at: order.updated_at,
+          table_id: order.table_id,
+          table_number: order.table?.number,
+          table_name: order.table?.name,
+          waiter_name: order.waiter_name,
+          customer_count: order.customer_count,
+        };
+      });
 
       // Combine and sort by creation date
       const allOrders = [...unifiedDelivery, ...unifiedTable].sort(
@@ -201,24 +204,50 @@ export function useUpdateUnifiedOrderStatus() {
         if (error) throw error;
         return data;
       } else {
-        // For table orders, map unified status back to table status
-        let tableStatus: string;
-        if (status === 'pending') tableStatus = 'open';
-        else if (status === 'preparing') tableStatus = 'preparing';
-        else if (status === 'ready') tableStatus = 'ready';
-        else if (status === 'completed') tableStatus = 'paid';
-        else if (status === 'cancelled') tableStatus = 'cancelled';
-        else tableStatus = 'open';
+        // For table orders:
+        // - status changes (pending/preparing/ready) are driven by table_order_items
+        // - completion is stored in table_orders (paid/cancelled)
+        if (status === 'completed') {
+          const { data, error } = await supabase
+            .from('table_orders')
+            .update({ status: 'paid' })
+            .eq('id', orderId)
+            .select()
+            .single();
 
-        const { data, error } = await supabase
-          .from('table_orders')
-          .update({ status: tableStatus })
-          .eq('id', orderId)
-          .select()
-          .single();
-        
+          if (error) throw error;
+          return data;
+        }
+
+        if (status === 'cancelled') {
+          const { data, error } = await supabase
+            .from('table_orders')
+            .update({ status: 'cancelled' })
+            .eq('id', orderId)
+            .select()
+            .single();
+
+          if (error) throw error;
+          return data;
+        }
+
+        // Otherwise, update all items for that table order
+        const itemStatusMap: Record<string, string> = {
+          pending: 'pending',
+          preparing: 'preparing',
+          ready: 'ready',
+        };
+
+        const targetItemStatus = itemStatusMap[status] || 'pending';
+
+        const { error } = await supabase
+          .from('table_order_items')
+          .update({ status: targetItemStatus })
+          .eq('table_order_id', orderId);
+
         if (error) throw error;
-        return data;
+
+        return { id: orderId, status: targetItemStatus };
       }
     },
     onSuccess: () => {
