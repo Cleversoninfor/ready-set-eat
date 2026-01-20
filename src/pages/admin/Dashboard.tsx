@@ -492,7 +492,7 @@ export default function Dashboard() {
               {format(new Date(), "EEEE, dd 'de' MMMM", { locale: ptBR })}
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3 relative z-10">
             {/* Sound Toggle */}
             <SoundNotificationToggle />
 
@@ -508,7 +508,10 @@ export default function Dashboard() {
               )}
               <Switch
                 checked={autoRefresh}
-                onCheckedChange={handleAutoRefreshToggle}
+                onCheckedChange={(checked) => {
+                  console.log('[Dashboard] Auto refresh toggle:', checked);
+                  handleAutoRefreshToggle(checked);
+                }}
                 className="data-[state=checked]:bg-green-500"
               />
               {autoRefresh && (
@@ -519,7 +522,11 @@ export default function Dashboard() {
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={handleRefresh}
+              onClick={() => {
+                console.log('[Dashboard] Refresh button clicked');
+                handleRefresh();
+                toast.success('Dados atualizados!');
+              }}
               className="gap-2"
             >
               <RefreshCw className="w-4 h-4" />

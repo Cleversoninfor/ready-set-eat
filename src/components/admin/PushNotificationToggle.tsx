@@ -13,6 +13,7 @@ export function PushNotificationToggle({ variant = 'switch' }: PushNotificationT
   if (!isSupported) return null;
 
   const handleToggle = async () => {
+    console.log('[PushNotificationToggle] Toggle clicked, current state:', isEnabled);
     // Browser notifications can only be enabled by requesting permission.
     if (!isEnabled) {
       await requestPermission();
