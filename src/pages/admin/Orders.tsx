@@ -669,7 +669,12 @@ const AdminOrders = () => {
               return (
                 <DroppableColumn key={column.id} id={column.id} color={column.color} label={column.label} count={columnOrders.length}>
                   {columnOrders.map((order) => (
-                    <DraggableOrderCard key={order.id} order={order} store={store} onOpenDetails={setSelectedOrder} />
+                    <DraggableOrderCard
+                      key={`${order.type}-${order.id}`}
+                      order={order}
+                      store={store}
+                      onOpenDetails={setSelectedOrder}
+                    />
                   ))}
 
                   {columnOrders.length === 0 && (
