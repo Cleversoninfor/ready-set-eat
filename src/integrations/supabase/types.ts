@@ -445,6 +445,9 @@ export type Database = {
           is_open: boolean
           logo_url: string | null
           min_order_value: number
+          mode_delivery_enabled: boolean | null
+          mode_dine_in_enabled: boolean | null
+          mode_pickup_enabled: boolean | null
           name: string
           phone_whatsapp: string | null
           pix_key: string | null
@@ -482,6 +485,9 @@ export type Database = {
           is_open?: boolean
           logo_url?: string | null
           min_order_value?: number
+          mode_delivery_enabled?: boolean | null
+          mode_dine_in_enabled?: boolean | null
+          mode_pickup_enabled?: boolean | null
           name?: string
           phone_whatsapp?: string | null
           pix_key?: string | null
@@ -519,6 +525,9 @@ export type Database = {
           is_open?: boolean
           logo_url?: string | null
           min_order_value?: number
+          mode_delivery_enabled?: boolean | null
+          mode_dine_in_enabled?: boolean | null
+          mode_pickup_enabled?: boolean | null
           name?: string
           phone_whatsapp?: string | null
           pix_key?: string | null

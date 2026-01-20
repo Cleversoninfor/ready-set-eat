@@ -25,6 +25,7 @@ import AdminAddons from "./pages/admin/Addons";
 import AdminPDV from "./pages/admin/PDV";
 import AdminDashboard from "./pages/admin/Dashboard";
 import AdminWaiters from "./pages/admin/Waiters";
+import AdminReports from "./pages/admin/Reports";
 import WaiterAccess from "./pages/WaiterAccess";
 import WaiterDashboard from "./pages/WaiterDashboard";
 import Kitchen from "./pages/Kitchen";
@@ -63,6 +64,7 @@ const App = () => (
                 <Route path="/admin/addons" element={<AdminAddons />} />
                 <Route path="/admin/pdv" element={<AdminPDV />} />
                 <Route path="/admin/waiters" element={<AdminWaiters />} />
+                <Route path="/admin/reports" element={<AdminReports />} />
                 <Route path="/waiter" element={<WaiterAccess />} />
                 <Route path="/waiter/dashboard" element={<WaiterDashboard />} />
                 <Route path="/kitchen" element={<Kitchen />} />
