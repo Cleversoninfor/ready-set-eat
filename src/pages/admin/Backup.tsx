@@ -16,7 +16,10 @@ import {
   Clock,
   Ticket,
   PlusCircle,
-  Settings
+  Settings,
+  Package,
+  ClipboardList,
+  UserCog
 } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
@@ -40,6 +43,13 @@ interface BackupData {
   business_hours: any[];
   waiters: any[];
   tables: any[];
+  // New fields for complete backup
+  orders: any[];
+  order_items: any[];
+  table_orders: any[];
+  table_order_items: any[];
+  user_roles: any[];
+  customer_addresses: any[];
 }
 
 const AdminBackup = () => {
@@ -62,6 +72,12 @@ const AdminBackup = () => {
     { name: 'business_hours', label: 'Horários de Funcionamento', icon: Clock },
     { name: 'waiters', label: 'Garçons', icon: Users },
     { name: 'tables', label: 'Mesas', icon: Database },
+    { name: 'orders', label: 'Pedidos Delivery', icon: Package },
+    { name: 'order_items', label: 'Itens dos Pedidos', icon: ClipboardList },
+    { name: 'table_orders', label: 'Comandas de Mesa', icon: ClipboardList },
+    { name: 'table_order_items', label: 'Itens das Comandas', icon: ClipboardList },
+    { name: 'user_roles', label: 'Permissões de Usuário', icon: UserCog },
+    { name: 'customer_addresses', label: 'Endereços de Clientes', icon: MapPin },
   ];
 
   const exportBackup = async () => {
@@ -70,7 +86,7 @@ const AdminBackup = () => {
 
     try {
       const backup: BackupData = {
-        version: '1.0',
+        version: '2.0',
         created_at: new Date().toISOString(),
         store_config: null,
         categories: [],
@@ -83,6 +99,12 @@ const AdminBackup = () => {
         business_hours: [],
         waiters: [],
         tables: [],
+        orders: [],
+        order_items: [],
+        table_orders: [],
+        table_order_items: [],
+        user_roles: [],
+        customer_addresses: [],
       };
 
       const totalTables = tables.length;
@@ -158,20 +180,56 @@ const AdminBackup = () => {
       completed++;
       setProgress((completed / totalTables) * 100);
 
+      // Fetch orders (delivery)
+      const { data: orders } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
+      backup.orders = orders || [];
+      completed++;
+      setProgress((completed / totalTables) * 100);
+
+      // Fetch order_items
+      const { data: orderItems } = await supabase.from('order_items').select('*');
+      backup.order_items = orderItems || [];
+      completed++;
+      setProgress((completed / totalTables) * 100);
+
+      // Fetch table_orders (comandas)
+      const { data: tableOrders } = await supabase.from('table_orders').select('*').order('created_at', { ascending: false });
+      backup.table_orders = tableOrders || [];
+      completed++;
+      setProgress((completed / totalTables) * 100);
+
+      // Fetch table_order_items
+      const { data: tableOrderItems } = await supabase.from('table_order_items').select('*');
+      backup.table_order_items = tableOrderItems || [];
+      completed++;
+      setProgress((completed / totalTables) * 100);
+
+      // Fetch user_roles
+      const { data: userRoles } = await supabase.from('user_roles').select('*');
+      backup.user_roles = userRoles || [];
+      completed++;
+      setProgress((completed / totalTables) * 100);
+
+      // Fetch customer_addresses
+      const { data: customerAddresses } = await supabase.from('customer_addresses').select('*');
+      backup.customer_addresses = customerAddresses || [];
+      completed++;
+      setProgress((completed / totalTables) * 100);
+
       // Download file
       const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `backup-${format(new Date(), 'yyyy-MM-dd-HH-mm', { locale: ptBR })}.json`;
+      link.download = `backup-completo-${format(new Date(), 'yyyy-MM-dd-HH-mm', { locale: ptBR })}.json`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
       toast({
-        title: 'Backup exportado com sucesso!',
-        description: `${backup.products.length} produtos, ${backup.categories.length} categorias exportados.`,
+        title: 'Backup completo exportado!',
+        description: `${backup.products.length} produtos, ${backup.orders.length} pedidos, ${backup.table_orders.length} comandas exportados.`,
       });
     } catch (error) {
       console.error('Export error:', error);
@@ -229,12 +287,16 @@ const AdminBackup = () => {
     setProgress(0);
 
     try {
-      const totalSteps = 11;
+      const totalSteps = 17;
       let completed = 0;
 
       // 1. Clear existing data and import in order (respecting foreign keys)
       
       // Delete in reverse dependency order
+      await supabase.from('table_order_items').delete().neq('id', '');
+      await supabase.from('table_orders').delete().gte('id', 0);
+      await supabase.from('order_items').delete().neq('id', '');
+      await supabase.from('orders').delete().gte('id', 0);
       await supabase.from('product_addon_groups').delete().neq('id', '');
       await supabase.from('addon_options').delete().neq('id', '');
       await supabase.from('addon_groups').delete().neq('id', '');
@@ -245,6 +307,7 @@ const AdminBackup = () => {
       await supabase.from('business_hours').delete().neq('id', '');
       await supabase.from('waiters').delete().neq('id', '');
       await supabase.from('tables').delete().neq('id', '');
+      await supabase.from('customer_addresses').delete().neq('id', '');
 
       // 2. Update store_config
       if (previewData.store_config) {
@@ -255,70 +318,70 @@ const AdminBackup = () => {
       setProgress((completed / totalSteps) * 100);
 
       // 3. Import categories
-      if (previewData.categories.length > 0) {
+      if (previewData.categories?.length > 0) {
         await supabase.from('categories').insert(previewData.categories);
       }
       completed++;
       setProgress((completed / totalSteps) * 100);
 
       // 4. Import products
-      if (previewData.products.length > 0) {
+      if (previewData.products?.length > 0) {
         await supabase.from('products').insert(previewData.products);
       }
       completed++;
       setProgress((completed / totalSteps) * 100);
 
       // 5. Import addon_groups
-      if (previewData.addon_groups.length > 0) {
+      if (previewData.addon_groups?.length > 0) {
         await supabase.from('addon_groups').insert(previewData.addon_groups);
       }
       completed++;
       setProgress((completed / totalSteps) * 100);
 
       // 6. Import addon_options
-      if (previewData.addon_options.length > 0) {
+      if (previewData.addon_options?.length > 0) {
         await supabase.from('addon_options').insert(previewData.addon_options);
       }
       completed++;
       setProgress((completed / totalSteps) * 100);
 
       // 7. Import product_addon_groups
-      if (previewData.product_addon_groups.length > 0) {
+      if (previewData.product_addon_groups?.length > 0) {
         await supabase.from('product_addon_groups').insert(previewData.product_addon_groups);
       }
       completed++;
       setProgress((completed / totalSteps) * 100);
 
       // 8. Import coupons
-      if (previewData.coupons.length > 0) {
+      if (previewData.coupons?.length > 0) {
         await supabase.from('coupons').insert(previewData.coupons);
       }
       completed++;
       setProgress((completed / totalSteps) * 100);
 
       // 9. Import delivery_zones
-      if (previewData.delivery_zones.length > 0) {
+      if (previewData.delivery_zones?.length > 0) {
         await supabase.from('delivery_zones').insert(previewData.delivery_zones);
       }
       completed++;
       setProgress((completed / totalSteps) * 100);
 
       // 10. Import business_hours
-      if (previewData.business_hours.length > 0) {
+      if (previewData.business_hours?.length > 0) {
         await supabase.from('business_hours').insert(previewData.business_hours);
       }
       completed++;
       setProgress((completed / totalSteps) * 100);
 
       // 11. Import waiters
-      if (previewData.waiters.length > 0) {
+      if (previewData.waiters?.length > 0) {
         await supabase.from('waiters').insert(previewData.waiters);
       }
       completed++;
       setProgress((completed / totalSteps) * 100);
 
       // 12. Import tables
-      if (previewData.tables.length > 0) {
+      if (previewData.tables?.length > 0) {
         // Remove current_order_id to avoid FK issues
         const tablesWithoutOrders = previewData.tables.map(({ current_order_id, ...rest }) => rest);
         await supabase.from('tables').insert(tablesWithoutOrders);
@@ -326,9 +389,44 @@ const AdminBackup = () => {
       completed++;
       setProgress((completed / totalSteps) * 100);
 
+      // 13. Import orders (delivery)
+      if (previewData.orders?.length > 0) {
+        await supabase.from('orders').insert(previewData.orders);
+      }
+      completed++;
+      setProgress((completed / totalSteps) * 100);
+
+      // 14. Import order_items
+      if (previewData.order_items?.length > 0) {
+        await supabase.from('order_items').insert(previewData.order_items);
+      }
+      completed++;
+      setProgress((completed / totalSteps) * 100);
+
+      // 15. Import table_orders
+      if (previewData.table_orders?.length > 0) {
+        await supabase.from('table_orders').insert(previewData.table_orders);
+      }
+      completed++;
+      setProgress((completed / totalSteps) * 100);
+
+      // 16. Import table_order_items
+      if (previewData.table_order_items?.length > 0) {
+        await supabase.from('table_order_items').insert(previewData.table_order_items);
+      }
+      completed++;
+      setProgress((completed / totalSteps) * 100);
+
+      // 17. Import customer_addresses
+      if (previewData.customer_addresses?.length > 0) {
+        await supabase.from('customer_addresses').insert(previewData.customer_addresses);
+      }
+      completed++;
+      setProgress((completed / totalSteps) * 100);
+
       toast({
-        title: 'Backup importado com sucesso!',
-        description: 'Todos os dados foram restaurados.',
+        title: 'Backup completo importado!',
+        description: 'Todos os dados foram restaurados, incluindo pedidos e comandas.',
       });
 
       setImportFile(null);
@@ -431,8 +529,7 @@ const AdminBackup = () => {
               <AlertTriangle className="h-4 w-4" />
               <AlertTitle>Atenção!</AlertTitle>
               <AlertDescription>
-                A importação irá <strong>substituir todos os dados existentes</strong> pelos dados do backup.
-                Pedidos e comandas não são afetados.
+                A importação irá <strong>substituir todos os dados existentes</strong> pelos dados do backup, incluindo pedidos e comandas.
               </AlertDescription>
             </Alert>
 
@@ -463,7 +560,7 @@ const AdminBackup = () => {
                   <CheckCircle2 className="h-4 w-4" />
                   <AlertTitle>Arquivo selecionado: {importFile?.name}</AlertTitle>
                   <AlertDescription>
-                    Backup criado em {format(new Date(previewData.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                    Backup v{previewData.version} criado em {format(new Date(previewData.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
                   </AlertDescription>
                 </Alert>
 
@@ -472,35 +569,51 @@ const AdminBackup = () => {
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
                     <div className="flex items-center justify-between bg-background rounded-lg px-3 py-2">
                       <span className="text-muted-foreground">Categorias</span>
-                      <span className="font-medium">{previewData.categories.length}</span>
+                      <span className="font-medium">{previewData.categories?.length || 0}</span>
                     </div>
                     <div className="flex items-center justify-between bg-background rounded-lg px-3 py-2">
                       <span className="text-muted-foreground">Produtos</span>
-                      <span className="font-medium">{previewData.products.length}</span>
+                      <span className="font-medium">{previewData.products?.length || 0}</span>
                     </div>
                     <div className="flex items-center justify-between bg-background rounded-lg px-3 py-2">
                       <span className="text-muted-foreground">Acréscimos</span>
-                      <span className="font-medium">{previewData.addon_groups.length}</span>
+                      <span className="font-medium">{previewData.addon_groups?.length || 0}</span>
                     </div>
                     <div className="flex items-center justify-between bg-background rounded-lg px-3 py-2">
                       <span className="text-muted-foreground">Cupons</span>
-                      <span className="font-medium">{previewData.coupons.length}</span>
+                      <span className="font-medium">{previewData.coupons?.length || 0}</span>
                     </div>
                     <div className="flex items-center justify-between bg-background rounded-lg px-3 py-2">
                       <span className="text-muted-foreground">Zonas de Entrega</span>
-                      <span className="font-medium">{previewData.delivery_zones.length}</span>
+                      <span className="font-medium">{previewData.delivery_zones?.length || 0}</span>
                     </div>
                     <div className="flex items-center justify-between bg-background rounded-lg px-3 py-2">
                       <span className="text-muted-foreground">Garçons</span>
-                      <span className="font-medium">{previewData.waiters.length}</span>
+                      <span className="font-medium">{previewData.waiters?.length || 0}</span>
                     </div>
                     <div className="flex items-center justify-between bg-background rounded-lg px-3 py-2">
                       <span className="text-muted-foreground">Mesas</span>
-                      <span className="font-medium">{previewData.tables.length}</span>
+                      <span className="font-medium">{previewData.tables?.length || 0}</span>
                     </div>
                     <div className="flex items-center justify-between bg-background rounded-lg px-3 py-2">
                       <span className="text-muted-foreground">Horários</span>
-                      <span className="font-medium">{previewData.business_hours.length}</span>
+                      <span className="font-medium">{previewData.business_hours?.length || 0}</span>
+                    </div>
+                    <div className="flex items-center justify-between bg-background rounded-lg px-3 py-2 border-2 border-primary/30">
+                      <span className="text-muted-foreground">Pedidos Delivery</span>
+                      <span className="font-medium text-primary">{previewData.orders?.length || 0}</span>
+                    </div>
+                    <div className="flex items-center justify-between bg-background rounded-lg px-3 py-2 border-2 border-primary/30">
+                      <span className="text-muted-foreground">Comandas</span>
+                      <span className="font-medium text-primary">{previewData.table_orders?.length || 0}</span>
+                    </div>
+                    <div className="flex items-center justify-between bg-background rounded-lg px-3 py-2 border-2 border-primary/30">
+                      <span className="text-muted-foreground">Permissões</span>
+                      <span className="font-medium text-primary">{previewData.user_roles?.length || 0}</span>
+                    </div>
+                    <div className="flex items-center justify-between bg-background rounded-lg px-3 py-2">
+                      <span className="text-muted-foreground">Endereços</span>
+                      <span className="font-medium">{previewData.customer_addresses?.length || 0}</span>
                     </div>
                   </div>
                 </div>
