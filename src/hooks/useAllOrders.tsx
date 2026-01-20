@@ -69,13 +69,14 @@ export function useAllOrders() {
       if (deliveryError) throw deliveryError;
 
       // Fetch table orders with table info (specify FK to avoid ambiguity)
+      // Include all active statuses so the admin board reflects kitchen + payment flow
       const { data: tableOrders, error: tableError } = await supabase
         .from('table_orders')
         .select(`
           *,
           table:tables!table_orders_table_id_fkey(id, number, name)
         `)
-        .in('status', ['open', 'requesting_bill'])
+        .in('status', ['open', 'preparing', 'ready', 'requesting_bill', 'paid'])
         .order('opened_at', { ascending: false });
 
       if (tableError) throw tableError;
@@ -201,10 +202,12 @@ export function useUpdateUnifiedOrderStatus() {
         return data;
       } else {
         // For table orders, map unified status back to table status
-        let tableStatus = 'open';
-        if (status === 'completed') tableStatus = 'paid';
+        let tableStatus: string;
+        if (status === 'pending') tableStatus = 'open';
+        else if (status === 'preparing') tableStatus = 'preparing';
+        else if (status === 'ready') tableStatus = 'ready';
+        else if (status === 'completed') tableStatus = 'paid';
         else if (status === 'cancelled') tableStatus = 'cancelled';
-        else if (status === 'ready') tableStatus = 'requesting_bill';
         else tableStatus = 'open';
 
         const { data, error } = await supabase
