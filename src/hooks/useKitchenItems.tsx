@@ -74,7 +74,7 @@ export function useKitchenItems(statusFilter?: KitchenItemStatus) {
 export function useKitchenItemMutations() {
   const queryClient = useQueryClient();
 
-  const updateItemStatus = async (itemId: string, newStatus: KitchenItemStatus, orderType: 'table' | 'delivery' = 'table', orderId?: number) => {
+  const updateItemStatus = async (itemId: string, newStatus: KitchenItemStatus, orderType: 'table' | 'delivery' = 'table', orderId?: number, tableOrderId?: number) => {
     if (orderType === 'table') {
       const updateData: Record<string, unknown> = { status: newStatus };
       if (newStatus === 'delivered') {
@@ -87,6 +87,24 @@ export function useKitchenItemMutations() {
         .eq('id', itemId);
       
       if (error) throw error;
+
+      // Also update the parent table_orders status to reflect in admin panel
+      if (tableOrderId) {
+        // Map kitchen item status to table order status
+        const tableOrderStatusMap: Record<string, string> = {
+          'pending': 'open',
+          'preparing': 'preparing',
+          'ready': 'ready',
+        };
+
+        const newOrderStatus = tableOrderStatusMap[newStatus];
+        if (newOrderStatus && newOrderStatus !== 'open') {
+          await supabase
+            .from('table_orders')
+            .update({ status: newOrderStatus })
+            .eq('id', tableOrderId);
+        }
+      }
     } else {
       // For delivery orders, update the order status
       // When kitchen marks as 'ready', keep it as 'ready' - admin will move to 'delivery'
