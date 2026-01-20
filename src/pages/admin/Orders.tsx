@@ -298,7 +298,7 @@ const AdminOrders = () => {
   const { data: store } = useStoreConfig();
   const { data: orders, isLoading, refetch } = useAllOrders();
   const updateStatus = useUpdateUnifiedOrderStatus();
-  const { playNotificationSound, setEnabled, isEnabled } = useNotificationSound();
+  const { setEnabled, isEnabled } = useNotificationSound();
 
   const [autoRefresh, setAutoRefresh] = useState(() => {
     const saved = localStorage.getItem('orders-auto-refresh');
@@ -367,9 +367,6 @@ const AdminOrders = () => {
 
   const handleSoundToggle = (checked: boolean) => {
     setEnabled(checked);
-    if (checked && pendingCount === 0) {
-      playNotificationSound(); // Test beep
-    }
   };
 
   // Filter orders by date

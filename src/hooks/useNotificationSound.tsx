@@ -5,16 +5,15 @@ let audioContext: AudioContext | null = null;
 let isCurrentlyEnabled = localStorage.getItem('notification-sound-enabled') !== 'false';
 const listeners = new Set<() => void>();
 
-// Alarm (continuous) state
+// Alarm state
 let alarmPlaying = false;
-let alarmNodes:
-  | {
-      mainOsc: OscillatorNode;
-      lfo: OscillatorNode;
-      lfoGain: GainNode;
-      gain: GainNode;
-    }
-  | null = null;
+let alarmTimeoutId: ReturnType<typeof setTimeout> | null = null;
+let currentAlarmNodes: {
+  mainOsc: OscillatorNode;
+  lfo: OscillatorNode;
+  lfoGain: GainNode;
+  gain: GainNode;
+} | null = null;
 
 function notifyAllListeners() {
   listeners.forEach((fn) => fn());
@@ -29,71 +28,43 @@ function getAudioContext(): AudioContext {
 
 function safeResume(ctx: AudioContext) {
   if (ctx.state === 'suspended') {
-    // ignore promise rejection (browser policies)
     ctx.resume().catch(() => undefined);
   }
 }
 
-function playBeep() {
+function stopCurrentBurst() {
+  if (!currentAlarmNodes) return;
+
   try {
     const ctx = getAudioContext();
-    safeResume(ctx);
+    const now = ctx.currentTime;
 
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
+    currentAlarmNodes.gain.gain.cancelScheduledValues(now);
+    currentAlarmNodes.gain.gain.setValueAtTime(currentAlarmNodes.gain.gain.value || 0.2, now);
+    currentAlarmNodes.gain.gain.linearRampToValueAtTime(0.0001, now + 0.05);
 
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(880, ctx.currentTime);
-    osc.frequency.setValueAtTime(1100, ctx.currentTime + 0.1);
-    osc.frequency.setValueAtTime(880, ctx.currentTime + 0.2);
-
-    gain.gain.setValueAtTime(0, ctx.currentTime);
-    gain.gain.linearRampToValueAtTime(0.4, ctx.currentTime + 0.02);
-    gain.gain.linearRampToValueAtTime(0.4, ctx.currentTime + 0.25);
-    gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.3);
-
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.3);
-
-    // Second beep
+    const nodesToClean = currentAlarmNodes;
     setTimeout(() => {
       try {
-        const ctx2 = getAudioContext();
-        safeResume(ctx2);
-
-        const osc2 = ctx2.createOscillator();
-        const gain2 = ctx2.createGain();
-        osc2.connect(gain2);
-        gain2.connect(ctx2.destination);
-
-        osc2.type = 'sine';
-        osc2.frequency.setValueAtTime(1100, ctx2.currentTime);
-        osc2.frequency.setValueAtTime(1320, ctx2.currentTime + 0.1);
-
-        gain2.gain.setValueAtTime(0, ctx2.currentTime);
-        gain2.gain.linearRampToValueAtTime(0.4, ctx2.currentTime + 0.02);
-        gain2.gain.linearRampToValueAtTime(0.4, ctx2.currentTime + 0.15);
-        gain2.gain.linearRampToValueAtTime(0, ctx2.currentTime + 0.2);
-
-        osc2.start(ctx2.currentTime);
-        osc2.stop(ctx2.currentTime + 0.2);
-      } catch (e) {
-        console.error('[Sound] Second beep error:', e);
+        nodesToClean.mainOsc.stop();
+        nodesToClean.lfo.stop();
+        nodesToClean.mainOsc.disconnect();
+        nodesToClean.lfo.disconnect();
+        nodesToClean.lfoGain.disconnect();
+        nodesToClean.gain.disconnect();
+      } catch {
+        // ignore
       }
-    }, 350);
+    }, 60);
+
+    currentAlarmNodes = null;
   } catch (error) {
-    console.error('[Sound] Beep error:', error);
+    console.error('[Sound] Stop burst error:', error);
   }
 }
 
-// Intermittent alarm state
-let alarmIntervalId: ReturnType<typeof setInterval> | null = null;
-let isAlarmSoundOn = false;
-
-function playAlarmBurst() {
-  if (!alarmPlaying || alarmNodes) return;
+function playBurst() {
+  if (!alarmPlaying || currentAlarmNodes) return;
 
   try {
     const ctx = getAudioContext();
@@ -103,13 +74,11 @@ function playAlarmBurst() {
     gain.gain.setValueAtTime(0.0001, ctx.currentTime);
     gain.connect(ctx.destination);
 
-    // Main very "extridente" tone
     const mainOsc = ctx.createOscillator();
     mainOsc.type = 'square';
     mainOsc.frequency.setValueAtTime(1800, ctx.currentTime);
     mainOsc.connect(gain);
 
-    // Tremolo (LFO) to make it more alarming
     const lfo = ctx.createOscillator();
     lfo.type = 'square';
     lfo.frequency.setValueAtTime(8, ctx.currentTime);
@@ -120,83 +89,43 @@ function playAlarmBurst() {
     lfo.connect(lfoGain);
     lfoGain.connect(gain.gain);
 
-    // Ramp volume up quickly
     gain.gain.linearRampToValueAtTime(0.35, ctx.currentTime + 0.05);
 
     mainOsc.start();
     lfo.start();
 
-    alarmNodes = { mainOsc, lfo, lfoGain, gain };
-    isAlarmSoundOn = true;
+    currentAlarmNodes = { mainOsc, lfo, lfoGain, gain };
   } catch (error) {
-    console.error('[Sound] Alarm burst start error:', error);
+    console.error('[Sound] Play burst error:', error);
   }
 }
 
-function stopAlarmBurst() {
-  if (!alarmNodes) return;
+function runAlarmCycle() {
+  if (!alarmPlaying) return;
 
-  try {
-    const ctx = getAudioContext();
-    const now = ctx.currentTime;
+  // Play for 1.5 seconds
+  playBurst();
 
-    // fade out
-    alarmNodes.gain.gain.cancelScheduledValues(now);
-    alarmNodes.gain.gain.setValueAtTime(alarmNodes.gain.gain.value || 0.2, now);
-    alarmNodes.gain.gain.linearRampToValueAtTime(0.0001, now + 0.06);
+  alarmTimeoutId = setTimeout(() => {
+    if (!alarmPlaying) return;
+    stopCurrentBurst();
 
-    const nodesToClean = alarmNodes;
-    setTimeout(() => {
-      try {
-        nodesToClean.mainOsc.stop();
-        nodesToClean.lfo.stop();
-      } catch {
-        // ignore
+    // Pause for 1 second, then repeat
+    alarmTimeoutId = setTimeout(() => {
+      if (alarmPlaying) {
+        runAlarmCycle();
       }
-
-      try {
-        nodesToClean.mainOsc.disconnect();
-        nodesToClean.lfo.disconnect();
-        nodesToClean.lfoGain.disconnect();
-        nodesToClean.gain.disconnect();
-      } catch {
-        // ignore
-      }
-    }, 80);
-
-    alarmNodes = null;
-    isAlarmSoundOn = false;
-  } catch (error) {
-    console.error('[Sound] Alarm burst stop error:', error);
-  }
+    }, 1000);
+  }, 1500);
 }
 
 function startAlarmSound() {
   if (alarmPlaying) return;
+  if (!isCurrentlyEnabled) return;
 
   alarmPlaying = true;
-
-  // Start the intermittent pattern: 1.5s on, 1s off
-  const runCycle = () => {
-    if (!alarmPlaying) return;
-
-    // Play for 1.5 seconds
-    playAlarmBurst();
-
-    setTimeout(() => {
-      if (!alarmPlaying) return;
-      stopAlarmBurst();
-
-      // Pause for 1 second, then repeat
-      setTimeout(() => {
-        if (alarmPlaying) {
-          runCycle();
-        }
-      }, 1000);
-    }, 1500);
-  };
-
-  runCycle();
+  runAlarmCycle();
+  notifyAllListeners();
 }
 
 function stopAlarmSound() {
@@ -204,21 +133,30 @@ function stopAlarmSound() {
 
   alarmPlaying = false;
 
-  // Clear any intervals
-  if (alarmIntervalId) {
-    clearInterval(alarmIntervalId);
-    alarmIntervalId = null;
+  if (alarmTimeoutId) {
+    clearTimeout(alarmTimeoutId);
+    alarmTimeoutId = null;
   }
 
-  // Stop current burst if playing
-  stopAlarmBurst();
+  stopCurrentBurst();
+  notifyAllListeners();
 }
 
 function setGlobalEnabled(enabled: boolean) {
   isCurrentlyEnabled = enabled;
   localStorage.setItem('notification-sound-enabled', String(enabled));
-  if (!enabled) stopAlarmSound();
+  if (!enabled) {
+    stopAlarmSound();
+  }
   notifyAllListeners();
+}
+
+function getIsAlarmPlaying() {
+  return alarmPlaying;
+}
+
+function getIsEnabled() {
+  return isCurrentlyEnabled;
 }
 
 // === REACT HOOK ===
@@ -233,12 +171,8 @@ export function useNotificationSound() {
     };
   }, []);
 
-  const playNotificationSound = useCallback(() => {
-    if (isCurrentlyEnabled) playBeep();
-  }, []);
-
   const startAlarm = useCallback(() => {
-    if (isCurrentlyEnabled) startAlarmSound();
+    startAlarmSound();
   }, []);
 
   const stopAlarm = useCallback(() => {
@@ -250,12 +184,11 @@ export function useNotificationSound() {
   }, []);
 
   return {
-    playNotificationSound,
     startAlarm,
     stopAlarm,
     setEnabled,
-    isEnabled: isCurrentlyEnabled,
-    isAlarmPlaying: alarmPlaying,
+    isEnabled: getIsEnabled(),
+    isAlarmPlaying: getIsAlarmPlaying(),
   };
 }
 
