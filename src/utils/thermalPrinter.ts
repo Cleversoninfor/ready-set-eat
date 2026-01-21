@@ -828,7 +828,7 @@ export function generateOrderPDF(data: PrintOrderData): void {
   
   // ========== 7. FINANCIAL SUMMARY ==========
   // Check if we have enough space for the summary
-  checkPageBreak(60);
+  checkPageBreak(70);
   
   doc.setDrawColor(180, 180, 180);
   doc.line(margin, y, pageWidth - margin, y);
@@ -839,6 +839,16 @@ export function generateOrderPDF(data: PrintOrderData): void {
   
   const summaryX = margin + 100;
   const valueX = pageWidth - margin - 5;
+  
+  // Calculate total quantity of items
+  const totalItemQuantity = data.items.reduce((sum, item) => sum + item.quantity, 0);
+  
+  // Total item quantity
+  doc.setFont('helvetica', 'bold');
+  doc.text('Quantidade Total de Itens:', summaryX, y);
+  doc.text(String(totalItemQuantity), valueX, y, { align: 'right' });
+  doc.setFont('helvetica', 'normal');
+  y += 10;
   
   // Subtotal
   doc.text('Subtotal:', summaryX, y);
