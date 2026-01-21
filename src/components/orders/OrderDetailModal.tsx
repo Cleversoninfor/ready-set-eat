@@ -2,11 +2,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
-import { MapPin, Phone, User, CreditCard, Clock, FileDown, Users, Utensils } from 'lucide-react';
+import { MapPin, Phone, User, CreditCard, Clock, FileDown, Users, Utensils, Printer } from 'lucide-react';
 import { useUnifiedOrderItems, UnifiedOrder } from '@/hooks/useAllOrders';
 import { useStoreConfig } from '@/hooks/useStore';
 import { PrintReceiptButton } from '@/components/pdv/PrintReceiptButton';
-import { PrintOrderData, generateOrderPDF } from '@/utils/thermalPrinter';
+import { PrintOrderData, generateOrderPDF, generateThermalPDF } from '@/utils/thermalPrinter';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -256,11 +256,21 @@ export function OrderDetailModal({ order, open, onOpenChange }: OrderDetailModal
                 <FileDown className="h-4 w-4 mr-2" />
                 Exportar PDF
               </Button>
-              <PrintReceiptButton 
-                orderData={printData} 
+              <Button 
                 variant="outline"
                 className="w-full"
-              />
+                onClick={() => {
+                  try {
+                    generateThermalPDF(printData);
+                    toast.success('PDF para impressora térmica gerado!');
+                  } catch (error) {
+                    toast.error('Erro ao gerar PDF térmico');
+                  }
+                }}
+              >
+                <Printer className="h-4 w-4 mr-2" />
+                Imprimir (Térmica)
+              </Button>
             </div>
           )}
         </div>

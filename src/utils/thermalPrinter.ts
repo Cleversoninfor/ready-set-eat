@@ -475,81 +475,410 @@ export function printReceiptBrowser(data: PrintOrderData): void {
 
 // Fallback: Generate text for copying or viewing
 export function generatePrintableText(data: PrintOrderData): string {
-  const width = 40;
+  const width = 32; // Thermal printer width (58mm)
   let text = '';
+  
+  // Helper for centering text
+  const centerText = (str: string): string => {
+    const padding = Math.max(0, Math.floor((width - str.length) / 2));
+    return ' '.repeat(padding) + str;
+  };
 
-  text += '='.repeat(width) + '\n';
-  text += data.orderType === 'delivery' ? '         DELIVERY\n' : '         COMANDA\n';
-  text += `           #${data.orderNumber}\n`;
-  text += '='.repeat(width) + '\n\n';
+  // ========== 1. HEADER ==========
+  // Store name centered
+  if (data.storeName) {
+    const storeName = data.storeName.toUpperCase();
+    if (storeName.length <= width) {
+      text += centerText(storeName) + '\n';
+    } else {
+      // Wrap store name if too long
+      const wrappedName = wrapText(storeName, width, '');
+      wrappedName.forEach(line => text += centerText(line.trim()) + '\n');
+    }
+  }
+  
+  // Order type centered
+  let orderTypeLabel = 'DELIVERY';
+  if (data.orderType === 'table') {
+    orderTypeLabel = 'CONSUMIR NO LOCAL';
+  } else if (data.orderType === 'pickup') {
+    orderTypeLabel = 'RETIRAR NO LOCAL';
+  }
+  text += centerText(orderTypeLabel) + '\n';
+  
+  // Order ID centered
+  text += centerText(`PEDIDO #${data.orderNumber}`) + '\n';
+  text += '-'.repeat(width) + '\n';
 
-  if (data.orderType === 'table' && data.tableName) {
-    text += `Mesa: ${data.tableName}\n`;
-    if (data.waiterName) {
-      text += `Garçom: ${data.waiterName}\n`;
+  // ========== 2. ORDER INFO ==========
+  const dateStr = data.createdAt.toLocaleDateString('pt-BR');
+  const timeStr = data.createdAt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  text += `Data: ${dateStr}\n`;
+  text += `Hora: ${timeStr}\n`;
+  text += '-'.repeat(width) + '\n';
+
+  // ========== 3. CUSTOMER INFO ==========
+  text += 'CLIENTE\n';
+  if (data.customerName) {
+    text += `${data.customerName}\n`;
+  }
+  if (data.customerPhone) {
+    text += `Tel: ${data.customerPhone}\n`;
+  }
+  if (data.orderType === 'table' && data.waiterName) {
+    text += `Garcom: ${data.waiterName}\n`;
+  }
+  if (data.customerCount) {
+    text += `Pessoas: ${data.customerCount}\n`;
+  }
+
+  // ========== 4. DELIVERY ADDRESS ==========
+  if (data.orderType === 'delivery' && data.address) {
+    text += '-'.repeat(width) + '\n';
+    text += 'ENDERECO DE ENTREGA\n';
+    const fullAddress = `${data.address.street}, ${data.address.number} - ${data.address.neighborhood}`;
+    const wrappedAddress = wrapText(fullAddress, width, '');
+    wrappedAddress.forEach(line => text += line + '\n');
+    if (data.address.complement) {
+      const wrappedComplement = wrapText(data.address.complement, width, '');
+      wrappedComplement.forEach(line => text += line + '\n');
     }
-  } else if (data.orderType === 'delivery') {
-    text += `Cliente: ${data.customerName}\n`;
-    if (data.customerPhone) {
-      text += `Tel: ${data.customerPhone}\n`;
-    }
-    if (data.address) {
-      text += `Endereço: ${data.address.street}, ${data.address.number}\n`;
-      text += `          ${data.address.neighborhood}\n`;
-      if (data.address.complement) {
-        // Wrap complement text to fit within print width
-        const complementLines = wrapText(data.address.complement, width - 10, '          ');
-        complementLines.forEach(line => text += line + '\n');
-      }
+    if (data.address.reference) {
+      const wrappedRef = wrapText(`Ref: ${data.address.reference}`, width, '');
+      wrappedRef.forEach(line => text += line + '\n');
     }
   }
 
-  const dateStr = data.createdAt.toLocaleDateString('pt-BR');
-  const timeStr = data.createdAt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-  text += `Data: ${dateStr} ${timeStr}\n`;
   text += '-'.repeat(width) + '\n';
 
-  text += 'ITENS:\n';
+  // ========== 5. ORDER ITEMS ==========
+  text += 'ITENS DO PEDIDO\n';
   text += '-'.repeat(width) + '\n';
 
-  data.items.forEach(item => {
+  data.items.forEach((item, index) => {
     const itemTotal = formatCurrency(item.quantity * item.unitPrice);
-    text += `${item.quantity}x ${item.name}\n`;
-    text += `   ${itemTotal}\n`;
+    const itemLine = `${item.quantity}x ${item.name}`;
+    
+    // Item name (may wrap)
+    const wrappedItem = wrapText(itemLine, width - itemTotal.length - 1, '');
+    if (wrappedItem.length === 1) {
+      // Single line - put price on same line
+      text += formatLine(itemLine, itemTotal, width) + '\n';
+    } else {
+      // Multiple lines - put price on last line
+      wrappedItem.forEach((line, i) => {
+        if (i === wrappedItem.length - 1) {
+          text += formatLine(line, itemTotal, width) + '\n';
+        } else {
+          text += line + '\n';
+        }
+      });
+    }
+    
+    // Observation
     if (item.observation) {
-      text += `   Obs: ${item.observation}\n`;
+      const wrappedObs = wrapText(`Obs: ${item.observation}`, width - 2, '  ');
+      wrappedObs.forEach(line => text += line + '\n');
+    }
+    
+    // Separator between items
+    if (index < data.items.length - 1) {
+      text += '----\n';
     }
   });
 
   text += '-'.repeat(width) + '\n';
-  text += `Subtotal: ${formatCurrency(data.subtotal)}\n`;
+
+  // ========== 7. TOTAL ITEM QUANTITY ==========
+  const totalItemQuantity = data.items.reduce((sum, item) => sum + item.quantity, 0);
+  text += `Qtd Total de Itens: ${totalItemQuantity}\n`;
+  text += '-'.repeat(width) + '\n';
+
+  // ========== 8. FINANCIAL SUMMARY ==========
+  text += formatLine('Subtotal:', formatCurrency(data.subtotal), width) + '\n';
   
   if (data.deliveryFee && data.deliveryFee > 0) {
-    text += `Taxa de entrega: ${formatCurrency(data.deliveryFee)}\n`;
+    text += formatLine('Taxa Entrega:', formatCurrency(data.deliveryFee), width) + '\n';
   }
   
   if (data.serviceFee && data.serviceFee > 0) {
-    text += `Taxa de serviço: ${formatCurrency(data.serviceFee)}\n`;
+    text += formatLine('Taxa Servico:', formatCurrency(data.serviceFee), width) + '\n';
   }
   
   if (data.discount && data.discount > 0) {
-    text += `Desconto: -${formatCurrency(data.discount)}\n`;
+    text += formatLine('Desconto:', `-${formatCurrency(data.discount)}`, width) + '\n';
   }
 
   text += '='.repeat(width) + '\n';
-  text += `TOTAL: ${formatCurrency(data.total)}\n`;
+  text += formatLine('TOTAL:', formatCurrency(data.total), width) + '\n';
   text += '='.repeat(width) + '\n';
 
+  // ========== 9. PAYMENT METHOD ==========
   if (data.paymentMethod) {
-    text += `\nPagamento: ${data.paymentMethod}\n`;
+    text += `PAGAMENTO: ${data.paymentMethod}\n`;
     if (data.changeFor && data.changeFor > 0) {
       text += `Troco para: ${formatCurrency(data.changeFor)}\n`;
     }
   }
 
-  text += '\n    Obrigado pela preferência!\n';
+  // ========== 10. FOOTER ==========
+  text += '-'.repeat(width) + '\n';
+  text += centerText('Obrigado pela preferencia!') + '\n';
 
   return text;
+}
+
+// Generate thermal-optimized PDF for printing
+export function generateThermalPDF(data: PrintOrderData): void {
+  // Thermal paper width: 80mm (or 58mm)
+  const paperWidth = 80;
+  const doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: [paperWidth, 297] // Start with max height, will trim later
+  });
+  
+  const margin = 3;
+  const contentWidth = paperWidth - (margin * 2);
+  let y = margin;
+  
+  const fontSize = {
+    small: 7,
+    normal: 8,
+    large: 10,
+    title: 12
+  };
+  
+  const formatCurrencyPDF = (value: number) => 
+    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+
+  // Helper to add text and advance y
+  const addText = (text: string, size: number = fontSize.normal, align: 'left' | 'center' | 'right' = 'left', bold: boolean = false): void => {
+    doc.setFontSize(size);
+    doc.setFont('helvetica', bold ? 'bold' : 'normal');
+    
+    const textWidth = doc.getTextWidth(text);
+    let x = margin;
+    
+    if (align === 'center') {
+      x = (paperWidth - textWidth) / 2;
+    } else if (align === 'right') {
+      x = paperWidth - margin - textWidth;
+    }
+    
+    doc.text(text, x, y);
+    y += size * 0.45;
+  };
+
+  // Helper to add wrapped text
+  const addWrappedText = (text: string, size: number = fontSize.normal, align: 'left' | 'center' | 'right' = 'left'): void => {
+    doc.setFontSize(size);
+    doc.setFont('helvetica', 'normal');
+    const lines = doc.splitTextToSize(text, contentWidth);
+    lines.forEach((line: string) => {
+      let x = margin;
+      if (align === 'center') {
+        x = (paperWidth - doc.getTextWidth(line)) / 2;
+      } else if (align === 'right') {
+        x = paperWidth - margin - doc.getTextWidth(line);
+      }
+      doc.text(line, x, y);
+      y += size * 0.45;
+    });
+  };
+
+  // Helper to add line with left and right aligned text
+  const addLineLeftRight = (left: string, right: string, size: number = fontSize.normal, bold: boolean = false): void => {
+    doc.setFontSize(size);
+    doc.setFont('helvetica', bold ? 'bold' : 'normal');
+    doc.text(left, margin, y);
+    const rightWidth = doc.getTextWidth(right);
+    doc.text(right, paperWidth - margin - rightWidth, y);
+    y += size * 0.45;
+  };
+
+  // Helper to add dashed line
+  const addDashedLine = (): void => {
+    y += 1;
+    doc.setDrawColor(0);
+    doc.setLineDashPattern([1, 1], 0);
+    doc.line(margin, y, paperWidth - margin, y);
+    doc.setLineDashPattern([], 0);
+    y += 2;
+  };
+
+  // ========== 1. HEADER ==========
+  // Store name centered
+  if (data.storeName) {
+    addText(data.storeName.toUpperCase(), fontSize.title, 'center', true);
+  }
+  
+  // Order type
+  let orderTypeLabel = 'DELIVERY';
+  if (data.orderType === 'table') {
+    orderTypeLabel = 'CONSUMIR NO LOCAL';
+  } else if (data.orderType === 'pickup') {
+    orderTypeLabel = 'RETIRAR NO LOCAL';
+  }
+  addText(orderTypeLabel, fontSize.large, 'center', true);
+  
+  // Order ID
+  addText(`PEDIDO #${data.orderNumber}`, fontSize.normal, 'center', true);
+  
+  addDashedLine();
+
+  // ========== 2. ORDER INFO ==========
+  const dateStr = data.createdAt.toLocaleDateString('pt-BR');
+  const timeStr = data.createdAt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  addText(`Data: ${dateStr}`, fontSize.normal, 'left');
+  addText(`Hora: ${timeStr}`, fontSize.normal, 'left');
+  
+  addDashedLine();
+
+  // ========== 3. CUSTOMER INFO ==========
+  addText('CLIENTE', fontSize.normal, 'left', true);
+  y += 1;
+  
+  if (data.orderType === 'table' && data.tableName) {
+    addText(`Mesa: ${data.tableName}`, fontSize.normal, 'left');
+    if (data.waiterName) {
+      addText(`Garcom: ${data.waiterName}`, fontSize.normal, 'left');
+    }
+    if (data.customerCount) {
+      addText(`Pessoas: ${data.customerCount}`, fontSize.normal, 'left');
+    }
+  } else {
+    if (data.customerName) {
+      addText(data.customerName, fontSize.normal, 'left');
+    }
+    if (data.customerPhone) {
+      addText(`Tel: ${data.customerPhone}`, fontSize.normal, 'left');
+    }
+  }
+
+  // ========== 4. DELIVERY ADDRESS ==========
+  if (data.orderType === 'delivery' && data.address) {
+    addDashedLine();
+    addText('ENDERECO DE ENTREGA', fontSize.normal, 'left', true);
+    y += 1;
+    
+    const fullAddress = `${data.address.street}, ${data.address.number} - ${data.address.neighborhood}`;
+    addWrappedText(fullAddress, fontSize.normal, 'left');
+    
+    if (data.address.complement) {
+      addWrappedText(data.address.complement, fontSize.small, 'left');
+    }
+    if (data.address.reference) {
+      addWrappedText(`Ref: ${data.address.reference}`, fontSize.small, 'left');
+    }
+  }
+
+  addDashedLine();
+
+  // ========== 5. ORDER ITEMS ==========
+  addText('ITENS DO PEDIDO', fontSize.normal, 'left', true);
+  y += 1;
+  addDashedLine();
+
+  data.items.forEach((item, index) => {
+    const itemTotal = formatCurrencyPDF(item.quantity * item.unitPrice);
+    const itemText = `${item.quantity}x ${item.name}`;
+    
+    // Check if we need a new page
+    if (y > 280) {
+      doc.addPage([paperWidth, 297]);
+      y = margin;
+      addText('ITENS DO PEDIDO (cont.)', fontSize.normal, 'left', true);
+      addDashedLine();
+    }
+    
+    // Item name and price
+    doc.setFontSize(fontSize.normal);
+    doc.setFont('helvetica', 'normal');
+    
+    const itemLines = doc.splitTextToSize(itemText, contentWidth - doc.getTextWidth(itemTotal) - 5);
+    
+    itemLines.forEach((line: string, i: number) => {
+      doc.text(line, margin, y);
+      if (i === itemLines.length - 1) {
+        // Add price on last line
+        const priceWidth = doc.getTextWidth(itemTotal);
+        doc.text(itemTotal, paperWidth - margin - priceWidth, y);
+      }
+      y += fontSize.normal * 0.45;
+    });
+    
+    // Observation
+    if (item.observation) {
+      doc.setFontSize(fontSize.small);
+      doc.setFont('helvetica', 'italic');
+      const obsLines = doc.splitTextToSize(`Obs: ${item.observation}`, contentWidth - 4);
+      obsLines.forEach((line: string) => {
+        doc.text(line, margin + 2, y);
+        y += fontSize.small * 0.45;
+      });
+    }
+    
+    // Separator between items
+    if (index < data.items.length - 1) {
+      doc.setFontSize(fontSize.small);
+      doc.text('----', margin, y);
+      y += fontSize.small * 0.4;
+    }
+  });
+
+  addDashedLine();
+
+  // ========== 7. TOTAL ITEM QUANTITY ==========
+  const totalItemQuantity = data.items.reduce((sum, item) => sum + item.quantity, 0);
+  addText(`Qtd Total de Itens: ${totalItemQuantity}`, fontSize.normal, 'left', true);
+  
+  addDashedLine();
+
+  // ========== 8. FINANCIAL SUMMARY ==========
+  addLineLeftRight('Subtotal:', formatCurrencyPDF(data.subtotal), fontSize.normal);
+  
+  if (data.deliveryFee && data.deliveryFee > 0) {
+    addLineLeftRight('Taxa Entrega:', formatCurrencyPDF(data.deliveryFee), fontSize.normal);
+  }
+  
+  if (data.serviceFee && data.serviceFee > 0) {
+    addLineLeftRight('Taxa Servico:', formatCurrencyPDF(data.serviceFee), fontSize.normal);
+  }
+  
+  if (data.discount && data.discount > 0) {
+    addLineLeftRight('Desconto:', `-${formatCurrencyPDF(data.discount)}`, fontSize.normal);
+  }
+
+  y += 1;
+  doc.setDrawColor(0);
+  doc.line(margin, y, paperWidth - margin, y);
+  y += 2;
+  
+  // TOTAL highlighted
+  addLineLeftRight('TOTAL:', formatCurrencyPDF(data.total), fontSize.large, true);
+  
+  doc.line(margin, y, paperWidth - margin, y);
+  y += 2;
+
+  // ========== 9. PAYMENT METHOD ==========
+  if (data.paymentMethod) {
+    addText(`PAGAMENTO: ${data.paymentMethod}`, fontSize.normal, 'left', true);
+    if (data.changeFor && data.changeFor > 0) {
+      addText(`Troco para: ${formatCurrencyPDF(data.changeFor)}`, fontSize.normal, 'left');
+    }
+  }
+
+  // ========== 10. FOOTER ==========
+  addDashedLine();
+  addText('Obrigado pela preferencia!', fontSize.normal, 'center');
+  
+  y += 5; // Extra space at bottom
+
+  // Save the PDF
+  const orderTypeFileName = data.orderType === 'delivery' ? 'delivery' : 
+                            data.orderType === 'table' ? 'mesa' : 'retirada';
+  doc.save(`pedido-${data.orderNumber}-${orderTypeFileName}-termica.pdf`);
 }
 
 // Generate A4 PDF for order details
