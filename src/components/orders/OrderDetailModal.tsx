@@ -2,13 +2,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
-import { MapPin, Phone, User, CreditCard, Clock, Printer, Users, Utensils } from 'lucide-react';
+import { MapPin, Phone, User, CreditCard, Clock, FileDown, Users, Utensils } from 'lucide-react';
 import { useUnifiedOrderItems, UnifiedOrder } from '@/hooks/useAllOrders';
 import { useStoreConfig } from '@/hooks/useStore';
 import { PrintReceiptButton } from '@/components/pdv/PrintReceiptButton';
-import { PrintOrderData } from '@/utils/thermalPrinter';
+import { PrintOrderData, generateOrderPDF } from '@/utils/thermalPrinter';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { toast } from 'sonner';
 
 interface OrderDetailModalProps {
   order: UnifiedOrder | null;
@@ -227,13 +228,30 @@ export function OrderDetailModal({ order, open, onOpenChange }: OrderDetailModal
             </div>
           </div>
 
-          {/* Print Button */}
+          {/* Print and Export Buttons */}
           {printData && (
-            <PrintReceiptButton 
-              orderData={printData} 
-              variant="outline"
-              className="w-full"
-            />
+            <div className="flex flex-col gap-2">
+              <Button
+                variant="default"
+                className="w-full"
+                onClick={() => {
+                  try {
+                    generateOrderPDF(printData);
+                    toast.success('PDF exportado com sucesso!');
+                  } catch (error) {
+                    toast.error('Erro ao exportar PDF');
+                  }
+                }}
+              >
+                <FileDown className="h-4 w-4 mr-2" />
+                Exportar PDF
+              </Button>
+              <PrintReceiptButton 
+                orderData={printData} 
+                variant="outline"
+                className="w-full"
+              />
+            </div>
           )}
         </div>
       </DialogContent>
