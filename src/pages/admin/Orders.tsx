@@ -182,8 +182,8 @@ function OrderCardContent({ order, store, onOpenDetails, dragListeners }: { orde
   return (
     <div className="rounded-xl bg-card p-3 sm:p-4 shadow-card animate-slide-up min-w-0 cursor-pointer hover:ring-2 hover:ring-primary/20 transition-all" onClick={() => onOpenDetails(order)}>
       {/* Order Header */}
-      <div className="flex items-start justify-between gap-2 mb-3">
-        <div className="flex items-center gap-2 min-w-0 flex-1">
+      <div className="mb-3">
+        <div className="flex items-center gap-2 mb-1">
           {dragListeners && (
             <div
               {...dragListeners}
@@ -193,23 +193,21 @@ function OrderCardContent({ order, store, onOpenDetails, dragListeners }: { orde
               <GripVertical className="h-4 w-4" />
             </div>
           )}
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <p className="font-bold text-base sm:text-lg text-foreground">{order.type === 'table' ? `Mesa #${order.table_number}` : `#${order.id}`}</p>
-              <Badge variant="outline" className="text-[10px]">
-                {getOrderTypeLabel()}
-              </Badge>
-            </div>
-            <p className="text-xs sm:text-sm text-muted-foreground truncate">{order.customer_name}</p>
-            {isCompleted && (
-              <p className="text-xs text-muted-foreground mt-1">{format(new Date(order.updated_at), "dd/MM 'às' HH:mm", { locale: ptBR })}</p>
-            )}
-          </div>
+          <p className="font-bold text-base sm:text-lg text-foreground">{order.type === 'table' ? `Mesa #${order.table_number}` : `#${order.id}`}</p>
         </div>
-        {order.payment_method && (
-          <Badge variant={order.payment_method as any} className="text-[10px] sm:text-xs flex-shrink-0 whitespace-nowrap">
-            {getPaymentLabel(order.payment_method)}
+        <div className="flex flex-wrap items-center gap-1.5 mb-1">
+          <Badge variant="outline" className="text-[10px]">
+            {getOrderTypeLabel()}
           </Badge>
+          {order.payment_method && (
+            <Badge variant={order.payment_method as any} className="text-[10px] sm:text-xs">
+              {getPaymentLabel(order.payment_method)}
+            </Badge>
+          )}
+        </div>
+        <p className="text-xs sm:text-sm text-muted-foreground truncate">{order.customer_name}</p>
+        {isCompleted && (
+          <p className="text-xs text-muted-foreground mt-1">{format(new Date(order.updated_at), "dd/MM 'às' HH:mm", { locale: ptBR })}</p>
         )}
       </div>
 
