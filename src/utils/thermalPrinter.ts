@@ -1,3 +1,5 @@
+import jsPDF from 'jspdf';
+
 // ESC/POS commands for thermal printers (as bytes)
 const ESC = 0x1B;
 const GS = 0x1D;
@@ -545,4 +547,272 @@ export function generatePrintableText(data: PrintOrderData): string {
   text += '\n    Obrigado pela preferência!\n';
 
   return text;
+}
+
+// Generate A4 PDF for order details
+export function generateOrderPDF(data: PrintOrderData): void {
+  const doc = new jsPDF('p', 'mm', 'a4');
+  const pageWidth = 210;
+  const pageHeight = 297;
+  const margin = 20;
+  const contentWidth = pageWidth - (margin * 2);
+  
+  let y = margin;
+  
+  const formatCurrencyPDF = (value: number) => 
+    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+
+  // Header background
+  doc.setFillColor(34, 34, 34);
+  doc.rect(0, 0, pageWidth, 50, 'F');
+  
+  // Header title
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(28);
+  doc.setFont('helvetica', 'bold');
+  const headerText = data.orderType === 'delivery' ? 'PEDIDO DELIVERY' : 'COMANDA MESA';
+  doc.text(headerText, pageWidth / 2, 25, { align: 'center' });
+  
+  doc.setFontSize(18);
+  doc.text(`#${data.orderNumber}`, pageWidth / 2, 38, { align: 'center' });
+  
+  y = 65;
+  doc.setTextColor(0, 0, 0);
+  
+  // Date/Time section
+  doc.setFillColor(245, 245, 245);
+  doc.rect(margin, y - 5, contentWidth, 12, 'F');
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'normal');
+  const dateStr = data.createdAt.toLocaleDateString('pt-BR');
+  const timeStr = data.createdAt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  doc.text(`Data do Pedido: ${dateStr} às ${timeStr}`, margin + 5, y + 2);
+  
+  y += 20;
+  
+  // Customer/Table info section
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(100, 100, 100);
+  doc.text(data.orderType === 'table' ? 'INFORMAÇÕES DA MESA' : 'INFORMAÇÕES DO CLIENTE', margin, y);
+  
+  y += 3;
+  doc.setDrawColor(200, 200, 200);
+  doc.line(margin, y, pageWidth - margin, y);
+  y += 10;
+  
+  doc.setTextColor(0, 0, 0);
+  doc.setFontSize(12);
+  
+  if (data.orderType === 'table' && data.tableName) {
+    doc.setFont('helvetica', 'bold');
+    doc.text('Mesa:', margin, y);
+    doc.setFont('helvetica', 'normal');
+    doc.text(data.tableName, margin + 25, y);
+    y += 8;
+    
+    if (data.waiterName) {
+      doc.setFont('helvetica', 'bold');
+      doc.text('Garçom:', margin, y);
+      doc.setFont('helvetica', 'normal');
+      doc.text(data.waiterName, margin + 28, y);
+      y += 8;
+    }
+  } else if (data.orderType === 'delivery') {
+    doc.setFont('helvetica', 'bold');
+    doc.text('Cliente:', margin, y);
+    doc.setFont('helvetica', 'normal');
+    doc.text(data.customerName || '', margin + 28, y);
+    y += 8;
+    
+    if (data.customerPhone) {
+      doc.setFont('helvetica', 'bold');
+      doc.text('Telefone:', margin, y);
+      doc.setFont('helvetica', 'normal');
+      doc.text(data.customerPhone, margin + 32, y);
+      y += 8;
+    }
+    
+    if (data.address) {
+      y += 5;
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(100, 100, 100);
+      doc.text('ENDEREÇO DE ENTREGA', margin, y);
+      y += 3;
+      doc.line(margin, y, pageWidth - margin, y);
+      y += 10;
+      
+      doc.setTextColor(0, 0, 0);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`${data.address.street}, ${data.address.number}`, margin, y);
+      y += 7;
+      doc.text(data.address.neighborhood, margin, y);
+      y += 7;
+      
+      if (data.address.complement) {
+        doc.setFont('helvetica', 'bold');
+        doc.text('Complemento:', margin, y);
+        doc.setFont('helvetica', 'normal');
+        // Handle long complement text with wrapping
+        const complementLines = doc.splitTextToSize(data.address.complement, contentWidth - 40);
+        doc.text(complementLines, margin + 40, y);
+        y += (complementLines.length * 6);
+      }
+    }
+  }
+  
+  y += 15;
+  
+  // Items section
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(100, 100, 100);
+  doc.text('ITENS DO PEDIDO', margin, y);
+  
+  y += 3;
+  doc.line(margin, y, pageWidth - margin, y);
+  y += 8;
+  
+  // Table header
+  doc.setFillColor(240, 240, 240);
+  doc.rect(margin, y - 4, contentWidth, 10, 'F');
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(80, 80, 80);
+  doc.text('QTD', margin + 5, y + 2);
+  doc.text('ITEM', margin + 25, y + 2);
+  doc.text('UNIT.', pageWidth - margin - 50, y + 2);
+  doc.text('TOTAL', pageWidth - margin - 20, y + 2);
+  
+  y += 12;
+  doc.setTextColor(0, 0, 0);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(11);
+  
+  data.items.forEach((item, index) => {
+    // Alternating row colors
+    if (index % 2 === 0) {
+      doc.setFillColor(252, 252, 252);
+      doc.rect(margin, y - 5, contentWidth, 14, 'F');
+    }
+    
+    const itemTotal = item.quantity * item.unitPrice;
+    doc.text(String(item.quantity), margin + 8, y);
+    
+    // Truncate long item names
+    const maxNameWidth = 80;
+    const itemName = item.name.length > 35 ? item.name.substring(0, 35) + '...' : item.name;
+    doc.text(itemName, margin + 25, y);
+    
+    doc.text(formatCurrencyPDF(item.unitPrice), pageWidth - margin - 50, y);
+    doc.setFont('helvetica', 'bold');
+    doc.text(formatCurrencyPDF(itemTotal), pageWidth - margin - 20, y);
+    doc.setFont('helvetica', 'normal');
+    
+    y += 7;
+    
+    if (item.observation) {
+      doc.setFontSize(9);
+      doc.setTextColor(150, 100, 0);
+      doc.text(`📝 ${item.observation}`, margin + 25, y);
+      doc.setFontSize(11);
+      doc.setTextColor(0, 0, 0);
+      y += 6;
+    }
+    
+    y += 5;
+  });
+  
+  y += 5;
+  doc.setDrawColor(200, 200, 200);
+  doc.line(margin, y, pageWidth - margin, y);
+  y += 10;
+  
+  // Totals section
+  const totalsX = pageWidth - margin - 80;
+  doc.setFontSize(11);
+  
+  doc.text('Subtotal:', totalsX, y);
+  doc.text(formatCurrencyPDF(data.subtotal), pageWidth - margin - 5, y, { align: 'right' });
+  y += 8;
+  
+  if (data.deliveryFee && data.deliveryFee > 0) {
+    doc.text('Taxa de Entrega:', totalsX, y);
+    doc.text(formatCurrencyPDF(data.deliveryFee), pageWidth - margin - 5, y, { align: 'right' });
+    y += 8;
+  }
+  
+  if (data.serviceFee && data.serviceFee > 0) {
+    doc.text('Taxa de Serviço:', totalsX, y);
+    doc.text(formatCurrencyPDF(data.serviceFee), pageWidth - margin - 5, y, { align: 'right' });
+    y += 8;
+  }
+  
+  if (data.discount && data.discount > 0) {
+    doc.setTextColor(0, 150, 0);
+    doc.text('Desconto:', totalsX, y);
+    doc.text(`-${formatCurrencyPDF(data.discount)}`, pageWidth - margin - 5, y, { align: 'right' });
+    doc.setTextColor(0, 0, 0);
+    y += 8;
+  }
+  
+  y += 5;
+  
+  // Total highlight box
+  doc.setFillColor(34, 34, 34);
+  doc.rect(totalsX - 10, y - 5, 95, 18, 'F');
+  doc.setFontSize(16);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(255, 255, 255);
+  doc.text('TOTAL:', totalsX, y + 6);
+  doc.text(formatCurrencyPDF(data.total), pageWidth - margin - 5, y + 6, { align: 'right' });
+  
+  y += 25;
+  doc.setTextColor(0, 0, 0);
+  
+  // Payment section
+  if (data.paymentMethod) {
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(100, 100, 100);
+    doc.text('PAGAMENTO', margin, y);
+    
+    y += 3;
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 10;
+    
+    doc.setFontSize(12);
+    doc.setTextColor(0, 0, 0);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Forma de Pagamento:', margin, y);
+    doc.setFont('helvetica', 'normal');
+    doc.text(data.paymentMethod, margin + 58, y);
+    y += 8;
+    
+    if (data.changeFor && data.changeFor > 0) {
+      doc.setFont('helvetica', 'bold');
+      doc.text('Troco para:', margin, y);
+      doc.setFont('helvetica', 'normal');
+      doc.text(formatCurrencyPDF(data.changeFor), margin + 35, y);
+      y += 8;
+    }
+  }
+  
+  // Footer
+  const footerY = pageHeight - 25;
+  doc.setDrawColor(200, 200, 200);
+  doc.line(margin, footerY - 10, pageWidth - margin, footerY - 10);
+  
+  doc.setFontSize(10);
+  doc.setTextColor(120, 120, 120);
+  doc.setFont('helvetica', 'italic');
+  doc.text('Obrigado pela preferência!', pageWidth / 2, footerY, { align: 'center' });
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Documento gerado em ${new Date().toLocaleString('pt-BR')}`, pageWidth / 2, footerY + 6, { align: 'center' });
+  
+  // Download PDF
+  const fileName = data.orderType === 'table' 
+    ? `comanda-${data.tableName?.replace(/\s/g, '-')}-${data.orderNumber}.pdf`
+    : `pedido-${data.orderNumber}.pdf`;
+  doc.save(fileName);
 }
