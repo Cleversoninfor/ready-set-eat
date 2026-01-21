@@ -12,7 +12,7 @@ export interface Order {
   address_reference: string | null;
   total_amount: number;
   status: 'pending' | 'preparing' | 'ready' | 'delivery' | 'completed' | 'cancelled';
-  payment_method: 'money' | 'card' | 'pix';
+  payment_method: 'money' | 'card' | 'pix' | 'credit' | 'debit';
   change_for: number | null;
   created_at: string;
   updated_at: string;
@@ -36,7 +36,7 @@ export interface CreateOrderData {
   address_complement?: string | null;
   address_reference?: string | null;
   total_amount: number;
-  payment_method: 'money' | 'card' | 'pix';
+  payment_method: 'money' | 'card' | 'pix' | 'credit' | 'debit';
   change_for?: number | null;
 }
 
