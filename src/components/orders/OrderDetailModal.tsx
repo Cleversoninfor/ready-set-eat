@@ -62,6 +62,7 @@ export function OrderDetailModal({ order, open, onOpenChange }: OrderDetailModal
       deliveryFee: order.type === 'delivery' ? (store?.delivery_fee || 0) : 0,
       total: Number(order.total_amount),
       paymentMethod: order.payment_method ? (paymentConfig[order.payment_method]?.label || order.payment_method) : undefined,
+      changeFor: order.change_for || undefined,
       createdAt: new Date(order.created_at),
     };
   };
