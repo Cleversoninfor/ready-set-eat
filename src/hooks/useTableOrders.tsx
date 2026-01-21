@@ -225,6 +225,8 @@ export function useTableOrderMutations() {
       queryClient.invalidateQueries({ queryKey: ['kitchen-items'] });
       // Ensure Admin "Pedidos" sees the order as soon as the first item is added
       queryClient.invalidateQueries({ queryKey: ['all-orders'] });
+      // Refresh multiple orders list for PDV/Waiter
+      queryClient.invalidateQueries({ queryKey: ['table-orders-by-table'] });
 
       toast({
         title: result.createdNewOrder ? 'Novo pedido criado!' : 'Item adicionado!',
