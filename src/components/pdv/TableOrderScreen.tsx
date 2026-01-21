@@ -1,9 +1,16 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft, Plus, Clock, Users, Trash2, ReceiptText, X, User, ArrowRightLeft, Printer } from 'lucide-react';
+import { ArrowLeft, Plus, Clock, Users, Trash2, ReceiptText, X, User, ArrowRightLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,6 +23,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { TableWithOrder, OrderItemStatus } from '@/types/pdv';
 import { useTableOrder, useTableOrderMutations } from '@/hooks/useTableOrders';
+import { useOpenTableOrdersByTableId } from '@/hooks/useTableOrdersByTable';
 import { AddItemModal } from './AddItemModal';
 import { TransferTableModal } from './TransferTableModal';
 import { PrintReceiptButton } from './PrintReceiptButton';
@@ -53,9 +61,10 @@ export function TableOrderScreen({ table, onBack, onCheckout, onTableTransferred
     setActiveOrderId(table.current_order_id);
   }, [table.current_order_id]);
 
+  const { orders: openOrdersForTable } = useOpenTableOrdersByTableId(table.id);
   const { order, items, isLoading } = useTableOrder(activeOrderId);
   const { updateItemStatus, removeItem, requestBill, cancelOrder, transferTable } = useTableOrderMutations();
-  const { data: store } = useStoreConfig();
+  useStoreConfig();
 
   // Prepare print data
   const printData = order && items ? {
@@ -143,6 +152,31 @@ export function TableOrderScreen({ table, onBack, onCheckout, onTableTransferred
             {table.name && <p className="text-sm text-muted-foreground">{table.name}</p>}
           </div>
         </div>
+
+        {/* Order switcher (multiple orders per table) */}
+        {openOrdersForTable.length > 1 && (
+          <div className="flex items-center gap-2">
+            <Select
+              value={activeOrderId ? String(activeOrderId) : undefined}
+              onValueChange={(value) => setActiveOrderId(Number(value))}
+            >
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Selecione o pedido" />
+              </SelectTrigger>
+              <SelectContent>
+                {openOrdersForTable.map((o) => (
+                  <SelectItem key={o.id} value={String(o.id)}>
+                    Pedido #{o.id}
+                    {o.id === table.current_order_id ? ' (atual)' : ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Badge variant="secondary">{openOrdersForTable.length} pedidos</Badge>
+          </div>
+        )}
+
         <div className="flex gap-2">
           {printData && (
             <PrintReceiptButton orderData={printData} variant="outline" size="sm" />
