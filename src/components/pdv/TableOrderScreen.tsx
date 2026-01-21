@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ArrowLeft, Plus, Clock, Users, Trash2, ReceiptText, X, User, ArrowRightLeft, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -45,7 +45,15 @@ export function TableOrderScreen({ table, onBack, onCheckout, onTableTransferred
   const [itemToRemove, setItemToRemove] = useState<string | null>(null);
   const [transferModalOpen, setTransferModalOpen] = useState(false);
 
-  const { order, items, isLoading } = useTableOrder(table.current_order_id);
+  // If the kitchen already started preparing an earlier batch, adding new items will create a NEW order.
+  // This state lets us seamlessly switch the PDV/Garçom screen to the newest order.
+  const [activeOrderId, setActiveOrderId] = useState<number | null>(table.current_order_id);
+
+  useEffect(() => {
+    setActiveOrderId(table.current_order_id);
+  }, [table.current_order_id]);
+
+  const { order, items, isLoading } = useTableOrder(activeOrderId);
   const { updateItemStatus, removeItem, requestBill, cancelOrder, transferTable } = useTableOrderMutations();
   const { data: store } = useStoreConfig();
 
@@ -296,6 +304,7 @@ export function TableOrderScreen({ table, onBack, onCheckout, onTableTransferred
         orderId={order.id}
         open={addItemOpen}
         onOpenChange={setAddItemOpen}
+        onOrderIdChange={(newOrderId) => setActiveOrderId(newOrderId)}
       />
 
       {/* Remove Item Dialog */}
