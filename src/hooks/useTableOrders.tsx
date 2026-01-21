@@ -71,6 +71,19 @@ export function useTableOrderMutations() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  const shouldSplitToNewOrder = async (orderId: number) => {
+    // If any item was already accepted by the kitchen (preparing/ready),
+    // we start a NEW order so new items don't get mixed with the previous batch.
+    const { data: statuses, error } = await supabase
+      .from('table_order_items')
+      .select('status')
+      .eq('table_order_id', orderId)
+      .in('status', ['preparing', 'ready']);
+
+    if (error) throw error;
+    return (statuses?.length || 0) > 0;
+  };
+
   const openTable = useMutation({
     mutationFn: async (data: { tableId: string; customerCount?: number; waiterName?: string }) => {
       // Create the order
@@ -131,10 +144,54 @@ export function useTableOrderMutations() {
       unitPrice: number;
       observation?: string;
     }) => {
+      let targetOrderId = data.orderId;
+      let createdNewOrder = false;
+
+      // If this order already progressed in the kitchen, create a fresh order for this table
+      if (await shouldSplitToNewOrder(data.orderId)) {
+        const { data: currentOrder, error: currentOrderError } = await supabase
+          .from('table_orders')
+          .select('table_id, customer_count, waiter_name, discount, discount_type, service_fee_enabled, service_fee_percentage')
+          .eq('id', data.orderId)
+          .single();
+
+        if (currentOrderError) throw currentOrderError;
+
+        const { data: newOrder, error: newOrderError } = await supabase
+          .from('table_orders')
+          .insert({
+            table_id: currentOrder.table_id,
+            customer_count: currentOrder.customer_count ?? 1,
+            waiter_name: currentOrder.waiter_name ?? null,
+            status: 'open',
+            subtotal: 0,
+            discount: currentOrder.discount ?? 0,
+            discount_type: currentOrder.discount_type ?? 'value',
+            service_fee_enabled: currentOrder.service_fee_enabled ?? true,
+            service_fee_percentage: currentOrder.service_fee_percentage ?? 10,
+            total_amount: 0,
+          })
+          .select()
+          .single();
+
+        if (newOrderError) throw newOrderError;
+
+        // Point the table to the newest open order
+        const { error: tableError } = await supabase
+          .from('tables')
+          .update({ status: 'occupied', current_order_id: newOrder.id })
+          .eq('id', currentOrder.table_id);
+
+        if (tableError) throw tableError;
+
+        targetOrderId = newOrder.id;
+        createdNewOrder = true;
+      }
+
       const { data: item, error } = await supabase
         .from('table_order_items')
         .insert({
-          table_order_id: data.orderId,
+          table_order_id: targetOrderId,
           product_id: data.productId,
           product_name: data.productName,
           quantity: data.quantity,
@@ -148,18 +205,33 @@ export function useTableOrderMutations() {
       if (error) throw error;
       
       // Update order totals
-      await updateOrderTotals(data.orderId);
+      await updateOrderTotals(targetOrderId);
 
-      return item as TableOrderItem;
+      return {
+        item: item as TableOrderItem,
+        orderId: targetOrderId,
+        createdNewOrder,
+      };
     },
-    onSuccess: (_, variables) => {
+    onSuccess: (result, variables) => {
+      const actualOrderId = result.orderId;
+
+      // Refresh both the originally opened order (UI may still be on it) and the actual target order
       queryClient.invalidateQueries({ queryKey: ['table-order-items', variables.orderId] });
       queryClient.invalidateQueries({ queryKey: ['table-order', variables.orderId] });
+      queryClient.invalidateQueries({ queryKey: ['table-order-items', actualOrderId] });
+      queryClient.invalidateQueries({ queryKey: ['table-order', actualOrderId] });
       queryClient.invalidateQueries({ queryKey: ['tables-with-orders'] });
       queryClient.invalidateQueries({ queryKey: ['kitchen-items'] });
       // Ensure Admin "Pedidos" sees the order as soon as the first item is added
       queryClient.invalidateQueries({ queryKey: ['all-orders'] });
-      toast({ title: 'Item adicionado!' });
+
+      toast({
+        title: result.createdNewOrder ? 'Novo pedido criado!' : 'Item adicionado!',
+        description: result.createdNewOrder
+          ? 'Como o pedido anterior já está em preparo, este item entrou em um novo pedido.'
+          : undefined,
+      });
     },
     onError: (error: Error) => {
       toast({ 

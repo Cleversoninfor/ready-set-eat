@@ -19,9 +19,10 @@ interface AddItemModalProps {
   orderId: number;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onOrderIdChange?: (newOrderId: number) => void;
 }
 
-export function AddItemModal({ orderId, open, onOpenChange }: AddItemModalProps) {
+export function AddItemModal({ orderId, open, onOpenChange, onOrderIdChange }: AddItemModalProps) {
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<{
@@ -55,7 +56,7 @@ export function AddItemModal({ orderId, open, onOpenChange }: AddItemModalProps)
     if (!selectedProduct) return;
 
     try {
-      await addItem.mutateAsync({
+      const result = await addItem.mutateAsync({
         orderId,
         productId: selectedProduct.id,
         productName: selectedProduct.name,
@@ -63,6 +64,11 @@ export function AddItemModal({ orderId, open, onOpenChange }: AddItemModalProps)
         unitPrice: selectedProduct.price,
         observation: observation || undefined,
       });
+
+      // If the mutation created a new order, switch the screen to it
+      if (result?.orderId && result.orderId !== orderId) {
+        onOrderIdChange?.(result.orderId);
+      }
 
       // Reset and close
       setSelectedProduct(null);
