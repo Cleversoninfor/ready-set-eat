@@ -402,6 +402,13 @@ export function printReceiptBrowser(data: PrintOrderData): void {
         .row { display: flex; justify-content: space-between; }
         .item { margin: 5px 0; }
         .obs { font-size: 10px; color: #666; margin-left: 10px; }
+        .complement { 
+          word-wrap: break-word; 
+          word-break: break-word;
+          overflow-wrap: break-word;
+          max-width: 100%;
+          white-space: pre-wrap;
+        }
       </style>
     </head>
     <body>
@@ -418,7 +425,7 @@ export function printReceiptBrowser(data: PrintOrderData): void {
         ${data.address ? `
           <div>${data.address.street}, ${data.address.number}</div>
           <div>${data.address.neighborhood}</div>
-          ${data.address.complement ? `<div>${data.address.complement}</div>` : ''}
+          ${data.address.complement ? `<div class="complement">${data.address.complement}</div>` : ''}
         ` : ''}
       ` : ''}
       <div>Data: ${data.createdAt.toLocaleDateString('pt-BR')} ${data.createdAt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</div>
@@ -441,7 +448,10 @@ export function printReceiptBrowser(data: PrintOrderData): void {
       ${data.discount && data.discount > 0 ? `<div class="row"><span>Desconto:</span><span>-${formatCurrency(data.discount)}</span></div>` : ''}
       <div class="line"></div>
       <div class="row double"><span>TOTAL:</span><span>${formatCurrency(data.total)}</span></div>
-      ${data.paymentMethod ? `<div>Pagamento: ${data.paymentMethod}</div>` : ''}
+      ${data.paymentMethod ? `
+        <div>Pagamento: ${data.paymentMethod}</div>
+        ${data.changeFor && data.changeFor > 0 ? `<div>Troco para: ${formatCurrency(data.changeFor)}</div>` : ''}
+      ` : ''}
       <br>
       <div class="center">Obrigado pela preferência!</div>
     </body>
