@@ -628,19 +628,12 @@ export function generatePrintableText(data: PrintOrderData): string {
   return text;
 }
 
-// Generate thermal-optimized PDF for printing
+// Generate thermal-optimized PDF for direct printing (dynamic height, no dividers)
 export function generateThermalPDF(data: PrintOrderData): void {
-  // Thermal paper width: 80mm (or 58mm)
+  // Thermal paper width: 80mm
   const paperWidth = 80;
-  const doc = new jsPDF({
-    orientation: 'portrait',
-    unit: 'mm',
-    format: [paperWidth, 297] // Start with max height, will trim later
-  });
-  
   const margin = 3;
   const contentWidth = paperWidth - (margin * 2);
-  let y = margin;
   
   const fontSize = {
     small: 7,
@@ -651,6 +644,67 @@ export function generateThermalPDF(data: PrintOrderData): void {
   
   const formatCurrencyPDF = (value: number) => 
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+
+  // First pass: calculate total height needed
+  let estimatedHeight = 10; // Initial top spacing
+  
+  // Header
+  if (data.storeName) estimatedHeight += fontSize.title * 0.5;
+  estimatedHeight += fontSize.large * 0.5; // Order type
+  estimatedHeight += fontSize.normal * 0.5; // Order ID
+  estimatedHeight += 4; // Spacing
+  
+  // Date/time
+  estimatedHeight += fontSize.normal * 0.5 * 2 + 3;
+  
+  // Customer info
+  estimatedHeight += fontSize.normal * 0.5; // Title
+  if (data.orderType === 'table') {
+    estimatedHeight += fontSize.normal * 0.5 * 3;
+  } else {
+    estimatedHeight += fontSize.normal * 0.5 * 2;
+  }
+  estimatedHeight += 3;
+  
+  // Address (if delivery)
+  if (data.orderType === 'delivery' && data.address) {
+    estimatedHeight += fontSize.normal * 0.5 + 3; // Title
+    estimatedHeight += fontSize.normal * 0.5 * 2; // Address lines
+    if (data.address.complement) estimatedHeight += fontSize.small * 0.5;
+    if (data.address.reference) estimatedHeight += fontSize.small * 0.5;
+    estimatedHeight += 3;
+  }
+  
+  // Items title
+  estimatedHeight += fontSize.normal * 0.5 + 3;
+  
+  // Items
+  data.items.forEach(item => {
+    estimatedHeight += fontSize.normal * 0.5; // Item line
+    if (item.observation) estimatedHeight += fontSize.small * 0.5 * 2;
+    estimatedHeight += 2; // Spacing between items
+  });
+  
+  // Quantity total + financial
+  estimatedHeight += fontSize.normal * 0.5 + 3;
+  estimatedHeight += fontSize.normal * 0.5 * 4; // Subtotal, fees, total
+  estimatedHeight += fontSize.large * 0.5 + 3; // TOTAL
+  
+  // Payment
+  if (data.paymentMethod) estimatedHeight += fontSize.normal * 0.5 * 2;
+  
+  // Footer
+  estimatedHeight += fontSize.normal * 0.5 + 8;
+  
+  // Create PDF with calculated height (minimum 50mm)
+  const finalHeight = Math.max(50, estimatedHeight + 10);
+  const doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: [paperWidth, finalHeight]
+  });
+  
+  let y = 5; // Small initial spacing
 
   // Helper to add text and advance y
   const addText = (text: string, size: number = fontSize.normal, align: 'left' | 'center' | 'right' = 'left', bold: boolean = false): void => {
@@ -697,14 +751,9 @@ export function generateThermalPDF(data: PrintOrderData): void {
     y += size * 0.45;
   };
 
-  // Helper to add dashed line
-  const addDashedLine = (): void => {
-    y += 1;
-    doc.setDrawColor(0);
-    doc.setLineDashPattern([1, 1], 0);
-    doc.line(margin, y, paperWidth - margin, y);
-    doc.setLineDashPattern([], 0);
-    y += 2;
+  // Helper to add vertical spacing
+  const addSpacing = (space: number = 2): void => {
+    y += space;
   };
 
   // ========== 1. HEADER ==========
@@ -725,7 +774,7 @@ export function generateThermalPDF(data: PrintOrderData): void {
   // Order ID
   addText(`PEDIDO #${data.orderNumber}`, fontSize.normal, 'center', true);
   
-  addDashedLine();
+  addSpacing(3);
 
   // ========== 2. ORDER INFO ==========
   const dateStr = data.createdAt.toLocaleDateString('pt-BR');
@@ -733,11 +782,10 @@ export function generateThermalPDF(data: PrintOrderData): void {
   addText(`Data: ${dateStr}`, fontSize.normal, 'left');
   addText(`Hora: ${timeStr}`, fontSize.normal, 'left');
   
-  addDashedLine();
+  addSpacing(2);
 
   // ========== 3. CUSTOMER INFO ==========
   addText('CLIENTE', fontSize.normal, 'left', true);
-  y += 1;
   
   if (data.orderType === 'table' && data.tableName) {
     addText(`Mesa: ${data.tableName}`, fontSize.normal, 'left');
@@ -758,9 +806,8 @@ export function generateThermalPDF(data: PrintOrderData): void {
 
   // ========== 4. DELIVERY ADDRESS ==========
   if (data.orderType === 'delivery' && data.address) {
-    addDashedLine();
+    addSpacing(2);
     addText('ENDERECO DE ENTREGA', fontSize.normal, 'left', true);
-    y += 1;
     
     const fullAddress = `${data.address.street}, ${data.address.number} - ${data.address.neighborhood}`;
     addWrappedText(fullAddress, fontSize.normal, 'left');
@@ -773,24 +820,15 @@ export function generateThermalPDF(data: PrintOrderData): void {
     }
   }
 
-  addDashedLine();
+  addSpacing(3);
 
   // ========== 5. ORDER ITEMS ==========
   addText('ITENS DO PEDIDO', fontSize.normal, 'left', true);
-  y += 1;
-  addDashedLine();
+  addSpacing(1);
 
-  data.items.forEach((item, index) => {
+  data.items.forEach((item) => {
     const itemTotal = formatCurrencyPDF(item.quantity * item.unitPrice);
     const itemText = `${item.quantity}x ${item.name}`;
-    
-    // Check if we need a new page
-    if (y > 280) {
-      doc.addPage([paperWidth, 297]);
-      y = margin;
-      addText('ITENS DO PEDIDO (cont.)', fontSize.normal, 'left', true);
-      addDashedLine();
-    }
     
     // Item name and price
     doc.setFontSize(fontSize.normal);
@@ -801,7 +839,6 @@ export function generateThermalPDF(data: PrintOrderData): void {
     itemLines.forEach((line: string, i: number) => {
       doc.text(line, margin, y);
       if (i === itemLines.length - 1) {
-        // Add price on last line
         const priceWidth = doc.getTextWidth(itemTotal);
         doc.text(itemTotal, paperWidth - margin - priceWidth, y);
       }
@@ -819,23 +856,18 @@ export function generateThermalPDF(data: PrintOrderData): void {
       });
     }
     
-    // Separator between items
-    if (index < data.items.length - 1) {
-      doc.setFontSize(fontSize.small);
-      doc.text('----', margin, y);
-      y += fontSize.small * 0.4;
-    }
+    addSpacing(1);
   });
 
-  addDashedLine();
+  addSpacing(2);
 
-  // ========== 7. TOTAL ITEM QUANTITY ==========
+  // ========== 6. TOTAL ITEM QUANTITY ==========
   const totalItemQuantity = data.items.reduce((sum, item) => sum + item.quantity, 0);
   addText(`Qtd Total de Itens: ${totalItemQuantity}`, fontSize.normal, 'left', true);
   
-  addDashedLine();
+  addSpacing(2);
 
-  // ========== 8. FINANCIAL SUMMARY ==========
+  // ========== 7. FINANCIAL SUMMARY ==========
   addLineLeftRight('Subtotal:', formatCurrencyPDF(data.subtotal), fontSize.normal);
   
   if (data.deliveryFee && data.deliveryFee > 0) {
@@ -850,35 +882,35 @@ export function generateThermalPDF(data: PrintOrderData): void {
     addLineLeftRight('Desconto:', `-${formatCurrencyPDF(data.discount)}`, fontSize.normal);
   }
 
-  y += 1;
-  doc.setDrawColor(0);
-  doc.line(margin, y, paperWidth - margin, y);
-  y += 2;
+  addSpacing(1);
   
   // TOTAL highlighted
   addLineLeftRight('TOTAL:', formatCurrencyPDF(data.total), fontSize.large, true);
   
-  doc.line(margin, y, paperWidth - margin, y);
-  y += 2;
+  addSpacing(2);
 
-  // ========== 9. PAYMENT METHOD ==========
+  // ========== 8. PAYMENT METHOD ==========
   if (data.paymentMethod) {
-    addText(`PAGAMENTO: ${data.paymentMethod}`, fontSize.normal, 'left', true);
+    addText(`PAGAMENTO: ${data.paymentMethod.toUpperCase()}`, fontSize.normal, 'left', true);
     if (data.changeFor && data.changeFor > 0) {
       addText(`Troco para: ${formatCurrencyPDF(data.changeFor)}`, fontSize.normal, 'left');
     }
   }
 
-  // ========== 10. FOOTER ==========
-  addDashedLine();
+  // ========== 9. FOOTER ==========
+  addSpacing(3);
   addText('Obrigado pela preferencia!', fontSize.normal, 'center');
-  
-  y += 5; // Extra space at bottom
 
-  // Save the PDF
-  const orderTypeFileName = data.orderType === 'delivery' ? 'delivery' : 
-                            data.orderType === 'table' ? 'mesa' : 'retirada';
-  doc.save(`pedido-${data.orderNumber}-${orderTypeFileName}-termica.pdf`);
+  // Direct print - open print dialog immediately
+  const pdfBlob = doc.output('blob');
+  const pdfUrl = URL.createObjectURL(pdfBlob);
+  const printWindow = window.open(pdfUrl, '_blank');
+  
+  if (printWindow) {
+    printWindow.onload = () => {
+      printWindow.print();
+    };
+  }
 }
 
 // Generate A4 PDF for order details

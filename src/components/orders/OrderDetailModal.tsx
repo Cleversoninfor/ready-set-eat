@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { MapPin, Phone, User, CreditCard, Clock, FileDown, Users, Utensils, Printer } from 'lucide-react';
 import { useUnifiedOrderItems, UnifiedOrder } from '@/hooks/useAllOrders';
 import { useStoreConfig } from '@/hooks/useStore';
-import { PrintReceiptButton } from '@/components/pdv/PrintReceiptButton';
+
 import { PrintOrderData, generateOrderPDF, generateThermalPDF } from '@/utils/thermalPrinter';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -264,14 +264,13 @@ export function OrderDetailModal({ order, open, onOpenChange }: OrderDetailModal
                 onClick={() => {
                   try {
                     generateThermalPDF(printData);
-                    toast.success('PDF para impressora térmica gerado!');
                   } catch (error) {
-                    toast.error('Erro ao gerar PDF térmico');
+                    toast.error('Erro ao imprimir');
                   }
                 }}
               >
                 <Printer className="h-4 w-4 mr-2" />
-                Imprimir (Térmica)
+                Imprimir
               </Button>
             </div>
           )}
