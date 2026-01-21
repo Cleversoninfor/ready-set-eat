@@ -28,6 +28,8 @@ const paymentConfig: Record<string, { label: string; icon: string }> = {
   pix: { label: 'PIX', icon: '💠' },
   money: { label: 'Dinheiro', icon: '💵' },
   card: { label: 'Cartão', icon: '💳' },
+  credit: { label: 'Cartão de Crédito', icon: '💳' },
+  debit: { label: 'Cartão de Débito', icon: '💳' },
 };
 
 export function OrderDetailModal({ order, open, onOpenChange }: OrderDetailModalProps) {
