@@ -25,8 +25,8 @@ const CHECKOUT_STORAGE_KEY = 'delivery-checkout';
 
 const paymentOptions: { id: DisplayPaymentMethod; dbValue: PaymentMethod; label: string; icon: typeof Banknote }[] = [
   { id: 'money', dbValue: 'money', label: 'Dinheiro', icon: Banknote },
-  { id: 'debit', dbValue: 'card', label: 'Débito', icon: CreditCard },
-  { id: 'credit', dbValue: 'card', label: 'Crédito', icon: CreditCard },
+  { id: 'debit', dbValue: 'debit', label: 'Débito', icon: CreditCard },
+  { id: 'credit', dbValue: 'credit', label: 'Crédito', icon: CreditCard },
   { id: 'pix', dbValue: 'pix', label: 'Pix', icon: QrCode },
 ];
 

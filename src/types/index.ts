@@ -58,4 +58,4 @@ export interface OrderItem {
   observation?: string;
 }
 
-export type PaymentMethod = 'money' | 'card' | 'pix';
+export type PaymentMethod = 'money' | 'card' | 'pix' | 'credit' | 'debit';

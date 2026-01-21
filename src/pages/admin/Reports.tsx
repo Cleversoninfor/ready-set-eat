@@ -128,6 +128,8 @@ const AdminReports = () => {
     const methods: Record<string, string> = {
       money: 'Dinheiro',
       card: 'Cartão',
+      credit: 'Cartão de Crédito',
+      debit: 'Cartão de Débito',
       pix: 'PIX',
     };
     return methods[method] || method;
