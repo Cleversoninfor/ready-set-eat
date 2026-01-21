@@ -42,6 +42,7 @@ export interface PrintOrderData {
   serviceFee?: number;
   total: number;
   paymentMethod?: string;
+  changeFor?: number;
   createdAt: Date;
 }
 
@@ -65,6 +66,26 @@ function formatLine(left: string, right: string, width: number = 32): string {
 
 function dashedLine(width: number = 32): string {
   return '-'.repeat(width);
+}
+
+// Wrap text to fit within a specific width
+function wrapText(text: string, width: number, indent: string = ''): string[] {
+  const words = text.split(' ');
+  const lines: string[] = [];
+  let currentLine = '';
+  
+  words.forEach(word => {
+    const testLine = currentLine ? `${currentLine} ${word}` : word;
+    if (testLine.length <= width) {
+      currentLine = testLine;
+    } else {
+      if (currentLine) lines.push(indent + currentLine);
+      currentLine = word;
+    }
+  });
+  
+  if (currentLine) lines.push(indent + currentLine);
+  return lines;
 }
 
 // Convert string to bytes using CP437/CP850 compatible encoding
@@ -147,7 +168,9 @@ export function generateReceiptBytes(data: PrintOrderData): Uint8Array {
       addLine(bytes, `${data.address.street}, ${data.address.number}`);
       addLine(bytes, data.address.neighborhood);
       if (data.address.complement) {
-        addLine(bytes, data.address.complement);
+        // Wrap complement text to fit within printer width
+        const complementLines = wrapText(data.address.complement, width - 2, '  ');
+        complementLines.forEach(line => addLine(bytes, line));
       }
     }
   }
@@ -203,6 +226,9 @@ export function generateReceiptBytes(data: PrintOrderData): Uint8Array {
   if (data.paymentMethod) {
     bytes.push(LF);
     addLine(bytes, `Pagamento: ${data.paymentMethod}`);
+    if (data.changeFor && data.changeFor > 0) {
+      addLine(bytes, `Troco para: ${formatCurrency(data.changeFor)}`);
+    }
   }
 
   // Footer
@@ -456,7 +482,9 @@ export function generatePrintableText(data: PrintOrderData): string {
       text += `Endereço: ${data.address.street}, ${data.address.number}\n`;
       text += `          ${data.address.neighborhood}\n`;
       if (data.address.complement) {
-        text += `          ${data.address.complement}\n`;
+        // Wrap complement text to fit within print width
+        const complementLines = wrapText(data.address.complement, width - 10, '          ');
+        complementLines.forEach(line => text += line + '\n');
       }
     }
   }
@@ -499,6 +527,9 @@ export function generatePrintableText(data: PrintOrderData): string {
 
   if (data.paymentMethod) {
     text += `\nPagamento: ${data.paymentMethod}\n`;
+    if (data.changeFor && data.changeFor > 0) {
+      text += `Troco para: ${formatCurrency(data.changeFor)}\n`;
+    }
   }
 
   text += '\n    Obrigado pela preferência!\n';
