@@ -40,16 +40,26 @@ export function OrderDetailModal({ order, open, onOpenChange }: OrderDetailModal
   const getPrintData = (): PrintOrderData | null => {
     if (!order || !items) return null;
     
+    // Determine order type
+    let orderType: 'delivery' | 'table' | 'pickup' = 'delivery';
+    if (order.type === 'table') {
+      orderType = 'table';
+    }
+    // Note: pickup type would need to be determined from order data if available
+    
     return {
       orderNumber: order.id,
-      orderType: order.type === 'table' ? 'table' : 'delivery',
+      orderType,
+      storeName: store?.name || 'Estabelecimento',
       customerName: order.customer_name,
       customerPhone: order.customer_phone || undefined,
+      customerCount: order.customer_count || undefined,
       address: order.type === 'delivery' && order.address_street ? {
         street: order.address_street,
         number: order.address_number || '',
         neighborhood: order.address_neighborhood || '',
         complement: order.address_complement || undefined,
+        reference: order.address_reference || undefined,
       } : undefined,
       tableName: order.type === 'table' ? order.customer_name : undefined,
       waiterName: order.waiter_name || undefined,

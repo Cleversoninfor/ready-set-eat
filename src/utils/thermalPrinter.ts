@@ -21,16 +21,18 @@ const FEED_3 = [ESC, 0x64, 0x03];
 
 export interface PrintOrderData {
   orderNumber: number | string;
-  orderType: 'delivery' | 'table';
+  orderType: 'delivery' | 'table' | 'pickup';
   tableName?: string;
   waiterName?: string;
   customerName?: string;
   customerPhone?: string;
+  customerCount?: number;
   address?: {
     street: string;
     number: string;
     neighborhood: string;
     complement?: string;
+    reference?: string;
   };
   items: Array<{
     name: string;
@@ -46,6 +48,7 @@ export interface PrintOrderData {
   paymentMethod?: string;
   changeFor?: number;
   createdAt: Date;
+  storeName?: string;
 }
 
 function formatCurrency(value: number): string {
@@ -554,122 +557,201 @@ export function generateOrderPDF(data: PrintOrderData): void {
   const doc = new jsPDF('p', 'mm', 'a4');
   const pageWidth = 210;
   const pageHeight = 297;
-  const margin = 20;
+  const margin = 15;
   const contentWidth = pageWidth - (margin * 2);
+  const bottomMargin = 20;
   
   let y = margin;
+  let currentPage = 1;
   
   const formatCurrencyPDF = (value: number) => 
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 
-  // Header background
-  doc.setFillColor(34, 34, 34);
-  doc.rect(0, 0, pageWidth, 50, 'F');
+  // Helper function to check and add new page if needed
+  const checkPageBreak = (requiredSpace: number, sectionTitle?: string): void => {
+    if (y + requiredSpace > pageHeight - bottomMargin) {
+      doc.addPage();
+      currentPage++;
+      y = margin;
+      
+      // If we're in the items section, repeat the header
+      if (sectionTitle) {
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(100, 100, 100);
+        doc.text(sectionTitle + ' (continuação)', margin, y);
+        y += 3;
+        doc.setDrawColor(200, 200, 200);
+        doc.line(margin, y, pageWidth - margin, y);
+        y += 8;
+        
+        // Repeat table header
+        doc.setFillColor(240, 240, 240);
+        doc.rect(margin, y - 4, contentWidth, 10, 'F');
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(80, 80, 80);
+        doc.text('QTD', margin + 5, y + 2);
+        doc.text('ITEM', margin + 25, y + 2);
+        doc.text('UNIT.', pageWidth - margin - 50, y + 2);
+        doc.text('TOTAL', pageWidth - margin - 20, y + 2);
+        y += 12;
+        doc.setTextColor(0, 0, 0);
+        doc.setFont('helvetica', 'normal');
+      }
+    }
+  };
+
+  // Get order type label
+  const getOrderTypeLabel = () => {
+    switch (data.orderType) {
+      case 'delivery': return 'Delivery';
+      case 'pickup': return 'Retirar no Local';
+      case 'table': return 'Consumir no Local';
+      default: return 'Pedido';
+    }
+  };
+
+  // ========== 1. HEADER (Reduced size) ==========
+  doc.setFillColor(45, 45, 45);
+  doc.rect(0, 0, pageWidth, 35, 'F');
   
-  // Header title
+  // Store name at top
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(28);
+  doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
-  const headerText = data.orderType === 'delivery' ? 'PEDIDO DELIVERY' : 'COMANDA MESA';
-  doc.text(headerText, pageWidth / 2, 25, { align: 'center' });
+  const storeName = data.storeName || 'Estabelecimento';
+  doc.text(storeName.toUpperCase(), pageWidth / 2, 12, { align: 'center' });
   
-  doc.setFontSize(18);
-  doc.text(`#${data.orderNumber}`, pageWidth / 2, 38, { align: 'center' });
+  // Order type below store name
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'normal');
+  doc.text(getOrderTypeLabel(), pageWidth / 2, 22, { align: 'center' });
   
-  y = 65;
+  // Order ID
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text(`Pedido #${data.orderNumber}`, pageWidth / 2, 31, { align: 'center' });
+  
+  y = 45;
   doc.setTextColor(0, 0, 0);
   
-  // Date/Time section
-  doc.setFillColor(245, 245, 245);
-  doc.rect(margin, y - 5, contentWidth, 12, 'F');
-  doc.setFontSize(11);
+  // ========== 2. ORDER INFO (Date/Time) ==========
+  doc.setFillColor(248, 248, 248);
+  doc.rect(margin, y - 2, contentWidth, 14, 'F');
+  doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   const dateStr = data.createdAt.toLocaleDateString('pt-BR');
   const timeStr = data.createdAt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-  doc.text(`Data do Pedido: ${dateStr} às ${timeStr}`, margin + 5, y + 2);
+  doc.text(`Data: ${dateStr}`, margin + 5, y + 5);
+  doc.text(`Horário: ${timeStr}`, margin + 80, y + 5);
   
   y += 20;
   
-  // Customer/Table info section
-  doc.setFontSize(14);
+  // ========== 3. CUSTOMER/TABLE INFO ==========
+  doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(100, 100, 100);
-  doc.text(data.orderType === 'table' ? 'INFORMAÇÕES DA MESA' : 'INFORMAÇÕES DO CLIENTE', margin, y);
+  doc.setTextColor(80, 80, 80);
+  doc.text('INFORMAÇÕES DO CLIENTE', margin, y);
   
-  y += 3;
+  y += 2;
   doc.setDrawColor(200, 200, 200);
   doc.line(margin, y, pageWidth - margin, y);
-  y += 10;
+  y += 8;
   
   doc.setTextColor(0, 0, 0);
-  doc.setFontSize(12);
+  doc.setFontSize(11);
   
   if (data.orderType === 'table' && data.tableName) {
     doc.setFont('helvetica', 'bold');
     doc.text('Mesa:', margin, y);
     doc.setFont('helvetica', 'normal');
-    doc.text(data.tableName, margin + 25, y);
-    y += 8;
+    doc.text(data.tableName, margin + 20, y);
+    y += 7;
     
     if (data.waiterName) {
       doc.setFont('helvetica', 'bold');
       doc.text('Garçom:', margin, y);
       doc.setFont('helvetica', 'normal');
-      doc.text(data.waiterName, margin + 28, y);
-      y += 8;
+      doc.text(data.waiterName, margin + 25, y);
+      y += 7;
     }
-  } else if (data.orderType === 'delivery') {
-    doc.setFont('helvetica', 'bold');
-    doc.text('Cliente:', margin, y);
-    doc.setFont('helvetica', 'normal');
-    doc.text(data.customerName || '', margin + 28, y);
-    y += 8;
+    
+    if (data.customerCount && data.customerCount > 0) {
+      doc.setFont('helvetica', 'bold');
+      doc.text('Pessoas:', margin, y);
+      doc.setFont('helvetica', 'normal');
+      doc.text(String(data.customerCount), margin + 25, y);
+      y += 7;
+    }
+  } else {
+    if (data.customerName) {
+      doc.setFont('helvetica', 'bold');
+      doc.text('Nome:', margin, y);
+      doc.setFont('helvetica', 'normal');
+      doc.text(data.customerName, margin + 22, y);
+      y += 7;
+    }
     
     if (data.customerPhone) {
       doc.setFont('helvetica', 'bold');
       doc.text('Telefone:', margin, y);
       doc.setFont('helvetica', 'normal');
-      doc.text(data.customerPhone, margin + 32, y);
-      y += 8;
-    }
-    
-    if (data.address) {
-      y += 5;
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(100, 100, 100);
-      doc.text('ENDEREÇO DE ENTREGA', margin, y);
-      y += 3;
-      doc.line(margin, y, pageWidth - margin, y);
-      y += 10;
-      
-      doc.setTextColor(0, 0, 0);
-      doc.setFont('helvetica', 'normal');
-      doc.text(`${data.address.street}, ${data.address.number}`, margin, y);
+      doc.text(data.customerPhone, margin + 28, y);
       y += 7;
-      doc.text(data.address.neighborhood, margin, y);
-      y += 7;
-      
-      if (data.address.complement) {
-        doc.setFont('helvetica', 'bold');
-        doc.text('Complemento:', margin, y);
-        doc.setFont('helvetica', 'normal');
-        // Handle long complement text with wrapping
-        const complementLines = doc.splitTextToSize(data.address.complement, contentWidth - 40);
-        doc.text(complementLines, margin + 40, y);
-        y += (complementLines.length * 6);
-      }
     }
   }
   
-  y += 15;
+  y += 5;
   
-  // Items section
-  doc.setFontSize(14);
+  // ========== 4. DELIVERY ADDRESS (when applicable) ==========
+  if (data.orderType === 'delivery' && data.address) {
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(80, 80, 80);
+    doc.text('ENDEREÇO DE ENTREGA', margin, y);
+    
+    y += 2;
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 8;
+    
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'normal');
+    
+    doc.text(`${data.address.street}, ${data.address.number}`, margin, y);
+    y += 6;
+    doc.text(`Bairro: ${data.address.neighborhood}`, margin, y);
+    y += 6;
+    
+    if (data.address.complement) {
+      doc.setFont('helvetica', 'bold');
+      doc.text('Complemento:', margin, y);
+      doc.setFont('helvetica', 'normal');
+      const complementLines = doc.splitTextToSize(data.address.complement, contentWidth - 35);
+      doc.text(complementLines, margin + 35, y);
+      y += (complementLines.length * 5) + 2;
+    }
+    
+    if (data.address.reference) {
+      doc.setFont('helvetica', 'bold');
+      doc.text('Referência:', margin, y);
+      doc.setFont('helvetica', 'normal');
+      const refLines = doc.splitTextToSize(data.address.reference, contentWidth - 30);
+      doc.text(refLines, margin + 30, y);
+      y += (refLines.length * 5) + 2;
+    }
+    
+    y += 5;
+  }
+  
+  // ========== 5. ORDER ITEMS ==========
+  doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(100, 100, 100);
+  doc.setTextColor(80, 80, 80);
   doc.text('ITENS DO PEDIDO', margin, y);
   
-  y += 3;
+  y += 2;
   doc.line(margin, y, pageWidth - margin, y);
   y += 8;
   
@@ -687,128 +769,158 @@ export function generateOrderPDF(data: PrintOrderData): void {
   y += 12;
   doc.setTextColor(0, 0, 0);
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(11);
+  doc.setFontSize(10);
   
+  // ========== 6. ITEMS WITH PAGE BREAK SUPPORT ==========
   data.items.forEach((item, index) => {
+    // Calculate required space for this item
+    let itemHeight = 12;
+    if (item.observation) {
+      itemHeight += 6;
+    }
+    
+    // Check if we need a new page
+    checkPageBreak(itemHeight, 'ITENS DO PEDIDO');
+    
     // Alternating row colors
     if (index % 2 === 0) {
       doc.setFillColor(252, 252, 252);
-      doc.rect(margin, y - 5, contentWidth, 14, 'F');
+      doc.rect(margin, y - 4, contentWidth, itemHeight, 'F');
     }
     
     const itemTotal = item.quantity * item.unitPrice;
+    
+    // Quantity
+    doc.setFont('helvetica', 'bold');
     doc.text(String(item.quantity), margin + 8, y);
+    doc.setFont('helvetica', 'normal');
     
-    // Truncate long item names
-    const maxNameWidth = 80;
-    const itemName = item.name.length > 35 ? item.name.substring(0, 35) + '...' : item.name;
-    doc.text(itemName, margin + 25, y);
+    // Item name (with truncation if too long)
+    const maxNameLength = 45;
+    const itemName = item.name.length > maxNameLength 
+      ? item.name.substring(0, maxNameLength) + '...' 
+      : item.name;
+    doc.text(itemName, margin + 20, y);
     
+    // Unit price and total
     doc.text(formatCurrencyPDF(item.unitPrice), pageWidth - margin - 50, y);
     doc.setFont('helvetica', 'bold');
     doc.text(formatCurrencyPDF(itemTotal), pageWidth - margin - 20, y);
     doc.setFont('helvetica', 'normal');
     
-    y += 7;
+    y += 6;
     
+    // Observation if exists
     if (item.observation) {
       doc.setFontSize(9);
-      doc.setTextColor(150, 100, 0);
-      doc.text(`📝 ${item.observation}`, margin + 25, y);
-      doc.setFontSize(11);
+      doc.setTextColor(120, 90, 0);
+      const obsLines = doc.splitTextToSize(`Obs: ${item.observation}`, contentWidth - 25);
+      doc.text(obsLines, margin + 20, y);
+      doc.setFontSize(10);
       doc.setTextColor(0, 0, 0);
-      y += 6;
+      y += obsLines.length * 4 + 2;
     }
     
-    y += 5;
+    y += 4;
   });
   
   y += 5;
-  doc.setDrawColor(200, 200, 200);
+  
+  // ========== 7. FINANCIAL SUMMARY ==========
+  // Check if we have enough space for the summary
+  checkPageBreak(60);
+  
+  doc.setDrawColor(180, 180, 180);
   doc.line(margin, y, pageWidth - margin, y);
   y += 10;
   
-  // Totals section
-  const totalsX = pageWidth - margin - 80;
   doc.setFontSize(11);
+  doc.setFont('helvetica', 'normal');
   
-  doc.text('Subtotal:', totalsX, y);
-  doc.text(formatCurrencyPDF(data.subtotal), pageWidth - margin - 5, y, { align: 'right' });
-  y += 8;
+  const summaryX = margin + 100;
+  const valueX = pageWidth - margin - 5;
   
+  // Subtotal
+  doc.text('Subtotal:', summaryX, y);
+  doc.text(formatCurrencyPDF(data.subtotal), valueX, y, { align: 'right' });
+  y += 7;
+  
+  // Delivery fee (if applicable)
   if (data.deliveryFee && data.deliveryFee > 0) {
-    doc.text('Taxa de Entrega:', totalsX, y);
-    doc.text(formatCurrencyPDF(data.deliveryFee), pageWidth - margin - 5, y, { align: 'right' });
-    y += 8;
+    doc.text('Taxa de Entrega:', summaryX, y);
+    doc.text(formatCurrencyPDF(data.deliveryFee), valueX, y, { align: 'right' });
+    y += 7;
   }
   
+  // Service fee (if applicable)
   if (data.serviceFee && data.serviceFee > 0) {
-    doc.text('Taxa de Serviço:', totalsX, y);
-    doc.text(formatCurrencyPDF(data.serviceFee), pageWidth - margin - 5, y, { align: 'right' });
-    y += 8;
+    doc.text('Taxa de Serviço:', summaryX, y);
+    doc.text(formatCurrencyPDF(data.serviceFee), valueX, y, { align: 'right' });
+    y += 7;
   }
   
+  // Discount (if applicable)
   if (data.discount && data.discount > 0) {
-    doc.setTextColor(0, 150, 0);
-    doc.text('Desconto:', totalsX, y);
-    doc.text(`-${formatCurrencyPDF(data.discount)}`, pageWidth - margin - 5, y, { align: 'right' });
+    doc.setTextColor(0, 130, 0);
+    doc.text('Desconto:', summaryX, y);
+    doc.text(`-${formatCurrencyPDF(data.discount)}`, valueX, y, { align: 'right' });
     doc.setTextColor(0, 0, 0);
-    y += 8;
+    y += 7;
   }
   
-  y += 5;
+  y += 3;
   
   // Total highlight box
-  doc.setFillColor(34, 34, 34);
-  doc.rect(totalsX - 10, y - 5, 95, 18, 'F');
-  doc.setFontSize(16);
+  doc.setFillColor(45, 45, 45);
+  doc.rect(summaryX - 10, y - 4, pageWidth - margin - summaryX + 15, 16, 'F');
+  doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(255, 255, 255);
-  doc.text('TOTAL:', totalsX, y + 6);
-  doc.text(formatCurrencyPDF(data.total), pageWidth - margin - 5, y + 6, { align: 'right' });
+  doc.text('TOTAL:', summaryX, y + 6);
+  doc.text(formatCurrencyPDF(data.total), valueX, y + 6, { align: 'right' });
   
   y += 25;
   doc.setTextColor(0, 0, 0);
   
-  // Payment section
+  // ========== 8. PAYMENT METHOD ==========
   if (data.paymentMethod) {
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(100, 100, 100);
-    doc.text('PAGAMENTO', margin, y);
-    
-    y += 3;
-    doc.line(margin, y, pageWidth - margin, y);
-    y += 10;
+    checkPageBreak(25);
     
     doc.setFontSize(12);
-    doc.setTextColor(0, 0, 0);
     doc.setFont('helvetica', 'bold');
-    doc.text('Forma de Pagamento:', margin, y);
-    doc.setFont('helvetica', 'normal');
-    doc.text(data.paymentMethod, margin + 58, y);
+    doc.setTextColor(80, 80, 80);
+    doc.text('FORMA DE PAGAMENTO', margin, y);
+    
+    y += 2;
+    doc.setDrawColor(200, 200, 200);
+    doc.line(margin, y, pageWidth - margin, y);
     y += 8;
+    
+    doc.setFontSize(11);
+    doc.setTextColor(0, 0, 0);
+    doc.setFont('helvetica', 'normal');
+    doc.text(data.paymentMethod, margin, y);
+    y += 7;
     
     if (data.changeFor && data.changeFor > 0) {
       doc.setFont('helvetica', 'bold');
       doc.text('Troco para:', margin, y);
       doc.setFont('helvetica', 'normal');
-      doc.text(formatCurrencyPDF(data.changeFor), margin + 35, y);
-      y += 8;
+      doc.text(formatCurrencyPDF(data.changeFor), margin + 32, y);
     }
   }
   
-  // Footer
-  const footerY = pageHeight - 25;
+  // Footer on last page
+  const footerY = pageHeight - 15;
   doc.setDrawColor(200, 200, 200);
-  doc.line(margin, footerY - 10, pageWidth - margin, footerY - 10);
+  doc.line(margin, footerY - 8, pageWidth - margin, footerY - 8);
   
-  doc.setFontSize(10);
-  doc.setTextColor(120, 120, 120);
+  doc.setFontSize(9);
+  doc.setTextColor(140, 140, 140);
   doc.setFont('helvetica', 'italic');
-  doc.text('Obrigado pela preferência!', pageWidth / 2, footerY, { align: 'center' });
+  doc.text('Obrigado pela preferência!', pageWidth / 2, footerY - 2, { align: 'center' });
   doc.setFont('helvetica', 'normal');
-  doc.text(`Documento gerado em ${new Date().toLocaleString('pt-BR')}`, pageWidth / 2, footerY + 6, { align: 'center' });
+  doc.text(`Documento gerado em ${new Date().toLocaleString('pt-BR')}`, pageWidth / 2, footerY + 3, { align: 'center' });
   
   // Download PDF
   const fileName = data.orderType === 'table' 
