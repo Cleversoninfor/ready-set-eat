@@ -21,7 +21,8 @@ import {
   Eye,
   MapPin,
   BarChart3,
-  DatabaseBackup
+  DatabaseBackup,
+  QrCode
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -68,6 +69,7 @@ const navGroups = [
       { id: 'delivery-zones', label: 'Taxas de Entrega', icon: MapPin, path: '/admin/delivery-zones' },
       { id: 'hours', label: 'Horários', icon: Clock, path: '/admin/hours' },
       { id: 'settings', label: 'Configurações', icon: Settings, path: '/admin/settings' },
+      { id: 'qrcodes', label: 'QR Codes', icon: QrCode, path: '/admin/qrcodes' },
       { id: 'backup', label: 'Backup', icon: DatabaseBackup, path: '/admin/backup' },
     ]
   },

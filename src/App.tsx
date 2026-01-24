@@ -27,6 +27,7 @@ import AdminDashboard from "./pages/admin/Dashboard";
 import AdminWaiters from "./pages/admin/Waiters";
 import AdminReports from "./pages/admin/Reports";
 import AdminBackup from "./pages/admin/Backup";
+import AdminQRCodes from "./pages/admin/QRCodes";
 import WaiterAccess from "./pages/WaiterAccess";
 import WaiterDashboard from "./pages/WaiterDashboard";
 import Kitchen from "./pages/Kitchen";
@@ -69,6 +70,7 @@ const App = () => (
                 <Route path="/admin/waiters" element={<AdminWaiters />} />
                 <Route path="/admin/reports" element={<AdminReports />} />
                 <Route path="/admin/backup" element={<AdminBackup />} />
+                <Route path="/admin/qrcodes" element={<AdminQRCodes />} />
                 <Route path="/waiter" element={<WaiterAccess />} />
                 <Route path="/waiter/dashboard" element={<WaiterDashboard />} />
                 <Route path="/kitchen" element={<Kitchen />} />
