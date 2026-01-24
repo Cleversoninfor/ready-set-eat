@@ -15,14 +15,14 @@ const PWAInstallButton = ({ appName = 'App' }: PWAInstallButtonProps) => {
   // Don't show if already installed or dismissed
   if (isInstalled || dismissed) return null;
 
-  // Don't show if not installable and not iOS
-  if (!isInstallable && !showIOSInstructions) return null;
-
   const handleInstallClick = async () => {
     if (isIOS) {
       setShowIOSModal(true);
-    } else {
+    } else if (isInstallable) {
       await promptInstall();
+    } else {
+      // Show instructions for browsers that don't support beforeinstallprompt
+      setShowIOSModal(true);
     }
   };
 
@@ -47,7 +47,7 @@ const PWAInstallButton = ({ appName = 'App' }: PWAInstallButtonProps) => {
         </button>
       </div>
 
-      {/* iOS Instructions Modal */}
+      {/* Install Instructions Modal */}
       {showIOSModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-card rounded-2xl p-6 max-w-sm w-full shadow-xl animate-slide-up">
@@ -62,35 +62,71 @@ const PWAInstallButton = ({ appName = 'App' }: PWAInstallButtonProps) => {
             </div>
             
             <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Para instalar o app no seu iPhone ou iPad:
-              </p>
-              
-              <div className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                    <Share className="h-4 w-4 text-primary" />
+              {isIOS ? (
+                <>
+                  <p className="text-sm text-muted-foreground">
+                    Para instalar o app no seu iPhone ou iPad:
+                  </p>
+                  
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-3">
+                      <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                        <Share className="h-4 w-4 text-primary" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm">1. Toque em Compartilhar</p>
+                        <p className="text-xs text-muted-foreground">
+                          Na barra do Safari, toque no ícone de compartilhar
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-start gap-3">
+                      <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                        <Plus className="h-4 w-4 text-primary" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm">2. Adicionar à Tela de Início</p>
+                        <p className="text-xs text-muted-foreground">
+                          Role para baixo e toque em "Adicionar à Tela de Início"
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-medium text-sm">1. Toque em Compartilhar</p>
-                    <p className="text-xs text-muted-foreground">
-                      Na barra do Safari, toque no ícone de compartilhar
-                    </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm text-muted-foreground">
+                    Para instalar o app no seu dispositivo:
+                  </p>
+                  
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-3">
+                      <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                        <Download className="h-4 w-4 text-primary" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm">Chrome / Edge</p>
+                        <p className="text-xs text-muted-foreground">
+                          Toque no menu (⋮) e selecione "Instalar app" ou "Adicionar à tela inicial"
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-start gap-3">
+                      <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                        <Share className="h-4 w-4 text-primary" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm">Samsung Internet</p>
+                        <p className="text-xs text-muted-foreground">
+                          Toque no menu e selecione "Adicionar à Tela inicial"
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                </div>
-                
-                <div className="flex items-start gap-3">
-                  <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                    <Plus className="h-4 w-4 text-primary" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-sm">2. Adicionar à Tela de Início</p>
-                    <p className="text-xs text-muted-foreground">
-                      Role para baixo e toque em "Adicionar à Tela de Início"
-                    </p>
-                  </div>
-                </div>
-              </div>
+                </>
+              )}
               
               <Button
                 onClick={() => setShowIOSModal(false)}
