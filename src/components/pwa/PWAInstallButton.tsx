@@ -35,9 +35,10 @@ const PWAInstallButton = ({ appName = 'App' }: PWAInstallButtonProps) => {
           variant="outline"
           size="sm"
           className="gap-2"
+          title={`Instalar ${appName}`}
         >
           <Download className="h-4 w-4" />
-          <span className="hidden sm:inline">Instalar</span>
+          <span>Instalar</span>
         </Button>
         <button
           onClick={() => setDismissed(true)}
