@@ -22,6 +22,7 @@ import { useTablesWithOrders } from '@/hooks/useTables';
 import { useWaiterReadyItems, useKitchenItemMutations } from '@/hooks/useKitchenItems';
 import { useStoreConfig } from '@/hooks/useStore';
 import { useTheme } from '@/hooks/useTheme';
+import { usePWAConfig } from '@/hooks/usePWAConfig';
 import { TableWithOrder, TableStatus } from '@/types/pdv';
 
 type StatusFilter = 'all' | 'available' | 'occupied' | 'requesting_bill';
@@ -42,7 +43,7 @@ export default function WaiterDashboard() {
   const [readyItemsOpen, setReadyItemsOpen] = useState(false);
 
   useTheme();
-
+  usePWAConfig();
   // Get waiter info from localStorage
   const waiterId = localStorage.getItem('waiter_id');
   const waiterName = localStorage.getItem('waiter_name');
