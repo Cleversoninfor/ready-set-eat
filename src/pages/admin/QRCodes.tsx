@@ -71,9 +71,6 @@ const QRCodes = () => {
   };
 
   const baseUrl = getBaseUrl();
-  
-  // Converter cor primária para HEX (para o QR Code)
-  const primaryColorHex = hslToHex(storeConfig?.primary_color || '0 0 0');
 
   const qrCodeItems: QRCodeItem[] = [
     {
@@ -114,7 +111,7 @@ const QRCodes = () => {
       const centerX = pageWidth / 2;
 
       // Cores baseadas no tema - converter para RGB
-      const colorHex = primaryColorHex;
+      const colorHex = hslToHex(storeConfig?.primary_color || '0 84% 60%');
       const hexToRgb = (hex: string) => {
         const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
         return result ? {
@@ -176,12 +173,12 @@ const QRCodes = () => {
       pdf.text(descriptionLines, centerX, currentY, { align: "center" });
       currentY += descriptionLines.length * 6 + 15;
 
-      // QR Code - usando Canvas diretamente
+      // QR Code - usando Canvas diretamente com alta qualidade
       const qrCodeUrl = `${baseUrl}${item.path}`;
       const qrCanvas = document.getElementById(`qr-canvas-${item.id}`) as HTMLCanvasElement;
       
       if (qrCanvas) {
-        const qrDataUrl = qrCanvas.toDataURL("image/png");
+        const qrDataUrl = qrCanvas.toDataURL("image/png", 1.0);
         
         const qrSize = 80;
         const qrX = centerX - qrSize / 2;
@@ -191,7 +188,7 @@ const QRCodes = () => {
         pdf.setDrawColor(220, 220, 220);
         pdf.roundedRect(qrX - 5, currentY - 5, qrSize + 10, qrSize + 10, 3, 3, "FD");
         
-        pdf.addImage(qrDataUrl, "PNG", qrX, currentY, qrSize, qrSize);
+        pdf.addImage(qrDataUrl, "PNG", qrX, currentY, qrSize, qrSize, undefined, "FAST");
         currentY += qrSize + 20;
       } else {
         throw new Error("QR Code canvas não encontrado");
@@ -216,11 +213,6 @@ const QRCodes = () => {
       // Rodapé decorativo
       pdf.setFillColor(rgb.r, rgb.g, rgb.b);
       pdf.rect(0, pageHeight - 15, pageWidth, 15, "F");
-      
-      pdf.setFont("helvetica", "normal");
-      pdf.setFontSize(9);
-      pdf.setTextColor(255, 255, 255);
-      pdf.text("Desenvolvido com ❤️ por Infornexa", centerX, pageHeight - 6, { align: "center" });
 
       // Salvar PDF
       const fileName = `qrcode-${item.id}-${storeName.replace(/\s+/g, "-").toLowerCase()}.pdf`;
@@ -320,11 +312,11 @@ const QRCodes = () => {
                     <QRCodeCanvas
                       id={`qr-canvas-${item.id}`}
                       value={fullUrl}
-                      size={160}
+                      size={200}
                       level="H"
                       includeMargin
                       bgColor="#FFFFFF"
-                      fgColor={primaryColorHex}
+                      fgColor="#000000"
                     />
                   </div>
                   
