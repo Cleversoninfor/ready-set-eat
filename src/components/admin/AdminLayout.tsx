@@ -31,6 +31,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useStoreConfig } from '@/hooks/useStore';
 import { useTheme } from '@/hooks/useTheme';
+import { usePWAConfig } from '@/hooks/usePWAConfig';
 import { cn } from '@/lib/utils';
 import { GlobalOrderNotification } from './GlobalOrderNotification';
 import { InfornexaHeader } from './InfornexaHeader';
@@ -89,9 +90,9 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
   const { data: store } = useStoreConfig();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Apply dynamic theme based on store colors
+  // Apply dynamic theme and PWA config based on store colors
   useTheme();
-
+  usePWAConfig();
   useEffect(() => {
     if (!isLoading && !user) {
       navigate('/auth');

@@ -18,6 +18,7 @@ import { KitchenOrderCard, groupItemsByOrder, GroupedKitchenOrder } from '@/comp
 import { useKitchenItems } from '@/hooks/useKitchenItems';
 import { useStoreConfig } from '@/hooks/useStore';
 import { useTheme } from '@/hooks/useTheme';
+import { usePWAConfig } from '@/hooks/usePWAConfig';
 
 export default function Kitchen() {
   const navigate = useNavigate();
@@ -29,6 +30,7 @@ export default function Kitchen() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useTheme();
+  usePWAConfig();
 
   // Create audio context for notification sound
   useEffect(() => {

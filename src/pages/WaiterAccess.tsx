@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useStoreConfig } from '@/hooks/useStore';
 import { useTheme } from '@/hooks/useTheme';
+import { usePWAConfig } from '@/hooks/usePWAConfig';
 import { supabase } from '@/integrations/supabase/client';
 
 interface Waiter {
@@ -23,6 +24,7 @@ export default function WaiterAccess() {
   const [selectedWaiter, setSelectedWaiter] = useState<string | null>(null);
 
   useTheme();
+  usePWAConfig();
 
   useEffect(() => {
     loadWaiters();
