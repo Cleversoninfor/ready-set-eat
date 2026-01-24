@@ -311,6 +311,10 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
 
           {/* Content */}
           <main className="flex-1 p-3 sm:p-4 lg:p-6 overflow-x-hidden">
+            {/* Desktop: keep install button visible without needing to find it in the sidebar */}
+            <div className="hidden lg:flex justify-end mb-4">
+              <PWAInstallButton appName="Administração" />
+            </div>
             {children}
           </main>
         </div>
