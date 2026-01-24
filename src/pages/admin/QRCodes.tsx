@@ -16,6 +16,48 @@ interface QRCodeItem {
   icon: React.ElementType;
 }
 
+// Função para converter HSL para HEX
+const hslToHex = (hslString: string): string => {
+  // Se já for hex, retornar como está
+  if (hslString.startsWith('#')) {
+    return hslString;
+  }
+  
+  // Limpar a string e extrair valores HSL
+  // Formatos aceitos: "0 84% 60%" ou "0 84 60" ou "hsl(0, 84%, 60%)"
+  const cleanString = hslString.replace(/hsl\(|\)|,/g, ' ').trim();
+  const parts = cleanString.split(/\s+/).filter(p => p.length > 0);
+  
+  if (parts.length < 3) {
+    console.warn('HSL inválido:', hslString);
+    return '#ea384c'; // fallback para vermelho padrão
+  }
+  
+  const h = parseFloat(parts[0]) || 0;
+  const s = parseFloat(parts[1].replace('%', '')) / 100;
+  const l = parseFloat(parts[2].replace('%', '')) / 100;
+  
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const x = c * (1 - Math.abs((h / 60) % 2 - 1));
+  const m = l - c / 2;
+  
+  let r = 0, g = 0, b = 0;
+  
+  if (h >= 0 && h < 60) { r = c; g = x; b = 0; }
+  else if (h >= 60 && h < 120) { r = x; g = c; b = 0; }
+  else if (h >= 120 && h < 180) { r = 0; g = c; b = x; }
+  else if (h >= 180 && h < 240) { r = 0; g = x; b = c; }
+  else if (h >= 240 && h < 300) { r = x; g = 0; b = c; }
+  else if (h >= 300 && h < 360) { r = c; g = 0; b = x; }
+  
+  const toHex = (n: number) => {
+    const hex = Math.round((n + m) * 255).toString(16);
+    return hex.length === 1 ? '0' + hex : hex;
+  };
+  
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+};
+
 const QRCodes = () => {
   const { data: storeConfig, isLoading } = useStoreConfig();
   const [generatingPDF, setGeneratingPDF] = useState<string | null>(null);
@@ -29,6 +71,9 @@ const QRCodes = () => {
   };
 
   const baseUrl = getBaseUrl();
+  
+  // Converter cor primária para HEX (para o QR Code)
+  const primaryColorHex = hslToHex(storeConfig?.primary_color || '0 0 0');
 
   const qrCodeItems: QRCodeItem[] = [
     {
@@ -68,8 +113,8 @@ const QRCodes = () => {
       const pageHeight = pdf.internal.pageSize.getHeight();
       const centerX = pageWidth / 2;
 
-      // Cores baseadas no tema
-      const primaryColor = storeConfig?.primary_color || "#ea384c";
+      // Cores baseadas no tema - converter para RGB
+      const colorHex = primaryColorHex;
       const hexToRgb = (hex: string) => {
         const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
         return result ? {
@@ -78,7 +123,7 @@ const QRCodes = () => {
           b: parseInt(result[3], 16)
         } : { r: 234, g: 56, b: 76 };
       };
-      const rgb = hexToRgb(primaryColor);
+      const rgb = hexToRgb(colorHex);
 
       // Fundo decorativo superior
       pdf.setFillColor(rgb.r, rgb.g, rgb.b);
@@ -278,7 +323,8 @@ const QRCodes = () => {
                       size={160}
                       level="H"
                       includeMargin
-                      fgColor={storeConfig?.primary_color || "#000000"}
+                      bgColor="#FFFFFF"
+                      fgColor={primaryColorHex}
                     />
                   </div>
                   
