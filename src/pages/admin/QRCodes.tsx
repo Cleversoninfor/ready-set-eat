@@ -1,7 +1,7 @@
-import { useState, useRef } from "react";
-import { QRCodeSVG } from "qrcode.react";
+import { useState } from "react";
+import { QRCodeCanvas } from "qrcode.react";
 import { jsPDF } from "jspdf";
-import { Download, ChefHat, Users, Menu, QrCode } from "lucide-react";
+import { Download, ChefHat, Users, Menu, QrCode, RefreshCw } from "lucide-react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,7 @@ interface QRCodeItem {
 }
 
 const QRCodes = () => {
-  const { data: storeConfig } = useStoreConfig();
+  const { data: storeConfig, isLoading } = useStoreConfig();
   const [generatingPDF, setGeneratingPDF] = useState<string | null>(null);
   
   // Usar o subdomínio configurado ou a URL atual
@@ -89,13 +89,13 @@ const QRCodes = () => {
       
       if (storeConfig?.logo_url) {
         try {
-          const logoImg = await loadImage(storeConfig.logo_url);
+          const logoImg = await loadImageWithProxy(storeConfig.logo_url);
           const logoSize = 40;
           const logoX = centerX - logoSize / 2;
           pdf.addImage(logoImg, "PNG", logoX, currentY, logoSize, logoSize);
           currentY += logoSize + 10;
         } catch (error) {
-          console.error("Erro ao carregar logo:", error);
+          console.warn("Logo não carregada, continuando sem ela:", error);
           currentY += 10;
         }
       } else {
@@ -131,18 +131,12 @@ const QRCodes = () => {
       pdf.text(descriptionLines, centerX, currentY, { align: "center" });
       currentY += descriptionLines.length * 6 + 15;
 
-      // QR Code
+      // QR Code - usando Canvas diretamente
       const qrCodeUrl = `${baseUrl}${item.path}`;
-      const qrCanvas = document.createElement("canvas");
-      const qrSvg = document.getElementById(`qr-${item.id}`) as unknown as SVGSVGElement;
+      const qrCanvas = document.getElementById(`qr-canvas-${item.id}`) as HTMLCanvasElement;
       
-      if (qrSvg) {
-        const svgData = new XMLSerializer().serializeToString(qrSvg);
-        const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
-        const svgUrl = URL.createObjectURL(svgBlob);
-        
-        const qrImg = await loadImage(svgUrl);
-        URL.revokeObjectURL(svgUrl);
+      if (qrCanvas) {
+        const qrDataUrl = qrCanvas.toDataURL("image/png");
         
         const qrSize = 80;
         const qrX = centerX - qrSize / 2;
@@ -152,8 +146,10 @@ const QRCodes = () => {
         pdf.setDrawColor(220, 220, 220);
         pdf.roundedRect(qrX - 5, currentY - 5, qrSize + 10, qrSize + 10, 3, 3, "FD");
         
-        pdf.addImage(qrImg, "PNG", qrX, currentY, qrSize, qrSize);
+        pdf.addImage(qrDataUrl, "PNG", qrX, currentY, qrSize, qrSize);
         currentY += qrSize + 20;
+      } else {
+        throw new Error("QR Code canvas não encontrado");
       }
 
       // URL abaixo do QR Code
@@ -194,15 +190,33 @@ const QRCodes = () => {
     }
   };
 
-  const loadImage = (url: string): Promise<HTMLImageElement> => {
+  const loadImageWithProxy = (url: string): Promise<HTMLImageElement> => {
     return new Promise((resolve, reject) => {
       const img = new Image();
       img.crossOrigin = "anonymous";
+      
       img.onload = () => resolve(img);
-      img.onerror = reject;
+      img.onerror = () => {
+        // Tentar sem crossOrigin se falhar
+        const img2 = new Image();
+        img2.onload = () => resolve(img2);
+        img2.onerror = reject;
+        img2.src = url;
+      };
+      
       img.src = url;
     });
   };
+
+  if (isLoading) {
+    return (
+      <AdminLayout title="QR Codes">
+        <div className="flex items-center justify-center h-64">
+          <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout title="QR Codes">
@@ -219,14 +233,21 @@ const QRCodes = () => {
           </div>
         </div>
 
-        {storeConfig?.subdomain_slug && (
-          <div className="p-4 rounded-lg bg-accent/50 border border-border">
-            <p className="text-sm">
-              <span className="font-medium">URL base configurada:</span>{" "}
-              <code className="px-2 py-1 rounded bg-muted text-xs">{baseUrl}</code>
+        <div className="p-4 rounded-lg bg-accent/50 border border-border">
+          <p className="text-sm">
+            <span className="font-medium">URL base atual:</span>{" "}
+            <code className="px-2 py-1 rounded bg-muted text-xs">{baseUrl}</code>
+          </p>
+          {storeConfig?.subdomain_slug ? (
+            <p className="text-xs text-muted-foreground mt-1">
+              Os QR Codes usarão automaticamente o subdomínio configurado nas configurações.
             </p>
-          </div>
-        )}
+          ) : (
+            <p className="text-xs text-amber-600 mt-1">
+              Configure um subdomínio em Configurações → URL do Cardápio para usar seu domínio personalizado.
+            </p>
+          )}
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {qrCodeItems.map((item) => {
@@ -251,8 +272,8 @@ const QRCodes = () => {
                 
                 <CardContent className="space-y-4">
                   <div className="flex justify-center p-4 bg-white rounded-lg border border-border">
-                    <QRCodeSVG
-                      id={`qr-${item.id}`}
+                    <QRCodeCanvas
+                      id={`qr-canvas-${item.id}`}
                       value={fullUrl}
                       size={160}
                       level="H"
