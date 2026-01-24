@@ -27,6 +27,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { PWAInstallButton } from '@/components/pwa/PWAInstallButton';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useStoreConfig } from '@/hooks/useStore';
@@ -260,6 +261,11 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
 
             {/* User Section */}
             <div className="p-4 border-t border-border">
+              {/* PWA Install Button for Desktop */}
+              <div className="hidden lg:block mb-3">
+                <PWAInstallButton appName="Administração" />
+              </div>
+              
               <div className="flex items-center gap-3 mb-3">
                 <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center">
                   <span className="text-sm font-medium text-foreground">
@@ -299,7 +305,8 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
             >
               <Menu className="h-5 w-5" />
             </Button>
-            <h1 className="font-bold text-foreground truncate">{title || 'Admin'}</h1>
+            <h1 className="font-bold text-foreground truncate flex-1">{title || 'Admin'}</h1>
+            <PWAInstallButton appName="Administração" />
           </header>
 
           {/* Content */}

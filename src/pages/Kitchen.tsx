@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { KitchenOrderCard, groupItemsByOrder, GroupedKitchenOrder } from '@/components/kitchen/KitchenOrderCard';
+import { PWAInstallButton } from '@/components/pwa/PWAInstallButton';
 import { useKitchenItems } from '@/hooks/useKitchenItems';
 import { useStoreConfig } from '@/hooks/useStore';
 import { useTheme } from '@/hooks/useTheme';
@@ -121,6 +122,7 @@ export default function Kitchen() {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <PWAInstallButton appName="Cozinha" />
               <Button 
                 variant="outline" 
                 size="icon"
