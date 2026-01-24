@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { UserCheck, Loader2 } from 'lucide-react';
+import { UserCheck, Loader2, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { PWAInstallButton } from '@/components/pwa/PWAInstallButton';
 import { useStoreConfig } from '@/hooks/useStore';
 import { useTheme } from '@/hooks/useTheme';
 import { usePWAConfig } from '@/hooks/usePWAConfig';
@@ -63,6 +64,11 @@ export default function WaiterAccess() {
       </Helmet>
 
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        {/* PWA Install Button - Fixed Position */}
+        <div className="fixed top-4 right-4 z-50">
+          <PWAInstallButton appName="Garçons" />
+        </div>
+
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
