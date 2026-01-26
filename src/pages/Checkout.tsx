@@ -17,6 +17,7 @@ import { TableSelector } from '@/components/checkout/TableSelector';
 import { useCreateDineInOrder } from '@/hooks/useDineInOrder';
 import { PaymentMethod } from '@/types';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 
 type DisplayPaymentMethod = 'money' | 'debit' | 'credit' | 'pix';
 type DeliveryType = 'delivery' | 'pickup' | 'dine_in';
@@ -331,6 +332,44 @@ const Checkout = () => {
         title: '🎉 Pedido enviado!',
         description: `Pedido #${order.id} recebido com sucesso.`,
       });
+
+      // Send WhatsApp notification (non-blocking)
+      try {
+        console.log('[Checkout] Sending WhatsApp notification...');
+        supabase.functions.invoke('send-whatsapp-notification', {
+          body: {
+            orderId: order.id,
+            customerName: deliveryData.name,
+            customerPhone: deliveryData.phone,
+            items: items.map((item) => ({
+              product_name: item.product.name,
+              quantity: item.quantity,
+              unit_price: item.product.price,
+              observation: item.observation || null,
+            })),
+            totalAmount: finalTotal,
+            paymentMethod: paymentMethod,
+            addressStreet: deliveryType === 'delivery' ? deliveryData.street : 'Retirada no local',
+            addressNumber: deliveryType === 'delivery' ? deliveryData.number : '-',
+            addressNeighborhood: deliveryType === 'delivery' ? deliveryData.neighborhood : '-',
+            addressComplement: deliveryType === 'delivery' ? deliveryData.complement || null : null,
+            changeFor: changeForValue,
+            deliveryType: deliveryType as 'delivery' | 'pickup',
+            storePhone: store?.phone_whatsapp || null,
+          },
+        }).then((response) => {
+          if (response.error) {
+            console.error('[Checkout] WhatsApp notification error:', response.error);
+          } else {
+            console.log('[Checkout] WhatsApp notification sent:', response.data);
+          }
+        }).catch((err) => {
+          console.error('[Checkout] WhatsApp notification failed:', err);
+        });
+      } catch (whatsappError) {
+        console.error('[Checkout] WhatsApp notification error:', whatsappError);
+        // Don't block checkout flow if WhatsApp fails
+      }
 
       // Save customer phone for public order lookup
       console.log('[Checkout] Saving customer phone:', deliveryData.phone);
