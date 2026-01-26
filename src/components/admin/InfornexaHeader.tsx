@@ -21,7 +21,7 @@ export function InfornexaHeader() {
           <img 
             src={logoInfornexa} 
             alt="Logo Infornexa" 
-            className="h-14 w-auto"
+            className="h-10 w-auto"
           />
           <span className="text-white text-sm font-medium hidden sm:block">
             O seu cardápio digital, Boas vendas
