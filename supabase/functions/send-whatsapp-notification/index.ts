@@ -125,9 +125,12 @@ serve(async (req) => {
   }
 
   try {
-    const EVOLUTION_API_URL = Deno.env.get("EVOLUTION_API_URL");
+    let EVOLUTION_API_URL = Deno.env.get("EVOLUTION_API_URL");
     const EVOLUTION_API_KEY = Deno.env.get("EVOLUTION_API_KEY");
     const EVOLUTION_INSTANCE_NAME = Deno.env.get("EVOLUTION_INSTANCE_NAME");
+
+    console.log("[send-whatsapp-notification] EVOLUTION_API_URL raw:", EVOLUTION_API_URL);
+    console.log("[send-whatsapp-notification] EVOLUTION_INSTANCE_NAME:", EVOLUTION_INSTANCE_NAME);
 
     if (!EVOLUTION_API_URL || !EVOLUTION_API_KEY || !EVOLUTION_INSTANCE_NAME) {
       console.error("Missing Evolution API configuration");
@@ -136,6 +139,13 @@ serve(async (req) => {
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    // Normalize URL - ensure it starts with https:// and remove trailing slash
+    EVOLUTION_API_URL = EVOLUTION_API_URL.trim();
+    if (!EVOLUTION_API_URL.startsWith("http://") && !EVOLUTION_API_URL.startsWith("https://")) {
+      EVOLUTION_API_URL = `https://${EVOLUTION_API_URL}`;
+    }
+    EVOLUTION_API_URL = EVOLUTION_API_URL.replace(/\/+$/, ""); // Remove trailing slashes
 
     const payload: NotificationPayload = await req.json();
     
@@ -160,6 +170,7 @@ serve(async (req) => {
     // Send via Evolution API
     const evolutionUrl = `${EVOLUTION_API_URL}/message/sendText/${EVOLUTION_INSTANCE_NAME}`;
     
+    console.log("[send-whatsapp-notification] Final URL:", evolutionUrl);
     const evolutionPayload = {
       number: formattedPhone,
       text: message,
