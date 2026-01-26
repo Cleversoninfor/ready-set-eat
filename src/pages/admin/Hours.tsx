@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { Loader2, Clock, Plus, Trash2, Pencil, Check, X } from 'lucide-react';
+import { Loader2, Clock, Plus, Pencil, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { AdminLayout } from '@/components/admin/AdminLayout';
-import { useBusinessHours, useUpdateBusinessHour, useCreateBusinessHours, useDeleteBusinessHour, getDayName, BusinessHour } from '@/hooks/useBusinessHours';
+import { useBusinessHours, useUpdateBusinessHour, useCreateBusinessHours, getDayName, BusinessHour } from '@/hooks/useBusinessHours';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
@@ -12,7 +12,6 @@ const AdminHours = () => {
   const { data: hours, isLoading } = useBusinessHours();
   const updateHour = useUpdateBusinessHour();
   const createHours = useCreateBusinessHours();
-  const deleteHour = useDeleteBusinessHour();
   const { toast } = useToast();
 
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -61,15 +60,6 @@ const AdminHours = () => {
       toast({ title: 'Horários criados com sucesso!' });
     } catch (error: any) {
       toast({ title: 'Erro ao criar horários', description: error.message, variant: 'destructive' });
-    }
-  };
-
-  const handleDeleteHour = async (id: string) => {
-    try {
-      await deleteHour.mutateAsync(id);
-      toast({ title: 'Horário excluído!' });
-    } catch (error: any) {
-      toast({ title: 'Erro ao excluir', description: error.message, variant: 'destructive' });
     }
   };
 
@@ -165,18 +155,6 @@ const AdminHours = () => {
                     >
                       <Pencil className="h-4 w-4" />
                     </Button>
-                    <Button 
-                      size="icon-sm"
-                      variant="action-icon-destructive"
-                      onClick={() => handleDeleteHour(hour.id)}
-                      disabled={deleteHour.isPending}
-                    >
-                      {deleteHour.isPending ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Trash2 className="h-4 w-4" />
-                      )}
-                    </Button>
                   </div>
                 )}
               </div>
@@ -232,18 +210,6 @@ const AdminHours = () => {
                       onClick={() => handleEdit(hour)}
                     >
                       <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button 
-                      size="icon-sm"
-                      variant="action-icon-destructive"
-                      onClick={() => handleDeleteHour(hour.id)}
-                      disabled={deleteHour.isPending}
-                    >
-                      {deleteHour.isPending ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Trash2 className="h-4 w-4" />
-                      )}
                     </Button>
                   </div>
                 </div>
