@@ -26,7 +26,7 @@ export function CategoryIcons({ categories, onCategorySelect }: CategoryIconsPro
       </div>
       
       {/* Mobile: máximo 4 por linha com flex-wrap | Desktop: scroll horizontal */}
-      <div className="flex gap-2 pb-2 flex-wrap md:flex-nowrap md:overflow-x-auto md:scrollbar-hide">
+      <div className="flex gap-1.5 pb-2 flex-wrap md:flex-nowrap md:overflow-x-auto md:scrollbar-hide">
         {categories.map((category) => {
           const isSelected = selectedId === category.id;
           
@@ -35,8 +35,8 @@ export function CategoryIcons({ categories, onCategorySelect }: CategoryIconsPro
               key={category.id}
               onClick={() => handleSelect(category.id)}
               className={cn(
-                "rounded-full px-3 py-2 text-sm font-medium transition-all duration-200",
-                "w-[calc(25%-6px)] md:w-auto text-center truncate",
+                "rounded-full px-2 py-1.5 text-xs font-medium transition-all duration-200 whitespace-nowrap",
+                "w-[calc(25%-4.5px)] md:w-auto text-center",
                 isSelected
                   ? "bg-primary text-primary-foreground shadow-card"
                   : "bg-muted text-muted-foreground hover:text-foreground"
