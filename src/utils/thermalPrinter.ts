@@ -645,59 +645,84 @@ export function generateThermalPDF(data: PrintOrderData): void {
   const formatCurrencyPDF = (value: number) => 
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 
-  // First pass: calculate total height needed
-  let estimatedHeight = 10; // Initial top spacing
+  // First pass: calculate total height needed with more accurate measurements
+  // Using approximately 0.35mm per point of font size for line height
+  const lineMultiplier = 0.45;
+  let estimatedHeight = 5; // Initial top spacing (reduced from 10)
   
   // Header
-  if (data.storeName) estimatedHeight += fontSize.title * 0.5;
-  estimatedHeight += fontSize.large * 0.5; // Order type
-  estimatedHeight += fontSize.normal * 0.5; // Order ID
-  estimatedHeight += 4; // Spacing
+  if (data.storeName) estimatedHeight += fontSize.title * lineMultiplier;
+  estimatedHeight += fontSize.large * lineMultiplier; // Order type
+  estimatedHeight += fontSize.normal * lineMultiplier; // Order ID
+  estimatedHeight += 3; // Spacing
   
   // Date/time
-  estimatedHeight += fontSize.normal * 0.5 * 2 + 3;
+  estimatedHeight += fontSize.normal * lineMultiplier * 2 + 2;
   
   // Customer info
-  estimatedHeight += fontSize.normal * 0.5; // Title
+  estimatedHeight += fontSize.normal * lineMultiplier; // Title
   if (data.orderType === 'table') {
-    estimatedHeight += fontSize.normal * 0.5 * 3;
+    if (data.tableName) estimatedHeight += fontSize.normal * lineMultiplier;
+    if (data.waiterName) estimatedHeight += fontSize.normal * lineMultiplier;
+    if (data.customerCount) estimatedHeight += fontSize.normal * lineMultiplier;
   } else {
-    estimatedHeight += fontSize.normal * 0.5 * 2;
+    if (data.customerName) estimatedHeight += fontSize.normal * lineMultiplier;
+    if (data.customerPhone) estimatedHeight += fontSize.normal * lineMultiplier;
   }
-  estimatedHeight += 3;
+  estimatedHeight += 2;
   
   // Address (if delivery)
   if (data.orderType === 'delivery' && data.address) {
-    estimatedHeight += fontSize.normal * 0.5 + 3; // Title
-    estimatedHeight += fontSize.normal * 0.5 * 2; // Address lines
-    if (data.address.complement) estimatedHeight += fontSize.small * 0.5;
-    if (data.address.reference) estimatedHeight += fontSize.small * 0.5;
-    estimatedHeight += 3;
+    estimatedHeight += fontSize.normal * lineMultiplier + 2; // Title
+    estimatedHeight += fontSize.normal * lineMultiplier * 2; // Address lines
+    if (data.address.complement) {
+      // Estimate wrapped lines for complement
+      const complementLines = Math.ceil((data.address.complement.length * fontSize.small * 0.3) / contentWidth);
+      estimatedHeight += fontSize.small * lineMultiplier * Math.max(1, complementLines);
+    }
+    if (data.address.reference) estimatedHeight += fontSize.small * lineMultiplier;
+    estimatedHeight += 2;
   }
   
   // Items title
-  estimatedHeight += fontSize.normal * 0.5 + 3;
+  estimatedHeight += fontSize.normal * lineMultiplier + 2;
   
-  // Items
+  // Items - more accurate calculation
   data.items.forEach(item => {
-    estimatedHeight += fontSize.normal * 0.5; // Item line
-    if (item.observation) estimatedHeight += fontSize.small * 0.5 * 2;
-    estimatedHeight += 2; // Spacing between items
+    // Item name line (may wrap)
+    const itemText = `${item.quantity}x ${item.name}`;
+    const itemLines = Math.ceil((itemText.length * fontSize.normal * 0.25) / contentWidth);
+    estimatedHeight += fontSize.normal * lineMultiplier * Math.max(1, itemLines);
+    estimatedHeight += fontSize.normal * lineMultiplier; // Price line
+    
+    if (item.observation) {
+      const obsLines = Math.ceil((item.observation.length * fontSize.small * 0.25) / contentWidth);
+      estimatedHeight += fontSize.small * lineMultiplier * Math.max(1, obsLines);
+    }
+    estimatedHeight += 1; // Small spacing between items
   });
   
-  // Quantity total + financial
-  estimatedHeight += fontSize.normal * 0.5 + 3;
-  estimatedHeight += fontSize.normal * 0.5 * 4; // Subtotal, fees, total
-  estimatedHeight += fontSize.large * 0.5 + 3; // TOTAL
+  // Quantity total
+  estimatedHeight += fontSize.normal * lineMultiplier + 2;
+  
+  // Financial summary
+  estimatedHeight += fontSize.normal * lineMultiplier; // Subtotal
+  if (data.deliveryFee && data.deliveryFee > 0) estimatedHeight += fontSize.normal * lineMultiplier;
+  if (data.serviceFee && data.serviceFee > 0) estimatedHeight += fontSize.normal * lineMultiplier;
+  if (data.discount && data.discount > 0) estimatedHeight += fontSize.normal * lineMultiplier;
+  estimatedHeight += 1 + fontSize.large * lineMultiplier + 2; // TOTAL
   
   // Payment
-  if (data.paymentMethod) estimatedHeight += fontSize.normal * 0.5 * 2;
+  if (data.paymentMethod) {
+    estimatedHeight += fontSize.normal * lineMultiplier;
+    if (data.changeFor && data.changeFor > 0) estimatedHeight += fontSize.normal * lineMultiplier;
+  }
   
   // Footer
-  estimatedHeight += fontSize.normal * 0.5 + 8;
+  estimatedHeight += 3 + fontSize.normal * lineMultiplier + 3; // Reduced final padding
   
-  // Create PDF with calculated height (minimum 50mm)
-  const finalHeight = Math.max(50, estimatedHeight + 10);
+  // Create PDF with calculated height (minimum 40mm, no extra padding)
+  const finalHeight = Math.max(40, Math.ceil(estimatedHeight));
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
