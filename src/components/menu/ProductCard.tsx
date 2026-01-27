@@ -55,11 +55,12 @@ export function ProductCard({ product, onSelect }: ProductCardProps) {
         </div>
       </div>
       {product.image_url && (
-        <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl">
+        <div className="relative w-24 sm:w-28 shrink-0 overflow-hidden rounded-xl" style={{ aspectRatio: '27/14' }}>
           <img
             src={product.image_url}
             alt={product.name}
-            className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
+            loading="lazy"
+            className="h-full w-full object-contain bg-muted/30 transition-transform duration-200 group-hover:scale-105"
           />
           {product.is_available && (
             <div className="absolute bottom-1 right-1 flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-card md:hidden">

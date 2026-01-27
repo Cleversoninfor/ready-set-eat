@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Clock, Phone, MapPin, Bike } from 'lucide-react';
 import { StoreConfig } from '@/hooks/useStore';
-import { useBusinessHours, getDayName, isStoreCurrentlyOpen } from '@/hooks/useBusinessHours';
+import { useBusinessHours, getDayName } from '@/hooks/useBusinessHours';
+import { useStoreStatus } from '@/hooks/useStoreStatus';
 import {
   Dialog,
   DialogContent,
@@ -17,6 +18,7 @@ interface StoreInfoProps {
 export function StoreInfo({ store }: StoreInfoProps) {
   const [hoursModalOpen, setHoursModalOpen] = useState(false);
   const { data: businessHours } = useBusinessHours();
+  const storeStatus = useStoreStatus();
 
   const formatPhone = (phone: string | null) => {
     if (!phone) return '';
@@ -31,24 +33,23 @@ export function StoreInfo({ store }: StoreInfoProps) {
     return time.slice(0, 5);
   };
 
-  const isOpen = businessHours ? isStoreCurrentlyOpen(businessHours) : store.is_open;
   const currentDay = new Date().getDay();
 
   return (
     <>
       <div className="mt-4 px-4 space-y-3">
-        {/* Status */}
+        {/* Status - Usando status combinado (manual + horário) */}
         <div className="flex items-center justify-between rounded-xl bg-card p-4 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-              <Clock className="h-5 w-5 text-muted-foreground" />
+            <div className={`flex h-10 w-10 items-center justify-center rounded-full ${storeStatus.isOpen ? 'bg-secondary/20' : 'bg-destructive/20'}`}>
+              <Clock className={`h-5 w-5 ${storeStatus.isOpen ? 'text-secondary' : 'text-destructive'}`} />
             </div>
             <div>
-              <p className="text-sm font-semibold text-foreground">
-                {isOpen ? 'Aberto agora' : 'Fechado'}
+              <p className={`text-sm font-semibold ${storeStatus.isOpen ? 'text-secondary' : 'text-destructive'}`}>
+                {storeStatus.isOpen ? 'Aberto agora' : 'Fechado'}
               </p>
               <p className="text-xs text-muted-foreground">
-                {isOpen ? 'Pedidos disponíveis' : 'Fora do horário de atendimento'}
+                {storeStatus.message}
               </p>
             </div>
           </div>
