@@ -27,20 +27,6 @@ export function CategoryIcons({ categories, onCategorySelect }: CategoryIconsPro
       
       {/* Mobile: máximo 4 por linha com flex-wrap | Desktop: scroll horizontal */}
       <div className="flex gap-2 pb-2 flex-wrap md:flex-nowrap md:overflow-x-auto md:scrollbar-hide">
-        {/* Todos */}
-        <button
-          onClick={() => handleSelect(null)}
-          className={cn(
-            "rounded-full px-3 py-2 text-sm font-medium transition-all duration-200",
-            "w-[calc(25%-6px)] md:w-auto text-center",
-            selectedId === null
-              ? "bg-primary text-primary-foreground shadow-card"
-              : "bg-muted text-muted-foreground hover:text-foreground"
-          )}
-        >
-          Todos
-        </button>
-
         {categories.map((category) => {
           const isSelected = selectedId === category.id;
           

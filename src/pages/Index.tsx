@@ -178,7 +178,10 @@ const Index = () => {
         <HeroHeader store={store} />
 
 
-        {/* Search Bar */}
+        {/* Store Info */}
+        <StoreInfo store={store} />
+
+        {/* Search Bar - Above Categories */}
         <div className="px-4 mt-4">
           <div className="relative">
             <Input
@@ -191,9 +194,6 @@ const Index = () => {
             <Search className="absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
           </div>
         </div>
-
-        {/* Store Info */}
-        <StoreInfo store={store} />
 
         {/* Categories */}
         {categories && categories.length > 0 && (
