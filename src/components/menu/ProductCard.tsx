@@ -60,7 +60,7 @@ export function ProductCard({ product, onSelect }: ProductCardProps) {
             src={product.image_url}
             alt={product.name}
             loading="lazy"
-            className="h-full w-full object-contain bg-muted/30 transition-transform duration-200 group-hover:scale-105"
+            className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
           />
           {product.is_available && (
             <div className="absolute bottom-1 right-1 flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-card md:hidden">

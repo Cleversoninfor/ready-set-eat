@@ -30,7 +30,7 @@ export function MenuProductCard({ product, onSelect }: MenuProductCardProps) {
             src={product.image_url}
             alt={product.name}
             loading="lazy"
-            className="h-full w-full object-contain bg-muted/30 transition-transform duration-200 group-hover:scale-105"
+            className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
           />
           {!product.is_available && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/60">
