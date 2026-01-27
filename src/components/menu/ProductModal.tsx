@@ -149,7 +149,7 @@ export function ProductModal({
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto">
           {/* Image Header with Close Button */}
-          <div className="relative h-56 sm:h-64 w-full bg-muted flex items-center justify-center">
+          <div className="relative w-full bg-muted flex items-center justify-center" style={{ aspectRatio: '540/280' }}>
             {product.image_url ? (
               <img src={product.image_url} alt={product.name} className="h-full w-full object-contain" />
             ) : (
