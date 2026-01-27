@@ -450,6 +450,8 @@ export type Database = {
           mode_pickup_enabled: boolean | null
           name: string
           phone_whatsapp: string | null
+          pickup_time_max: number | null
+          pickup_time_min: number | null
           pix_key: string | null
           pix_key_type: string | null
           pix_message: string | null
@@ -490,6 +492,8 @@ export type Database = {
           mode_pickup_enabled?: boolean | null
           name?: string
           phone_whatsapp?: string | null
+          pickup_time_max?: number | null
+          pickup_time_min?: number | null
           pix_key?: string | null
           pix_key_type?: string | null
           pix_message?: string | null
@@ -530,6 +534,8 @@ export type Database = {
           mode_pickup_enabled?: boolean | null
           name?: string
           phone_whatsapp?: string | null
+          pickup_time_max?: number | null
+          pickup_time_min?: number | null
           pix_key?: string | null
           pix_key_type?: string | null
           pix_message?: string | null

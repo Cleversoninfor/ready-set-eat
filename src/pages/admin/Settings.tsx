@@ -41,6 +41,8 @@ const AdminSettings = () => {
     delivery_fee: '',
     delivery_time_min: '',
     delivery_time_max: '',
+    pickup_time_min: '',
+    pickup_time_max: '',
     is_open: true,
     address: ''
   });
@@ -74,6 +76,8 @@ const AdminSettings = () => {
         delivery_fee: store.delivery_fee?.toString() || '',
         delivery_time_min: store.delivery_time_min?.toString() || '30',
         delivery_time_max: store.delivery_time_max?.toString() || '45',
+        pickup_time_min: store.pickup_time_min?.toString() || '15',
+        pickup_time_max: store.pickup_time_max?.toString() || '25',
         is_open: store.is_open ?? true,
         address: store.address || ''
       });
@@ -93,6 +97,8 @@ const AdminSettings = () => {
         delivery_fee: parseFloat(formData.delivery_fee.replace(',', '.')) || 0,
         delivery_time_min: parseInt(formData.delivery_time_min) || 30,
         delivery_time_max: parseInt(formData.delivery_time_max) || 45,
+        pickup_time_min: parseInt(formData.pickup_time_min) || 15,
+        pickup_time_max: parseInt(formData.pickup_time_max) || 25,
         is_open: formData.is_open,
         address: formData.address || null
       };
@@ -296,6 +302,40 @@ const AdminSettings = () => {
               address: e.target.value
             })} placeholder="Rua, número, bairro, cidade" className="mt-1" />
               <p className="text-xs text-muted-foreground mt-1">Será exibido no cardápio para os clientes</p>
+            </div>
+
+            {/* Pickup Time Settings */}
+            <div className="pt-4 border-t border-border">
+              <label className="text-xs sm:text-sm text-muted-foreground font-medium">Tempo de preparo para retirada</label>
+              <p className="text-xs text-muted-foreground mb-2">Exibido para o cliente ao escolher a opção de retirada</p>
+              <div className="grid grid-cols-2 gap-3 mt-2">
+                <div>
+                  <label className="text-xs text-muted-foreground">Tempo mínimo (min)</label>
+                  <Input 
+                    type="number"
+                    value={formData.pickup_time_min} 
+                    onChange={e => setFormData({
+                      ...formData,
+                      pickup_time_min: e.target.value
+                    })} 
+                    placeholder="15" 
+                    className="mt-1" 
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">Tempo máximo (min)</label>
+                  <Input 
+                    type="number"
+                    value={formData.pickup_time_max} 
+                    onChange={e => setFormData({
+                      ...formData,
+                      pickup_time_max: e.target.value
+                    })} 
+                    placeholder="25" 
+                    className="mt-1" 
+                  />
+                </div>
+              </div>
             </div>
           </div>
 

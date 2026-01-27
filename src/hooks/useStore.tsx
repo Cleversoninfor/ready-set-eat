@@ -17,6 +17,8 @@ export interface StoreConfig {
   address: string | null;
   delivery_time_min: number | null;
   delivery_time_max: number | null;
+  pickup_time_min: number | null;
+  pickup_time_max: number | null;
   primary_color: string | null;
   secondary_color: string | null;
   accent_color: string | null;
@@ -69,6 +71,8 @@ export function useStoreConfig() {
           address: null,
           delivery_time_min: 30,
           delivery_time_max: 45,
+          pickup_time_min: 15,
+          pickup_time_max: 25,
           primary_color: '25 95% 53%',
           secondary_color: '142 76% 36%',
           accent_color: '25 100% 95%',
