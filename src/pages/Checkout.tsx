@@ -11,7 +11,7 @@ import { useStoreConfig } from '@/hooks/useStore';
 import { useCreateOrder, saveCustomerPhone } from '@/hooks/useOrders';
 import { useValidateCoupon, calculateDiscount, Coupon } from '@/hooks/useCoupons';
 import { saveLastOrderId } from '@/components/order/FloatingOrderButton';
-import { useBusinessHours, isStoreCurrentlyOpen } from '@/hooks/useBusinessHours';
+import { useStoreStatus } from '@/hooks/useStoreStatus';
 import { AddressSelector } from '@/components/checkout/AddressSelector';
 import { TableSelector } from '@/components/checkout/TableSelector';
 import { useCreateDineInOrder } from '@/hooks/useDineInOrder';
@@ -79,7 +79,7 @@ const Checkout = () => {
   const { items, totalPrice, clearCart, updateQuantity, removeItem } = useCart();
   const { toast } = useToast();
   const { data: store } = useStoreConfig();
-  const { data: businessHours } = useBusinessHours();
+  const storeStatus = useStoreStatus();
   const createOrder = useCreateOrder();
   const createDineInOrder = useCreateDineInOrder();
   const validateCoupon = useValidateCoupon();
@@ -151,7 +151,7 @@ const Checkout = () => {
   const discount = appliedCoupon ? calculateDiscount(appliedCoupon, subtotal) : 0;
   const finalTotal = subtotal + deliveryFee - discount;
   const minOrderValue = Number(store?.min_order_value || 0);
-  const isStoreOpen = businessHours ? isStoreCurrentlyOpen(businessHours) : true;
+  const isStoreOpen = storeStatus.isOpen;
 
   const formatPhone = (value: string) => {
     const numbers = value.replace(/\D/g, '');
@@ -428,9 +428,9 @@ const Checkout = () => {
           <div className="mx-4 mt-4 flex items-center gap-3 p-4 bg-destructive/10 border border-destructive/30 rounded-xl">
             <Store className="h-5 w-5 text-destructive flex-shrink-0" />
             <div>
-              <p className="font-medium text-foreground text-sm">Loja fechada</p>
+              <p className="font-medium text-destructive text-sm">Loja fechada</p>
               <p className="text-xs text-muted-foreground">
-                Não estamos aceitando pedidos no momento
+                {storeStatus.message}
               </p>
             </div>
           </div>

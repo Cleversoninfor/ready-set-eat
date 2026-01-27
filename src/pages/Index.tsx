@@ -14,7 +14,8 @@ import { useStoreConfig } from '@/hooks/useStore';
 import { useCategories } from '@/hooks/useCategories';
 import { useProducts, Product } from '@/hooks/useProducts';
 import { useTheme } from '@/hooks/useTheme';
-import { Loader2, Search } from 'lucide-react';
+import { useStoreStatus } from '@/hooks/useStoreStatus';
+import { Loader2, Search, Store } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 
 interface EditingProduct {
@@ -36,6 +37,7 @@ const Index = () => {
   const { data: store, isLoading: storeLoading } = useStoreConfig();
   const { data: categories, isLoading: categoriesLoading } = useCategories();
   const { data: products, isLoading: productsLoading } = useProducts();
+  const storeStatus = useStoreStatus();
 
   // Apply dynamic theme based on store colors
   useTheme();
@@ -174,6 +176,19 @@ const Index = () => {
       <div className="min-h-screen bg-background pb-24">
         {/* Hero Header */}
         <HeroHeader store={store} />
+
+        {/* Store Closed Warning Banner */}
+        {!storeStatus.isOpen && (
+          <div className="mx-4 mt-4 flex items-center gap-3 p-4 bg-destructive/10 border border-destructive/30 rounded-xl">
+            <Store className="h-5 w-5 text-destructive flex-shrink-0" />
+            <div>
+              <p className="font-medium text-destructive text-sm">Loja fechada</p>
+              <p className="text-xs text-muted-foreground">
+                {storeStatus.message}. Você pode ver o cardápio, mas não é possível fazer pedidos no momento.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Search Bar */}
         <div className="px-4 mt-4">

@@ -23,13 +23,14 @@ export function MenuProductCard({ product, onSelect }: MenuProductCardProps) {
       )}
       onClick={() => product.is_available && onSelect(product)}
     >
-      {/* Image */}
+      {/* Image - Responsivo com aspect-ratio 540:280 (27:14) */}
       {product.image_url && (
-        <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl">
+        <div className="relative w-24 sm:w-28 md:w-32 shrink-0 overflow-hidden rounded-xl" style={{ aspectRatio: '27/14' }}>
           <img
             src={product.image_url}
             alt={product.name}
-            className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
+            loading="lazy"
+            className="h-full w-full object-contain bg-muted/30 transition-transform duration-200 group-hover:scale-105"
           />
           {!product.is_available && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/60">
