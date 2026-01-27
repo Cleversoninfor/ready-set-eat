@@ -26,11 +26,11 @@ import { useTableOrder, useTableOrderMutations } from '@/hooks/useTableOrders';
 import { useOpenTableOrdersByTableId } from '@/hooks/useTableOrdersByTable';
 import { AddItemModal } from './AddItemModal';
 import { TransferTableModal } from './TransferTableModal';
-import { PrintReceiptButton } from './PrintReceiptButton';
+import { ConsolidatedPrintButton } from './ConsolidatedPrintButton';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import { useStoreConfig } from '@/hooks/useStore';
+
 
 interface TableOrderScreenProps {
   table: TableWithOrder;
@@ -64,26 +64,6 @@ export function TableOrderScreen({ table, onBack, onCheckout, onTableTransferred
   const { orders: openOrdersForTable } = useOpenTableOrdersByTableId(table.id);
   const { order, items, isLoading } = useTableOrder(activeOrderId);
   const { updateItemStatus, removeItem, requestBill, cancelOrder, transferTable } = useTableOrderMutations();
-  useStoreConfig();
-
-  // Prepare print data
-  const printData = order && items ? {
-    orderNumber: order.id,
-    orderType: 'table' as const,
-    tableName: `Mesa ${table.number}`,
-    waiterName: order.waiter_name || undefined,
-    items: items.filter(i => i.status !== 'cancelled').map(item => ({
-      name: item.product_name,
-      quantity: item.quantity,
-      unitPrice: Number(item.unit_price),
-      observation: item.observation || undefined,
-    })),
-    subtotal: items.filter(i => i.status !== 'cancelled').reduce((sum, item) => sum + (item.quantity * Number(item.unit_price)), 0),
-    serviceFee: order.service_fee_enabled ? (order.service_fee_percentage || 10) : undefined,
-    discount: order.discount || undefined,
-    total: order.total_amount || 0,
-    createdAt: new Date(order.opened_at || order.created_at),
-  } : null;
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -156,9 +136,10 @@ export function TableOrderScreen({ table, onBack, onCheckout, onTableTransferred
         {/* Empty space - order list moved to below waiter name */}
 
         <div className="flex gap-2">
-          {printData && (
-            <PrintReceiptButton orderData={printData} variant="outline" size="sm" />
-          )}
+          <ConsolidatedPrintButton 
+            tableId={table.id} 
+            tableName={`Mesa ${table.number}`} 
+          />
           <Button variant="outline" size="sm" onClick={() => setTransferModalOpen(true)}>
             <ArrowRightLeft className="h-4 w-4 mr-1" />
             Transferir
@@ -326,7 +307,7 @@ export function TableOrderScreen({ table, onBack, onCheckout, onTableTransferred
                       </div>
 
                       <div className="flex items-center gap-2 mt-2 flex-wrap">
-                        {(['pending', 'preparing', 'ready', 'delivered'] as OrderItemStatus[]).map((status) => (
+                        {(['pending', 'preparing', 'ready'] as OrderItemStatus[]).map((status) => (
                           <button
                             key={status}
                             onClick={() => handleStatusChange(item.id, status)}
@@ -334,7 +315,7 @@ export function TableOrderScreen({ table, onBack, onCheckout, onTableTransferred
                               "px-2 py-1 rounded-full text-xs font-medium transition-all",
                               item.status === status
                                 ? statusConfig[status].color
-                                : "bg-gray-200 text-gray-500 hover:bg-gray-300"
+                                : "bg-muted text-muted-foreground hover:bg-muted/80"
                             )}
                           >
                             {statusConfig[status].label}
