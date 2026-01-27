@@ -270,7 +270,7 @@ export function OrderDetailModal({ order, open, onOpenChange }: OrderDetailModal
                 }}
               >
                 <Printer className="h-4 w-4 mr-2" />
-                Imprimir
+                Imprimir (Térmica)
               </Button>
             </div>
           )}
