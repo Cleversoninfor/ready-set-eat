@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Clock, Phone, MapPin, Bike } from 'lucide-react';
 import { StoreConfig } from '@/hooks/useStore';
-import { useBusinessHours, getDayName } from '@/hooks/useBusinessHours';
+import { useBusinessHours, getDayName, isStoreCurrentlyOpen } from '@/hooks/useBusinessHours';
 import { useStoreStatus } from '@/hooks/useStoreStatus';
 import {
   Dialog,
@@ -34,6 +34,16 @@ export function StoreInfo({ store }: StoreInfoProps) {
   };
 
   const currentDay = new Date().getDay();
+  
+  // Check if within business hours to detect forced opening
+  const isWithinBusinessHours = businessHours ? isStoreCurrentlyOpen(businessHours) : true;
+  const isForcedOpen = storeStatus.isOpen && !isWithinBusinessHours;
+  
+  // Get today's hours for display
+  const todayHours = businessHours?.find(h => h.day_of_week === currentDay);
+  const todaySchedule = todayHours?.is_active 
+    ? `${formatTime(todayHours.open_time)} - ${formatTime(todayHours.close_time)}`
+    : null;
 
   return (
     <>
@@ -46,20 +56,28 @@ export function StoreInfo({ store }: StoreInfoProps) {
             </div>
             <div>
               <p className={`text-sm font-semibold ${storeStatus.isOpen ? 'text-secondary' : 'text-destructive'}`}>
-                {storeStatus.isOpen ? 'Aberto agora' : 'Fechado'}
+                {storeStatus.isOpen ? 'Aberto' : 'Fechado'}
               </p>
               <p className="text-xs text-muted-foreground">
-                {storeStatus.message}
+                {isForcedOpen 
+                  ? 'Recebendo pedidos' 
+                  : storeStatus.isOpen && todaySchedule
+                    ? `Horário: ${todaySchedule}`
+                    : storeStatus.message
+                }
               </p>
             </div>
           </div>
-          <button 
-            onClick={() => setHoursModalOpen(true)}
-            className="flex flex-col sm:flex-row items-center gap-0 sm:gap-1 text-xs sm:text-sm font-semibold uppercase text-primary hover:text-primary/80 transition-colors leading-tight"
-          >
-            <span>Ver</span>
-            <span>Horários</span>
-          </button>
+          {/* Hide "Ver Horários" button when forced open */}
+          {!isForcedOpen && (
+            <button 
+              onClick={() => setHoursModalOpen(true)}
+              className="flex flex-col sm:flex-row items-center gap-0 sm:gap-1 text-xs sm:text-sm font-semibold uppercase text-primary hover:text-primary/80 transition-colors leading-tight"
+            >
+              <span>Ver</span>
+              <span>Horários</span>
+            </button>
+          )}
         </div>
 
         {/* Phone */}
