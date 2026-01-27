@@ -116,9 +116,9 @@ export function HeroHeader({ store }: HeroHeaderProps) {
   
   return (
     <header className="relative w-screen" style={{ marginLeft: 'calc(-50vw + 50%)' }}>
-      {/* Full Hero Section - Full viewport width, appropriate height */}
+      {/* Full Hero Section - Full viewport width and height */}
       <div 
-        className="relative h-screen md:h-[80vh] lg:h-[70vh] min-h-[500px] max-h-[1080px] overflow-hidden w-screen"
+        className="relative h-screen w-screen overflow-hidden"
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
       >
