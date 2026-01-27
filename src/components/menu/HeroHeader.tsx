@@ -115,10 +115,10 @@ export function HeroHeader({ store }: HeroHeaderProps) {
   const imageWidth = floatingImageSize;
   
   return (
-    <header className="relative">
-      {/* Full Hero Section - Full viewport height on mobile (1080x1920 aspect), appropriate height on desktop (1920x1080 aspect) */}
+    <header className="relative w-screen -ml-[calc((100vw-100%)/2)]">
+      {/* Full Hero Section - Full viewport width, appropriate height */}
       <div 
-        className="relative h-screen md:h-[80vh] lg:h-[70vh] min-h-[500px] max-h-[1080px] overflow-hidden"
+        className="relative h-screen md:h-[80vh] lg:h-[70vh] min-h-[500px] max-h-[1080px] overflow-hidden w-full"
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
       >
