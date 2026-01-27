@@ -92,11 +92,18 @@ export function OpenTableModal({
               <Users className="h-5 w-5 text-muted-foreground" />
               <Input
                 id="customerCount"
-                type="number"
-                min={1}
-                max={20}
-                value={customerCount}
-                onChange={(e) => setCustomerCount(parseInt(e.target.value) || 1)}
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={customerCount.toString()}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/\D/g, '');
+                  const num = parseInt(val) || 0;
+                  setCustomerCount(Math.min(Math.max(num, 0), 20) || 1);
+                }}
+                onBlur={() => {
+                  if (customerCount < 1) setCustomerCount(1);
+                }}
                 className="flex-1"
               />
             </div>

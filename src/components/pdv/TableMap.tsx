@@ -6,7 +6,7 @@ import { useTablesWithOrders } from '@/hooks/useTables';
 import { TableWithOrder, TableStatus } from '@/types/pdv';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
-type StatusFilter = 'all' | 'available' | 'occupied' | 'requesting_bill' | 'reserved';
+type StatusFilter = 'all' | 'available' | 'occupied' | 'requesting_bill';
 
 interface TableMapProps {
   onTableClick: (table: TableWithOrder) => void;
@@ -57,7 +57,6 @@ export function TableMap({ onTableClick, onAddTable }: TableMapProps) {
   const requestingBill = tables.filter(t => t.status === 'requesting_bill');
   const occupied = tables.filter(t => t.status === 'occupied');
   const available = tables.filter(t => t.status === 'available');
-  const reserved = tables.filter(t => t.status === 'reserved');
 
   // Sort tables by number and apply filter
   const sortedTables = [...tables]
@@ -82,9 +81,6 @@ export function TableMap({ onTableClick, onAddTable }: TableMapProps) {
           <ToggleGroupItem value="requesting_bill" className="text-xs px-3 data-[state=on]:bg-red-100 data-[state=on]:text-red-700">
             Pedindo Conta ({requestingBill.length})
           </ToggleGroupItem>
-          <ToggleGroupItem value="reserved" className="text-xs px-3 data-[state=on]:bg-blue-100 data-[state=on]:text-blue-700">
-            Reservadas ({reserved.length})
-          </ToggleGroupItem>
         </ToggleGroup>
       </div>
 
@@ -101,10 +97,6 @@ export function TableMap({ onTableClick, onAddTable }: TableMapProps) {
         <div className="bg-red-100 rounded-xl p-3 text-center">
           <p className="text-2xl font-bold text-red-700">{requestingBill.length}</p>
           <p className="text-sm text-red-600">Pedindo Conta</p>
-        </div>
-        <div className="bg-blue-100 rounded-xl p-3 text-center">
-          <p className="text-2xl font-bold text-blue-700">{reserved.length}</p>
-          <p className="text-sm text-blue-600">Reservadas</p>
         </div>
       </div>
 
