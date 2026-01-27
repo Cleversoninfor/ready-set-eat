@@ -610,6 +610,7 @@ export type Database = {
           closed_at: string | null
           created_at: string | null
           customer_count: number | null
+          customer_names: string[] | null
           discount: number | null
           discount_type: string | null
           id: number
@@ -630,6 +631,7 @@ export type Database = {
           closed_at?: string | null
           created_at?: string | null
           customer_count?: number | null
+          customer_names?: string[] | null
           discount?: number | null
           discount_type?: string | null
           id?: never
@@ -650,6 +652,7 @@ export type Database = {
           closed_at?: string | null
           created_at?: string | null
           customer_count?: number | null
+          customer_names?: string[] | null
           discount?: number | null
           discount_type?: string | null
           id?: never
