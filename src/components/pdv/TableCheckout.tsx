@@ -7,8 +7,9 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
-import { TableWithOrder } from '@/types/pdv';
-import { useTableOrder, useTableOrderMutations } from '@/hooks/useTableOrders';
+import { TableWithOrder, TableOrderItem } from '@/types/pdv';
+import { useOpenTableOrdersByTableId } from '@/hooks/useTableOrdersByTable';
+import { useAllTableOrderItems, useCloseAllTableOrders } from '@/hooks/useTableCheckout';
 import { cn } from '@/lib/utils';
 
 interface TableCheckoutProps {
@@ -31,8 +32,20 @@ export function TableCheckout({ table, onBack, onSuccess }: TableCheckoutProps) 
   const [paymentMethod, setPaymentMethod] = useState<string>('');
   const [changeFor, setChangeFor] = useState('');
 
-  const { order, items, isLoading } = useTableOrder(table.current_order_id);
-  const { closeTable } = useTableOrderMutations();
+  // Get all open orders for this table
+  const { orders: allOrders, isLoading: isLoadingOrders } = useOpenTableOrdersByTableId(table.id);
+  
+  // Get all items from all orders
+  const orderIds = allOrders.map(o => o.id);
+  const { items: allItems, isLoading: isLoadingItems } = useAllTableOrderItems(orderIds);
+  
+  // Close all orders mutation
+  const closeAllOrders = useCloseAllTableOrders();
+
+  // Calculate total customer count from all orders
+  const totalCustomerCount = useMemo(() => {
+    return allOrders.reduce((sum, order) => sum + (order.customer_count || 1), 0);
+  }, [allOrders]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -42,7 +55,7 @@ export function TableCheckout({ table, onBack, onSuccess }: TableCheckoutProps) 
   };
 
   const calculations = useMemo(() => {
-    const activeItems = items.filter(i => i.status !== 'cancelled');
+    const activeItems = allItems.filter(i => i.status !== 'cancelled');
     const subtotal = activeItems.reduce((sum, item) => sum + (item.quantity * Number(item.unit_price)), 0);
 
     let discountAmount = 0;
@@ -57,7 +70,7 @@ export function TableCheckout({ table, onBack, onSuccess }: TableCheckoutProps) 
     const serviceFee = serviceFeeEnabled ? afterDiscount * 0.10 : 0;
     const total = afterDiscount + serviceFee;
 
-    const perPerson = order?.customer_count ? total / order.customer_count : total;
+    const perPerson = totalCustomerCount > 1 ? total / totalCustomerCount : total;
 
     const changeForNum = parseFloat(changeFor) || 0;
     const change = paymentMethod === 'money' && changeForNum > total ? changeForNum - total : 0;
@@ -71,14 +84,15 @@ export function TableCheckout({ table, onBack, onSuccess }: TableCheckoutProps) 
       perPerson,
       itemCount: activeItems.length,
       change,
+      orderCount: allOrders.length,
     };
-  }, [items, discountType, discountValue, serviceFeeEnabled, order?.customer_count, paymentMethod, changeFor]);
+  }, [allItems, discountType, discountValue, serviceFeeEnabled, totalCustomerCount, paymentMethod, changeFor, allOrders.length]);
 
   const handleClose = async () => {
-    if (!order || !paymentMethod) return;
+    if (!paymentMethod || allOrders.length === 0) return;
 
-    await closeTable.mutateAsync({
-      orderId: order.id,
+    await closeAllOrders.mutateAsync({
+      orderIds: orderIds,
       tableId: table.id,
       paymentMethod,
       discount: parseFloat(discountValue) || 0,
@@ -90,7 +104,22 @@ export function TableCheckout({ table, onBack, onSuccess }: TableCheckoutProps) 
     onSuccess();
   };
 
-  if (isLoading || !order) {
+  // Group items by order for display
+  const itemsByOrder = useMemo(() => {
+    const grouped: Record<number, TableOrderItem[]> = {};
+    allItems.filter(i => i.status !== 'cancelled').forEach(item => {
+      const orderId = item.table_order_id;
+      if (!grouped[orderId]) {
+        grouped[orderId] = [];
+      }
+      grouped[orderId].push(item);
+    });
+    return grouped;
+  }, [allItems]);
+
+  const isLoading = isLoadingOrders || isLoadingItems;
+
+  if (isLoading || allOrders.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
@@ -107,7 +136,9 @@ export function TableCheckout({ table, onBack, onSuccess }: TableCheckoutProps) 
         </Button>
         <div>
           <h1 className="text-xl font-bold">Fechar Mesa {table.number}</h1>
-          <p className="text-sm text-muted-foreground">{calculations.itemCount} itens</p>
+          <p className="text-sm text-muted-foreground">
+            {calculations.orderCount} pedido{calculations.orderCount > 1 ? 's' : ''} • {calculations.itemCount} itens
+          </p>
         </div>
       </div>
 
@@ -213,7 +244,7 @@ export function TableCheckout({ table, onBack, onSuccess }: TableCheckoutProps) 
                     onChange={(e) => setChangeFor(e.target.value)}
                   />
                   {calculations.change > 0 && (
-                    <p className="text-sm font-medium text-green-600">
+                    <p className="text-sm font-medium text-primary">
                       Troco: {formatCurrency(calculations.change)}
                     </p>
                   )}
@@ -236,7 +267,7 @@ export function TableCheckout({ table, onBack, onSuccess }: TableCheckoutProps) 
               </div>
 
               {calculations.discountAmount > 0 && (
-                <div className="flex justify-between text-green-600">
+                <div className="flex justify-between text-primary">
                   <span>Desconto</span>
                   <span>-{formatCurrency(calculations.discountAmount)}</span>
                 </div>
@@ -256,11 +287,11 @@ export function TableCheckout({ table, onBack, onSuccess }: TableCheckoutProps) 
                 <span className="text-primary">{formatCurrency(calculations.total)}</span>
               </div>
 
-              {order.customer_count > 1 && (
+              {totalCustomerCount > 1 && (
                 <div className="bg-muted rounded-xl p-3 text-center">
                   <div className="flex items-center justify-center gap-2 text-muted-foreground mb-1">
                     <Users className="h-4 w-4" />
-                    <span className="text-sm">Por pessoa ({order.customer_count})</span>
+                    <span className="text-sm">Por pessoa ({totalCustomerCount})</span>
                   </div>
                   <p className="text-lg font-bold">{formatCurrency(calculations.perPerson)}</p>
                 </div>
@@ -268,21 +299,30 @@ export function TableCheckout({ table, onBack, onSuccess }: TableCheckoutProps) 
             </CardContent>
           </Card>
 
-          {/* Items List */}
+          {/* Items List - Grouped by Order */}
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Itens</CardTitle>
+              <CardTitle className="text-lg">Itens ({calculations.itemCount})</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2 max-h-60 overflow-y-auto">
-                {items.filter(i => i.status !== 'cancelled').map((item) => (
-                  <div key={item.id} className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">
-                      {item.quantity}x {item.product_name}
-                    </span>
-                    <span className="font-medium">
-                      {formatCurrency(item.quantity * Number(item.unit_price))}
-                    </span>
+              <div className="space-y-3 max-h-60 overflow-y-auto">
+                {Object.entries(itemsByOrder).map(([orderId, items]) => (
+                  <div key={orderId}>
+                    {calculations.orderCount > 1 && (
+                      <p className="text-xs text-muted-foreground font-medium mb-1">
+                        Pedido #{orderId}
+                      </p>
+                    )}
+                    {items.map((item) => (
+                      <div key={item.id} className="flex justify-between text-sm py-0.5">
+                        <span className="text-muted-foreground">
+                          {item.quantity}x {item.product_name}
+                        </span>
+                        <span className="font-medium">
+                          {formatCurrency(item.quantity * Number(item.unit_price))}
+                        </span>
+                      </div>
+                    ))}
                   </div>
                 ))}
               </div>
@@ -293,9 +333,9 @@ export function TableCheckout({ table, onBack, onSuccess }: TableCheckoutProps) 
           <Button
             className="w-full h-14 text-lg"
             onClick={handleClose}
-            disabled={!paymentMethod || closeTable.isPending}
+            disabled={!paymentMethod || closeAllOrders.isPending}
           >
-            {closeTable.isPending
+            {closeAllOrders.isPending
               ? 'Finalizando...'
               : `Fechar Mesa - ${formatCurrency(calculations.total)}`}
           </Button>
