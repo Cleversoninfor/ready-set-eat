@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Loader2, Store, Phone, CreditCard, MapPin, MessageSquare } from 'lucide-react';
+import { Loader2, Store, Phone, CreditCard, MapPin, MessageSquare, Clock, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { ImageUpload } from '@/components/admin/ImageUpload';
@@ -12,7 +13,8 @@ import { BannerSettings } from '@/components/admin/BannerSettings';
 import { SubdomainSettings } from '@/components/admin/SubdomainSettings';
 import { OperationModes } from '@/components/admin/OperationModes';
 import { useStoreConfig, useUpdateStoreConfig } from '@/hooks/useStore';
-import { useBusinessHours, useUpdateBusinessHour, getDayName, BusinessHour } from '@/hooks/useBusinessHours';
+import { useBusinessHours, useUpdateBusinessHour, getDayName, BusinessHour, isStoreCurrentlyOpen } from '@/hooks/useBusinessHours';
+import { useStoreStatus } from '@/hooks/useStoreStatus';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 const AdminSettings = () => {
@@ -170,24 +172,67 @@ const AdminSettings = () => {
         </div>
       </AdminLayout>;
   }
+  const storeStatus = useStoreStatus();
+  const isWithinBusinessHours = hours ? isStoreCurrentlyOpen(hours) : true;
+  
+  // Determine the effective status message
+  const getStatusMessage = () => {
+    if (formData.is_open && isWithinBusinessHours) {
+      return 'Recebendo pedidos (dentro do horário de funcionamento)';
+    }
+    if (formData.is_open && !isWithinBusinessHours) {
+      return 'Forçando abertura (fora do horário de funcionamento)';
+    }
+    if (!formData.is_open && isWithinBusinessHours) {
+      return 'Loja fechada manualmente (dentro do horário de funcionamento)';
+    }
+    return 'Loja fechada (fora do horário de funcionamento)';
+  };
+
   return <AdminLayout title="Configurações">
 
       <div className="max-w-2xl space-y-4 sm:space-y-6">
         {/* Store Status Card */}
-        <div className="bg-card rounded-xl p-4 sm:p-6 shadow-card">
+        <div className="bg-card rounded-xl p-4 sm:p-6 shadow-card space-y-4">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-              <div className={`h-10 w-10 sm:h-12 sm:w-12 rounded-xl flex items-center justify-center flex-shrink-0 ${formData.is_open ? 'bg-secondary/20' : 'bg-destructive/20'}`}>
-                <Store className={`h-5 w-5 sm:h-6 sm:w-6 ${formData.is_open ? 'text-secondary' : 'text-destructive'}`} />
+              <div className={`h-10 w-10 sm:h-12 sm:w-12 rounded-xl flex items-center justify-center flex-shrink-0 ${storeStatus.isOpen ? 'bg-secondary/20' : 'bg-destructive/20'}`}>
+                <Store className={`h-5 w-5 sm:h-6 sm:w-6 ${storeStatus.isOpen ? 'text-secondary' : 'text-destructive'}`} />
               </div>
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <h3 className="font-semibold text-foreground text-sm sm:text-base">Status da Loja</h3>
-                <p className="text-xs sm:text-sm text-muted-foreground truncate">
-                  {formData.is_open ? 'Recebendo pedidos' : 'Loja fechada para novos pedidos'}
+                <p className="text-xs sm:text-sm text-muted-foreground">
+                  {getStatusMessage()}
                 </p>
               </div>
             </div>
             <Switch checked={formData.is_open} onCheckedChange={toggleStoreStatus} />
+          </div>
+          
+          {/* Status indicator and description */}
+          <div className="bg-muted/50 rounded-lg p-3 space-y-2">
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-muted-foreground" />
+              <span className="text-xs font-medium text-muted-foreground">
+                Horário atual: {isWithinBusinessHours ? 'Dentro do expediente' : 'Fora do expediente'}
+              </span>
+            </div>
+            
+            {!isWithinBusinessHours && formData.is_open && (
+              <div className="flex items-start gap-2 bg-primary/10 rounded-md p-2">
+                <AlertTriangle className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                <p className="text-xs text-primary">
+                  Abertura forçada: A loja está aberta mesmo fora do horário de funcionamento configurado.
+                </p>
+              </div>
+            )}
+            
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              <strong>Como funciona:</strong> O status da loja sincroniza automaticamente com os horários de funcionamento. 
+              Quando estiver dentro do horário, a loja abre automaticamente. Fora do horário, ela fecha. 
+              Você pode <strong>forçar a abertura</strong> manualmente a qualquer momento ativando este toggle, 
+              mesmo que esteja fora do horário configurado.
+            </p>
           </div>
         </div>
 
