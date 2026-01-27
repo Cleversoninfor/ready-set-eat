@@ -42,6 +42,11 @@ export function PrintReceiptButton({ orderData, variant = 'outline', size = 'def
 
   const handleBrowserPrint = () => {
     const text = generatePrintableText(orderData);
+    const lines = text.split('\n');
+    const lineHeight = 14; // pixels por linha
+    const paddingVertical = 20; // padding top + bottom
+    const dynamicHeight = (lines.length * lineHeight) + paddingVertical;
+    
     const printWindow = window.open('', '_blank');
     if (printWindow) {
       printWindow.document.write(`
@@ -49,14 +54,37 @@ export function PrintReceiptButton({ orderData, variant = 'outline', size = 'def
           <head>
             <title>Comanda #${orderData.orderNumber}</title>
             <style>
+              @page { 
+                size: 80mm ${dynamicHeight}px; 
+                margin: 0; 
+              }
+              * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+              }
+              html, body { 
+                width: 80mm;
+                height: ${dynamicHeight}px;
+                margin: 0;
+                padding: 0;
+              }
               body { 
                 font-family: 'Courier New', monospace; 
                 font-size: 12px; 
+                line-height: ${lineHeight}px;
                 white-space: pre;
-                padding: 20px;
+                padding: 10px;
               }
               @media print {
-                body { margin: 0; padding: 10px; }
+                html, body {
+                  width: 80mm;
+                  height: auto;
+                }
+                body { 
+                  margin: 0; 
+                  padding: 10px; 
+                }
               }
             </style>
           </head>
@@ -64,7 +92,9 @@ export function PrintReceiptButton({ orderData, variant = 'outline', size = 'def
         </html>
       `);
       printWindow.document.close();
-      printWindow.print();
+      setTimeout(() => {
+        printWindow.print();
+      }, 100);
     }
   };
 
@@ -82,7 +112,7 @@ export function PrintReceiptButton({ orderData, variant = 'outline', size = 'def
         ) : (
           <Printer className="w-4 h-4" />
         )}
-        {size !== 'icon' && <span className="ml-2">Imprimir</span>}
+        {size !== 'icon' && <span className="ml-2">Imprimir (Térmica)</span>}
       </Button>
 
       <Dialog open={showPreview} onOpenChange={setShowPreview}>
