@@ -4,6 +4,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Printer, FileDown, Loader2 } from 'lucide-react';
 import { useStoreConfig } from '@/hooks/useStore';
 import { TableOrderItem } from '@/types/pdv';
+import jsPDF from 'jspdf';
 
 interface CheckoutPrintButtonProps {
   tableName: string;
@@ -34,6 +35,8 @@ export function CheckoutPrintButton({
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
   };
+
+  const activeItems = items.filter(i => i.status !== 'cancelled');
 
   const generateReceiptText = (storeName: string) => {
     const width = 32;
@@ -66,7 +69,6 @@ export function CheckoutPrintButton({
     text += 'ITENS DO PEDIDO\n';
     text += '-'.repeat(width) + '\n';
 
-    const activeItems = items.filter(i => i.status !== 'cancelled');
     activeItems.forEach((item, index) => {
       const itemTotal = item.quantity * Number(item.unit_price);
       text += formatLine(`${item.quantity}x ${item.product_name}`, formatCurrency(itemTotal)) + '\n';
@@ -112,7 +114,6 @@ export function CheckoutPrintButton({
   };
 
   const handleThermalPrint = async () => {
-    const activeItems = items.filter(i => i.status !== 'cancelled');
     if (activeItems.length === 0) {
       toast({ title: 'Nenhum item para imprimir', variant: 'destructive' });
       return;
@@ -131,6 +132,7 @@ export function CheckoutPrintButton({
       const printWindow = window.open('', '_blank');
       if (printWindow) {
         printWindow.document.write(`
+          <!DOCTYPE html>
           <html>
             <head>
               <title>Conta ${tableName}</title>
@@ -138,6 +140,15 @@ export function CheckoutPrintButton({
                 @page { 
                   size: 80mm ${dynamicHeight}px; 
                   margin: 0; 
+                }
+                @media print {
+                  html, body {
+                    width: 80mm;
+                    height: ${dynamicHeight}px;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    overflow: hidden;
+                  }
                 }
                 * {
                   margin: 0;
@@ -156,16 +167,6 @@ export function CheckoutPrintButton({
                   line-height: ${lineHeight}px;
                   white-space: pre;
                   padding: 10px;
-                }
-                @media print {
-                  html, body {
-                    width: 80mm;
-                    height: auto;
-                  }
-                  body { 
-                    margin: 0; 
-                    padding: 10px; 
-                  }
                 }
               </style>
             </head>
@@ -186,7 +187,6 @@ export function CheckoutPrintButton({
   };
 
   const handleExportPDF = async () => {
-    const activeItems = items.filter(i => i.status !== 'cancelled');
     if (activeItems.length === 0) {
       toast({ title: 'Nenhum item para exportar', variant: 'destructive' });
       return;
@@ -194,120 +194,241 @@ export function CheckoutPrintButton({
 
     try {
       setIsExporting(true);
-      const jsPDF = (await import('jspdf')).default;
       const storeName = storeConfig?.name || 'Restaurante';
 
-      // Calculate dynamic height
-      const pageWidth = 80; // mm
-      const margin = 5;
-      const lineHeight = 4;
-      let estimatedHeight = 35; // Header
-
-      estimatedHeight += activeItems.length * lineHeight * 2; // Items
-      activeItems.forEach(item => {
-        if (item.observation) estimatedHeight += lineHeight;
-      });
-      estimatedHeight += 50; // Footer, totals, service fee, discount
+      // A4 page dimensions
+      const pageWidth = 210;
+      const pageHeight = 297;
+      const margin = 15;
+      const contentWidth = pageWidth - (margin * 2);
+      const bottomMargin = 25;
 
       const doc = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
-        format: [pageWidth, Math.max(estimatedHeight, 100)],
+        format: 'a4',
       });
 
       let y = margin;
 
-      // Header
-      doc.setFontSize(12);
+      // Helper function to check and add new page if needed
+      const checkPageBreak = (requiredSpace: number, sectionTitle?: string): void => {
+        if (y + requiredSpace > pageHeight - bottomMargin) {
+          doc.addPage();
+          y = margin;
+
+          if (sectionTitle) {
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(100, 100, 100);
+            doc.text(sectionTitle + ' (continuação)', margin, y);
+            y += 3;
+            doc.setDrawColor(200, 200, 200);
+            doc.line(margin, y, pageWidth - margin, y);
+            y += 8;
+
+            // Repeat table header
+            doc.setFillColor(240, 240, 240);
+            doc.rect(margin, y - 4, contentWidth, 10, 'F');
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(80, 80, 80);
+            doc.text('QTD', margin + 5, y + 2);
+            doc.text('ITEM', margin + 25, y + 2);
+            doc.text('UNIT.', pageWidth - margin - 50, y + 2);
+            doc.text('TOTAL', pageWidth - margin - 20, y + 2);
+            y += 12;
+            doc.setTextColor(0, 0, 0);
+            doc.setFont('helvetica', 'normal');
+          }
+        }
+      };
+
+      // ========== 1. HEADER ==========
+      doc.setFillColor(45, 45, 45);
+      doc.rect(0, 0, pageWidth, 35, 'F');
+
+      // Store name at top
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(16);
       doc.setFont('helvetica', 'bold');
-      doc.text(storeName.toUpperCase(), pageWidth / 2, y, { align: 'center' });
-      y += 5;
+      doc.text(storeName.toUpperCase(), pageWidth / 2, 12, { align: 'center' });
 
+      // Order type below store name
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'normal');
+      doc.text('CONTA - CONSUMIR NO LOCAL', pageWidth / 2, 22, { align: 'center' });
+
+      // Table name
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text(tableName.toUpperCase(), pageWidth / 2, 31, { align: 'center' });
+
+      y = 45;
+      doc.setTextColor(0, 0, 0);
+
+      // ========== 2. ORDER INFO (Date/Time) ==========
+      doc.setFillColor(248, 248, 248);
+      doc.rect(margin, y - 2, contentWidth, 14, 'F');
       doc.setFontSize(10);
-      doc.text('CONTA', pageWidth / 2, y, { align: 'center' });
-      y += 4;
-      doc.text(tableName.toUpperCase(), pageWidth / 2, y, { align: 'center' });
-      y += 5;
-
-      // Date
-      doc.setFontSize(8);
       doc.setFont('helvetica', 'normal');
       const now = new Date();
-      doc.text(
-        `Data: ${now.toLocaleDateString('pt-BR')} - ${now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`,
-        margin,
-        y
-      );
-      y += 5;
+      const dateStr = now.toLocaleDateString('pt-BR');
+      const timeStr = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      doc.text(`Data: ${dateStr}`, margin + 5, y + 5);
+      doc.text(`Horário: ${timeStr}`, margin + 80, y + 5);
 
-      // Items header
+      y += 20;
+
+      // ========== 3. ITEMS SECTION ==========
+      doc.setFontSize(12);
       doc.setFont('helvetica', 'bold');
+      doc.setTextColor(80, 80, 80);
       doc.text('ITENS DO PEDIDO', margin, y);
-      y += 4;
-      doc.line(margin, y, pageWidth - margin, y);
-      y += 3;
 
-      // Items
+      y += 2;
+      doc.setDrawColor(200, 200, 200);
+      doc.line(margin, y, pageWidth - margin, y);
+      y += 8;
+
+      // Table header
+      doc.setFillColor(240, 240, 240);
+      doc.rect(margin, y - 4, contentWidth, 10, 'F');
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(80, 80, 80);
+      doc.text('QTD', margin + 5, y + 2);
+      doc.text('ITEM', margin + 25, y + 2);
+      doc.text('UNIT.', pageWidth - margin - 50, y + 2);
+      doc.text('TOTAL', pageWidth - margin - 20, y + 2);
+
+      y += 12;
+      doc.setTextColor(0, 0, 0);
       doc.setFont('helvetica', 'normal');
-      activeItems.forEach(item => {
+      doc.setFontSize(10);
+
+      // ========== 4. ITEMS WITH PAGE BREAK SUPPORT ==========
+      activeItems.forEach((item, index) => {
+        let itemHeight = 12;
+        if (item.observation) {
+          itemHeight += 6;
+        }
+
+        checkPageBreak(itemHeight, 'ITENS DO PEDIDO');
+
+        // Alternating row colors
+        if (index % 2 === 0) {
+          doc.setFillColor(252, 252, 252);
+          doc.rect(margin, y - 4, contentWidth, itemHeight, 'F');
+        }
+
         const itemTotal = item.quantity * Number(item.unit_price);
 
-        doc.text(`${item.quantity}x ${item.product_name}`, margin, y);
-        doc.text(formatCurrency(itemTotal), pageWidth - margin, y, { align: 'right' });
-        y += 4;
+        // Quantity
+        doc.setFont('helvetica', 'bold');
+        doc.text(String(item.quantity), margin + 8, y);
+        doc.setFont('helvetica', 'normal');
 
+        // Item name (with truncation if too long)
+        const maxNameLength = 45;
+        const itemName = item.product_name.length > maxNameLength
+          ? item.product_name.substring(0, maxNameLength) + '...'
+          : item.product_name;
+        doc.text(itemName, margin + 20, y);
+
+        // Unit price and total
+        doc.text(formatCurrency(Number(item.unit_price)), pageWidth - margin - 50, y);
+        doc.setFont('helvetica', 'bold');
+        doc.text(formatCurrency(itemTotal), pageWidth - margin - 20, y);
+        doc.setFont('helvetica', 'normal');
+
+        y += 6;
+
+        // Observation if exists
         if (item.observation) {
-          doc.setFontSize(7);
-          doc.text(`  Obs: ${item.observation}`, margin, y);
-          y += 3;
-          doc.setFontSize(8);
+          doc.setFontSize(9);
+          doc.setTextColor(120, 90, 0);
+          const obsLines = doc.splitTextToSize(`Obs: ${item.observation}`, contentWidth - 25);
+          doc.text(obsLines, margin + 20, y);
+          doc.setFontSize(10);
+          doc.setTextColor(0, 0, 0);
+          y += obsLines.length * 4 + 2;
         }
+
+        y += 4;
       });
 
-      y += 2;
-      doc.line(margin, y, pageWidth - margin, y);
-      y += 4;
-
-      // Total items
-      const totalQuantity = activeItems.reduce((sum, item) => sum + item.quantity, 0);
-      doc.text(`Qtd Total de Itens: ${totalQuantity}`, margin, y);
       y += 5;
 
+      // ========== 5. FINANCIAL SUMMARY ==========
+      checkPageBreak(70);
+
+      doc.setDrawColor(180, 180, 180);
       doc.line(margin, y, pageWidth - margin, y);
-      y += 4;
+      y += 10;
+
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'normal');
+
+      const summaryX = margin + 100;
+      const valueX = pageWidth - margin - 5;
+
+      // Calculate total quantity of items
+      const totalItemQuantity = activeItems.reduce((sum, item) => sum + item.quantity, 0);
+
+      // Total item quantity
+      doc.setFont('helvetica', 'bold');
+      doc.text('Quantidade Total de Itens:', summaryX, y);
+      doc.text(String(totalItemQuantity), valueX, y, { align: 'right' });
+      doc.setFont('helvetica', 'normal');
+      y += 10;
 
       // Subtotal
-      doc.text('Subtotal:', margin, y);
-      doc.text(formatCurrency(subtotal), pageWidth - margin, y, { align: 'right' });
-      y += 4;
+      doc.text('Subtotal:', summaryX, y);
+      doc.text(formatCurrency(subtotal), valueX, y, { align: 'right' });
+      y += 7;
 
-      // Discount
-      if (discountAmount > 0) {
-        doc.text('Desconto:', margin, y);
-        doc.text(`-${formatCurrency(discountAmount)}`, pageWidth - margin, y, { align: 'right' });
-        y += 4;
-      }
-
-      // Service fee
+      // Service fee (if applicable)
       if (serviceFeeEnabled && serviceFee > 0) {
-        doc.text('Taxa de Serviço (10%):', margin, y);
-        doc.text(formatCurrency(serviceFee), pageWidth - margin, y, { align: 'right' });
-        y += 4;
+        doc.text('Taxa de Serviço (10%):', summaryX, y);
+        doc.text(formatCurrency(serviceFee), valueX, y, { align: 'right' });
+        y += 7;
       }
 
-      y += 2;
+      // Discount (if applicable)
+      if (discountAmount > 0) {
+        doc.setTextColor(0, 130, 0);
+        doc.text('Desconto:', summaryX, y);
+        doc.text(`-${formatCurrency(discountAmount)}`, valueX, y, { align: 'right' });
+        doc.setTextColor(0, 0, 0);
+        y += 7;
+      }
 
-      // Total
+      y += 3;
+
+      // Total highlight box
+      doc.setFillColor(45, 45, 45);
+      doc.rect(summaryX - 10, y - 4, pageWidth - margin - summaryX + 15, 16, 'F');
+      doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(10);
-      doc.text('TOTAL:', margin, y);
-      doc.text(formatCurrency(total), pageWidth - margin, y, { align: 'right' });
-      y += 6;
+      doc.setTextColor(255, 255, 255);
+      doc.text('TOTAL:', summaryX, y + 6);
+      doc.text(formatCurrency(total), valueX, y + 6, { align: 'right' });
 
-      // Footer
+      y += 25;
+      doc.setTextColor(0, 0, 0);
+
+      // Footer on last page
+      const footerY = pageHeight - 15;
+      doc.setDrawColor(200, 200, 200);
+      doc.line(margin, footerY - 8, pageWidth - margin, footerY - 8);
+
+      doc.setFontSize(9);
+      doc.setTextColor(140, 140, 140);
+      doc.setFont('helvetica', 'italic');
+      doc.text('Obrigado pela preferência!', pageWidth / 2, footerY - 2, { align: 'center' });
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8);
-      doc.text('Obrigado pela preferência!', pageWidth / 2, y, { align: 'center' });
+      doc.text(`Documento gerado em ${new Date().toLocaleString('pt-BR')}`, pageWidth / 2, footerY + 3, { align: 'center' });
 
       doc.save(`conta-${tableName.replace(/\s/g, '-')}.pdf`);
       toast({ title: 'PDF exportado com sucesso!' });
