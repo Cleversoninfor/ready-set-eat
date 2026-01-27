@@ -153,29 +153,7 @@ export function TableOrderScreen({ table, onBack, onCheckout, onTableTransferred
           </div>
         </div>
 
-        {/* Order switcher (multiple orders per table) */}
-        {openOrdersForTable.length > 1 && (
-          <div className="flex items-center gap-2">
-            <Select
-              value={activeOrderId ? String(activeOrderId) : undefined}
-              onValueChange={(value) => setActiveOrderId(Number(value))}
-            >
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Selecione o pedido" />
-              </SelectTrigger>
-              <SelectContent>
-                {openOrdersForTable.map((o) => (
-                  <SelectItem key={o.id} value={String(o.id)}>
-                    Pedido #{o.id}
-                    {o.id === table.current_order_id ? ' (atual)' : ''}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Badge variant="secondary">{openOrdersForTable.length} pedidos</Badge>
-          </div>
-        )}
+        {/* Empty space - order list moved to below waiter name */}
 
         <div className="flex gap-2">
           {printData && (
@@ -229,19 +207,67 @@ export function TableOrderScreen({ table, onBack, onCheckout, onTableTransferred
                     ))}
                   </div>
                 )}
+                {/* Order list below waiter name */}
+                {openOrdersForTable.length > 1 && (
+                  <div className="mt-2 pt-2 border-t">
+                    <p className="text-xs text-muted-foreground mb-1">Pedidos da mesa:</p>
+                    {openOrdersForTable.map((o) => (
+                      <button
+                        key={o.id}
+                        onClick={() => setActiveOrderId(o.id)}
+                        className={cn(
+                          "block text-xs py-0.5 px-1 rounded w-full text-left",
+                          o.id === activeOrderId
+                            ? "bg-primary/20 text-primary font-medium"
+                            : "hover:bg-muted text-muted-foreground"
+                        )}
+                      >
+                        Pedido #{o.id}
+                        {o.id === table.current_order_id ? ' (atual)' : ''}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
         )}
-        {!order.waiter_name && order.customer_names && order.customer_names.length > 0 && (
+        {!order.waiter_name && (
           <Card>
             <CardContent className="p-3 flex items-center gap-2">
               <User className="h-4 w-4 text-muted-foreground" />
               <div>
-                <p className="text-xs text-muted-foreground">Clientes</p>
-                {order.customer_names.map((name, idx) => (
-                  <p key={idx} className="font-medium text-sm text-primary">{name}</p>
-                ))}
+                <p className="text-xs text-muted-foreground">
+                  {order.customer_names && order.customer_names.length > 0 ? 'Clientes' : 'Pedido'}
+                </p>
+                {order.customer_names && order.customer_names.length > 0 ? (
+                  order.customer_names.map((name, idx) => (
+                    <p key={idx} className="font-medium text-sm text-primary">{name}</p>
+                  ))
+                ) : (
+                  <p className="font-medium text-sm">#{order.id}</p>
+                )}
+                {/* Order list when no waiter */}
+                {openOrdersForTable.length > 1 && (
+                  <div className="mt-2 pt-2 border-t">
+                    <p className="text-xs text-muted-foreground mb-1">Pedidos da mesa:</p>
+                    {openOrdersForTable.map((o) => (
+                      <button
+                        key={o.id}
+                        onClick={() => setActiveOrderId(o.id)}
+                        className={cn(
+                          "block text-xs py-0.5 px-1 rounded w-full text-left",
+                          o.id === activeOrderId
+                            ? "bg-primary/20 text-primary font-medium"
+                            : "hover:bg-muted text-muted-foreground"
+                        )}
+                      >
+                        Pedido #{o.id}
+                        {o.id === table.current_order_id ? ' (atual)' : ''}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
