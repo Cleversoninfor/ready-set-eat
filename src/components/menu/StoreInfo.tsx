@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Clock, Phone, MapPin, Bike } from 'lucide-react';
 import { StoreConfig } from '@/hooks/useStore';
-import { useBusinessHours, getDayName, isStoreCurrentlyOpen } from '@/hooks/useBusinessHours';
+import { useBusinessHours, getDayName } from '@/hooks/useBusinessHours';
 import { useStoreStatus } from '@/hooks/useStoreStatus';
 import {
   Dialog,
@@ -35,9 +35,8 @@ export function StoreInfo({ store }: StoreInfoProps) {
 
   const currentDay = new Date().getDay();
   
-  // Check if within business hours to detect forced opening
-  const isWithinBusinessHours = businessHours ? isStoreCurrentlyOpen(businessHours) : true;
-  const isForcedOpen = storeStatus.isOpen && !isWithinBusinessHours;
+  // Check if forced opening (is_open=true but outside business hours)
+  const isForcedOpen = storeStatus.reason === 'forced_open';
   
   // Get today's hours for display
   const todayHours = businessHours?.find(h => h.day_of_week === currentDay);

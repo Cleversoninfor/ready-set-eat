@@ -3,17 +3,21 @@ import { useBusinessHours, isStoreCurrentlyOpen } from './useBusinessHours';
 
 export interface StoreStatus {
   isOpen: boolean;
-  reason: 'open' | 'manual_closed' | 'hours_closed';
+  reason: 'open' | 'forced_open' | 'manual_closed' | 'hours_closed';
   message: string;
 }
 
 /**
  * Hook que combina o status manual da loja (is_open) com os horários de funcionamento.
- * A loja só está aberta se AMBAS as condições forem verdadeiras:
- * 1. O status manual (is_open) está ativado
- * 2. Está dentro do horário de funcionamento configurado
  * 
- * Esta é a regra de PRIORIDADE MÁXIMA para determinar se a loja aceita pedidos.
+ * REGRAS:
+ * 1. Se is_open = FALSE -> Loja FECHADA (fechamento manual tem prioridade máxima)
+ * 2. Se is_open = TRUE e dentro do horário -> Loja ABERTA (operação normal)
+ * 3. Se is_open = TRUE e fora do horário -> Loja ABERTA (forçando abertura)
+ * 
+ * O botão is_open funciona como um "master switch":
+ * - Quando ATIVADO: mantém a loja aberta (força abertura se fora do horário)
+ * - Quando DESATIVADO: fecha a loja independente do horário
  */
 export function useStoreStatus(): StoreStatus {
   const { data: store } = useStoreConfig();
@@ -28,7 +32,7 @@ export function useStoreStatus(): StoreStatus {
     };
   }
 
-  // Verificar status manual primeiro (prioridade máxima)
+  // Verificar status manual primeiro (prioridade máxima para FECHAR)
   if (!store.is_open) {
     return {
       isOpen: false,
@@ -37,24 +41,26 @@ export function useStoreStatus(): StoreStatus {
     };
   }
 
-  // Verificar horário de funcionamento
+  // Se is_open = TRUE, a loja está ABERTA
+  // Verificar se está dentro ou fora do horário para definir a razão
   const isWithinBusinessHours = businessHours 
     ? isStoreCurrentlyOpen(businessHours) 
-    : true; // Se não tem horários configurados, considera aberto
+    : true;
 
-  if (!isWithinBusinessHours) {
+  if (isWithinBusinessHours) {
+    // Operação normal dentro do horário
     return {
-      isOpen: false,
-      reason: 'hours_closed',
-      message: 'Fora do horário de funcionamento',
+      isOpen: true,
+      reason: 'open',
+      message: 'Recebendo pedidos',
     };
   }
 
-  // Ambas as condições satisfeitas
+  // Fora do horário mas is_open = TRUE -> Forçando abertura
   return {
     isOpen: true,
-    reason: 'open',
-    message: 'Recebendo pedidos',
+    reason: 'forced_open',
+    message: 'Forçando abertura',
   };
 }
 
