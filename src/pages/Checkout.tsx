@@ -571,7 +571,7 @@ const Checkout = () => {
                 <div>
                   <p className="text-sm text-foreground">{store.address}</p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Previsão: 15-25 min após confirmação
+                    Previsão: {store.pickup_time_min || 15}-{store.pickup_time_max || 25} min após confirmação
                   </p>
                 </div>
               </div>
