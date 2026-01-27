@@ -98,16 +98,36 @@ const OrderStatus = () => {
     );
   }
 
-  // For customer display, 'ready' should still show as 'preparing' 
-  // since the customer doesn't need to know internal kitchen status
-  const displayStatus = order.status === 'ready' ? 'preparing' : order.status;
+  // Detect if this is a pickup order (address_street contains 'Retirada')
+  const isPickup = order.address_street?.toLowerCase().includes('retirada');
+  
+  // For delivery orders, 'ready' should still show as 'preparing' 
+  // For pickup orders, we want to show 'ready' as final step
+  const displayStatus = isPickup 
+    ? (order.status === 'delivery' || order.status === 'completed' ? 'ready' : order.status)
+    : (order.status === 'ready' ? 'preparing' : order.status);
 
   const getStatusMessage = () => {
+    if (isPickup) {
+      switch (order.status) {
+        case 'pending':
+          return 'O restaurante está analisando seu pedido';
+        case 'preparing':
+          return 'Seu pedido está sendo preparado';
+        case 'ready':
+        case 'delivery':
+        case 'completed':
+          return 'Seu pedido está pronto para retirada!';
+        default:
+          return 'Acompanhe seu pedido';
+      }
+    }
+    
     switch (order.status) {
       case 'pending':
         return 'O restaurante está analisando seu pedido';
       case 'preparing':
-      case 'ready': // Show same message as preparing for customers
+      case 'ready':
         return 'Seu pedido está sendo preparado';
       case 'delivery':
         return 'Seu pedido está a caminho';
@@ -178,7 +198,7 @@ const OrderStatus = () => {
             </p>
 
             {/* Status Tracker */}
-            <OrderStatusTracker status={displayStatus} />
+            <OrderStatusTracker status={displayStatus} isPickup={isPickup} />
           </section>
 
           {/* Order Details */}
@@ -210,14 +230,19 @@ const OrderStatus = () => {
             </div>
           </section>
 
-          {/* Delivery Address */}
+          {/* Address Section */}
           <section className="rounded-2xl bg-card p-4 shadow-card">
             <div className="flex items-center gap-2 mb-2">
               <MapPin className="h-5 w-5 text-red-500" />
-              <h3 className="font-semibold text-foreground">Endereço de Entrega</h3>
+              <h3 className="font-semibold text-foreground">
+                {isPickup ? 'Retirada no local' : 'Endereço de Entrega'}
+              </h3>
             </div>
             <p className="text-sm text-muted-foreground ml-7">
-              {order.address_street}, {order.address_number} - {order.address_neighborhood}
+              {isPickup 
+                ? (store?.address || 'Endereço não configurado')
+                : `${order.address_street}, ${order.address_number} - ${order.address_neighborhood}`
+              }
             </p>
           </section>
         </div>

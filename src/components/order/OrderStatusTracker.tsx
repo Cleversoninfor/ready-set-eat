@@ -1,11 +1,12 @@
-import { Clock, ChefHat, Bike, CheckCircle2 } from 'lucide-react';
+import { Clock, ChefHat, Bike, CheckCircle2, Package } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface OrderStatusTrackerProps {
   status: string;
+  isPickup?: boolean;
 }
 
-const steps = [
+const deliverySteps = [
   { 
     id: 'pending', 
     label: 'Aguardando', 
@@ -32,15 +33,47 @@ const steps = [
   },
 ];
 
-export function OrderStatusTracker({ status }: OrderStatusTrackerProps) {
-  const currentIndex = steps.findIndex(s => s.id === status);
-  const isCompleted = status === 'completed';
+const pickupSteps = [
+  { 
+    id: 'pending', 
+    label: 'Aguardando', 
+    description: 'Aguardando confirmação do restaurante',
+    icon: Clock 
+  },
+  { 
+    id: 'preparing', 
+    label: 'Preparando', 
+    description: 'Seu pedido está sendo preparado',
+    icon: ChefHat 
+  },
+  { 
+    id: 'ready', 
+    label: 'Pedido Pronto', 
+    description: 'Seu pedido está pronto para retirada',
+    icon: Package 
+  },
+];
+
+export function OrderStatusTracker({ status, isPickup = false }: OrderStatusTrackerProps) {
+  const steps = isPickup ? pickupSteps : deliverySteps;
+  
+  // Map status for pickup orders
+  let mappedStatus = status;
+  if (isPickup) {
+    // For pickup, 'delivery' and 'completed' both mean 'ready'
+    if (status === 'delivery' || status === 'completed') {
+      mappedStatus = 'ready';
+    }
+  }
+  
+  const currentIndex = steps.findIndex(s => s.id === mappedStatus);
+  const isCompleted = isPickup ? mappedStatus === 'ready' : status === 'completed';
 
   return (
     <div className="space-y-0">
       {steps.map((step, index) => {
         const isActive = index <= currentIndex;
-        const isCurrent = step.id === status;
+        const isCurrent = step.id === mappedStatus;
         const Icon = step.icon;
         const isLast = index === steps.length - 1;
 
