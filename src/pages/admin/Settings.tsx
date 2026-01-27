@@ -18,19 +18,13 @@ import { useStoreStatus } from '@/hooks/useStoreStatus';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 const AdminSettings = () => {
-  const {
-    data: store,
-    isLoading
-  } = useStoreConfig();
-  const {
-    data: hours,
-    isLoading: isLoadingHours
-  } = useBusinessHours();
+  const { data: store, isLoading } = useStoreConfig();
+  const { data: hours, isLoading: isLoadingHours } = useBusinessHours();
   const updateStore = useUpdateStoreConfig();
   const updateHour = useUpdateBusinessHour();
-  const {
-    toast
-  } = useToast();
+  const storeStatus = useStoreStatus();
+  const { toast } = useToast();
+  
   const [editingHourId, setEditingHourId] = useState<string | null>(null);
   const [editHourData, setEditHourData] = useState({
     open_time: '',
@@ -50,6 +44,23 @@ const AdminSettings = () => {
     is_open: true,
     address: ''
   });
+  
+  // Calculate business hours status - must be before any returns
+  const isWithinBusinessHours = hours ? isStoreCurrentlyOpen(hours) : true;
+  
+  // Determine the effective status message
+  const getStatusMessage = () => {
+    if (formData.is_open && isWithinBusinessHours) {
+      return 'Recebendo pedidos (dentro do horário de funcionamento)';
+    }
+    if (formData.is_open && !isWithinBusinessHours) {
+      return 'Forçando abertura (fora do horário de funcionamento)';
+    }
+    if (!formData.is_open && isWithinBusinessHours) {
+      return 'Loja fechada manualmente (dentro do horário de funcionamento)';
+    }
+    return 'Loja fechada (fora do horário de funcionamento)';
+  };
   useEffect(() => {
     if (store) {
       setFormData({
@@ -172,23 +183,6 @@ const AdminSettings = () => {
         </div>
       </AdminLayout>;
   }
-  const storeStatus = useStoreStatus();
-  const isWithinBusinessHours = hours ? isStoreCurrentlyOpen(hours) : true;
-  
-  // Determine the effective status message
-  const getStatusMessage = () => {
-    if (formData.is_open && isWithinBusinessHours) {
-      return 'Recebendo pedidos (dentro do horário de funcionamento)';
-    }
-    if (formData.is_open && !isWithinBusinessHours) {
-      return 'Forçando abertura (fora do horário de funcionamento)';
-    }
-    if (!formData.is_open && isWithinBusinessHours) {
-      return 'Loja fechada manualmente (dentro do horário de funcionamento)';
-    }
-    return 'Loja fechada (fora do horário de funcionamento)';
-  };
-
   return <AdminLayout title="Configurações">
 
       <div className="max-w-2xl space-y-4 sm:space-y-6">
