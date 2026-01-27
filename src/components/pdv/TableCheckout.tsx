@@ -10,6 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import { TableWithOrder, TableOrderItem } from '@/types/pdv';
 import { useOpenTableOrdersByTableId } from '@/hooks/useTableOrdersByTable';
 import { useAllTableOrderItems, useCloseAllTableOrders } from '@/hooks/useTableCheckout';
+import { CheckoutPrintButton } from './CheckoutPrintButton';
 import { cn } from '@/lib/utils';
 
 interface TableCheckoutProps {
@@ -328,6 +329,17 @@ export function TableCheckout({ table, onBack, onSuccess }: TableCheckoutProps) 
               </div>
             </CardContent>
           </Card>
+
+          {/* Print/PDF Buttons */}
+          <CheckoutPrintButton
+            tableName={`Mesa ${table.number}`}
+            items={allItems}
+            subtotal={calculations.subtotal}
+            discountAmount={calculations.discountAmount}
+            serviceFeeEnabled={serviceFeeEnabled}
+            serviceFee={calculations.serviceFee}
+            total={calculations.total}
+          />
 
           {/* Close Button */}
           <Button

@@ -26,7 +26,7 @@ import { useTableOrder, useTableOrderMutations } from '@/hooks/useTableOrders';
 import { useOpenTableOrdersByTableId } from '@/hooks/useTableOrdersByTable';
 import { AddItemModal } from './AddItemModal';
 import { TransferTableModal } from './TransferTableModal';
-import { ConsolidatedPrintButton } from './ConsolidatedPrintButton';
+
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -136,10 +136,6 @@ export function TableOrderScreen({ table, onBack, onCheckout, onTableTransferred
         {/* Empty space - order list moved to below waiter name */}
 
         <div className="flex gap-2">
-          <ConsolidatedPrintButton 
-            tableId={table.id} 
-            tableName={`Mesa ${table.number}`} 
-          />
           <Button variant="outline" size="sm" onClick={() => setTransferModalOpen(true)}>
             <ArrowRightLeft className="h-4 w-4 mr-1" />
             Transferir
