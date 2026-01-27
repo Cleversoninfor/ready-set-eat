@@ -48,6 +48,32 @@ async function updateOrderTotals(orderId: number) {
   if (updateError) throw updateError;
 }
 
+// Helper to add customer name to order's customer_names array
+async function addCustomerNameToOrder(orderId: number, customerName: string) {
+  // First fetch existing customer_names
+  const { data: order, error: fetchError } = await supabase
+    .from('table_orders')
+    .select('customer_names')
+    .eq('id', orderId)
+    .single();
+
+  if (fetchError) throw fetchError;
+
+  const existingNames: string[] = (order?.customer_names as string[]) || [];
+  
+  // Only add if not already in the list
+  if (!existingNames.includes(customerName)) {
+    const updatedNames = [...existingNames, customerName];
+    
+    const { error: updateError } = await supabase
+      .from('table_orders')
+      .update({ customer_names: updatedNames })
+      .eq('id', orderId);
+
+    if (updateError) throw updateError;
+  }
+}
+
 export function useCreateDineInOrder() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -131,6 +157,9 @@ export function useCreateDineInOrder() {
 
       // Update totals
       await updateOrderTotals(targetOrderId);
+
+      // Add customer name to the order
+      await addCustomerNameToOrder(targetOrderId, data.customerName);
 
       // Update table status only if we created a new order
       if (createdNewOrder) {

@@ -17,6 +17,7 @@ export interface TableOrder {
   id: number;
   table_id: string | null;
   waiter_name: string | null;
+  customer_names: string[] | null;
   customer_count: number;
   status: TableOrderStatus;
   subtotal: number;

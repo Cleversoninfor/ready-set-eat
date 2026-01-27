@@ -38,7 +38,7 @@ export function useTableOrder(orderId: number | null) {
       if (!orderId) return null;
       const { data, error } = await supabase
         .from('table_orders')
-        .select('*')
+        .select('*, customer_names')
         .eq('id', orderId)
         .maybeSingle();
       
