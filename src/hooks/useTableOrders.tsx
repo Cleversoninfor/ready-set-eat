@@ -459,18 +459,46 @@ export function useTableOrderMutations() {
         if (fromTableError) throw fromTableError;
       }
 
-      // Recompute destination table occupancy based on its open orders.
-      // This avoids ending up with status=occupied but current_order_id=NULL (which makes the table "not open" in the UI).
-      const { data: destOpenOrders, error: destOpenOrdersError } = await supabase
-        .from('table_orders')
-        .select('id, opened_at')
-        .eq('table_id', data.toTableId)
-        .in('status', ['open', 'requesting_bill'])
-        .order('opened_at', { ascending: false });
+      // Destination table:
+      // If it already has a valid open current_order_id, keep it (so the existing "pedido atual" doesn't disappear).
+      // Otherwise, set it to a valid open order (fallback to the transferred order).
 
-      if (destOpenOrdersError) throw destOpenOrdersError;
+      const { data: destTable, error: destTableError } = await supabase
+        .from('tables')
+        .select('current_order_id')
+        .eq('id', data.toTableId)
+        .maybeSingle();
 
-      const destCurrentOrderId = destOpenOrders?.[0]?.id ?? data.orderId;
+      if (destTableError) throw destTableError;
+
+      let destCurrentOrderId: number | null = (destTable?.current_order_id ?? null) as number | null;
+
+      if (destCurrentOrderId) {
+        const { data: currentIsOpen, error: currentIsOpenError } = await supabase
+          .from('table_orders')
+          .select('id')
+          .eq('id', destCurrentOrderId)
+          .in('status', ['open', 'requesting_bill'])
+          .maybeSingle();
+
+        if (currentIsOpenError) throw currentIsOpenError;
+
+        // If the pointer is stale (paid/cancelled), we'll recompute below.
+        if (!currentIsOpen) destCurrentOrderId = null;
+      }
+
+      if (!destCurrentOrderId) {
+        const { data: destOpenOrders, error: destOpenOrdersError } = await supabase
+          .from('table_orders')
+          .select('id, opened_at')
+          .eq('table_id', data.toTableId)
+          .in('status', ['open', 'requesting_bill'])
+          .order('opened_at', { ascending: false });
+
+        if (destOpenOrdersError) throw destOpenOrdersError;
+
+        destCurrentOrderId = destOpenOrders?.[0]?.id ?? data.orderId;
+      }
 
       const { error: toTableError } = await supabase
         .from('tables')
