@@ -4,8 +4,6 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface DineInOrderData {
   tableId: string;
-  customerName: string;
-  customerPhone: string;
   existingOrderId?: number | null;
   items: {
     productId?: string;
@@ -48,31 +46,6 @@ async function updateOrderTotals(orderId: number) {
   if (updateError) throw updateError;
 }
 
-// Helper to add customer name to order's customer_names array
-async function addCustomerNameToOrder(orderId: number, customerName: string) {
-  // First fetch existing customer_names
-  const { data: order, error: fetchError } = await supabase
-    .from('table_orders')
-    .select('customer_names')
-    .eq('id', orderId)
-    .single();
-
-  if (fetchError) throw fetchError;
-
-  const existingNames: string[] = (order?.customer_names as string[]) || [];
-  
-  // Only add if not already in the list
-  if (!existingNames.includes(customerName)) {
-    const updatedNames = [...existingNames, customerName];
-    
-    const { error: updateError } = await supabase
-      .from('table_orders')
-      .update({ customer_names: updatedNames })
-      .eq('id', orderId);
-
-    if (updateError) throw updateError;
-  }
-}
 
 export function useCreateDineInOrder() {
   const { toast } = useToast();
@@ -120,7 +93,6 @@ export function useCreateDineInOrder() {
           .insert({
             table_id: data.tableId,
             customer_count: 1,
-            waiter_name: `Cliente: ${data.customerName}`,
             status: 'open',
             subtotal: 0,
             discount: 0,
@@ -128,7 +100,6 @@ export function useCreateDineInOrder() {
             service_fee_enabled: false,
             service_fee_percentage: 0,
             total_amount: 0,
-            notes: `Tel: ${data.customerPhone}`,
           })
           .select()
           .single();
@@ -157,9 +128,6 @@ export function useCreateDineInOrder() {
 
       // Update totals
       await updateOrderTotals(targetOrderId);
-
-      // Add customer name to the order
-      await addCustomerNameToOrder(targetOrderId, data.customerName);
 
       // Update table status only if we created a new order
       if (createdNewOrder) {

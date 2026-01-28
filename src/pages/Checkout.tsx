@@ -218,12 +218,19 @@ const Checkout = () => {
       return;
     }
 
-    if (!deliveryData.name.trim()) {
-      toast({ title: 'Preencha seu nome', variant: 'destructive' });
-      return;
+    // Name and phone validation only for delivery/pickup
+    if (deliveryType !== 'dine_in') {
+      if (!deliveryData.name.trim()) {
+        toast({ title: 'Preencha seu nome', variant: 'destructive' });
+        return;
+      }
+      if (deliveryData.phone.replace(/\D/g, '').length < 10) {
+        toast({ title: 'Telefone inválido', variant: 'destructive' });
+        return;
+      }
     }
-    if (deliveryData.phone.replace(/\D/g, '').length < 10) {
-      toast({ title: 'Telefone inválido', variant: 'destructive' });
+    if (false) {
+      // Placeholder to maintain structure
       return;
     }
     if (
@@ -251,8 +258,6 @@ const Checkout = () => {
       try {
         const order = await createDineInOrder.mutateAsync({
           tableId: selectedTable!.id,
-          customerName: deliveryData.name,
-          customerPhone: deliveryData.phone,
           existingOrderId: selectedTable!.current_order_id || null,
           items: items.map((item) => ({
             productId: item.product.id,
@@ -612,32 +617,34 @@ const Checkout = () => {
             </section>
           )}
 
-          {/* Customer Data Section */}
-          <section className="space-y-2">
-            <h3 className="font-semibold text-foreground">Dados do cliente</h3>
-            <div className="bg-card rounded-2xl p-4 shadow-card space-y-4">
-              <div>
-                <label className="text-sm text-muted-foreground">Nome completo</label>
-                <Input
-                  placeholder="Seu nome"
-                  value={deliveryData.name}
-                  onChange={(e) => setDeliveryData({ ...deliveryData, name: e.target.value })}
-                  className="mt-1 bg-muted/50 border-0"
-                />
+          {/* Customer Data Section - Not shown for dine-in */}
+          {deliveryType !== 'dine_in' && (
+            <section className="space-y-2">
+              <h3 className="font-semibold text-foreground">Dados do cliente</h3>
+              <div className="bg-card rounded-2xl p-4 shadow-card space-y-4">
+                <div>
+                  <label className="text-sm text-muted-foreground">Nome completo</label>
+                  <Input
+                    placeholder="Seu nome"
+                    value={deliveryData.name}
+                    onChange={(e) => setDeliveryData({ ...deliveryData, name: e.target.value })}
+                    className="mt-1 bg-muted/50 border-0"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm text-muted-foreground">Telefone</label>
+                  <Input
+                    type="tel"
+                    placeholder="(00) 00000-0000"
+                    value={deliveryData.phone}
+                    onChange={(e) => setDeliveryData({ ...deliveryData, phone: formatPhone(e.target.value) })}
+                    className="mt-1 bg-muted/50 border-0"
+                    maxLength={15}
+                  />
+                </div>
               </div>
-              <div>
-                <label className="text-sm text-muted-foreground">Telefone</label>
-                <Input
-                  type="tel"
-                  placeholder="(00) 00000-0000"
-                  value={deliveryData.phone}
-                  onChange={(e) => setDeliveryData({ ...deliveryData, phone: formatPhone(e.target.value) })}
-                  className="mt-1 bg-muted/50 border-0"
-                  maxLength={15}
-                />
-              </div>
-            </div>
-          </section>
+            </section>
+          )}
 
           {/* Payment Method Section - Not shown for dine-in */}
           {deliveryType !== 'dine_in' && (
