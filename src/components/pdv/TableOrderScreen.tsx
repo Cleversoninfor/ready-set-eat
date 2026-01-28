@@ -95,10 +95,9 @@ export function TableOrderScreen({ table, onBack, onCheckout, onTableTransferred
     onBack?.();
   };
 
-  const handleTransfer = async (targetTableId: string) => {
-    if (!order) return;
+  const handleTransfer = async (targetTableId: string, orderId: number) => {
     await transferTable.mutateAsync({
-      orderId: order.id,
+      orderId: orderId,
       fromTableId: table.id,
       toTableId: targetTableId,
     });

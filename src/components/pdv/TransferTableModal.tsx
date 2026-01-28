@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { ArrowRightLeft, Loader2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ArrowRightLeft, Loader2, FileText } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -10,7 +10,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useTables } from '@/hooks/useTables';
-import { Table, TableWithOrder } from '@/types/pdv';
+import { useOpenTableOrdersByTableId } from '@/hooks/useTableOrdersByTable';
+import { TableWithOrder } from '@/types/pdv';
 import { cn } from '@/lib/utils';
 
 interface TransferTableModalProps {
@@ -18,9 +19,11 @@ interface TransferTableModalProps {
   orderId: number;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onTransfer: (targetTableId: string) => Promise<void>;
+  onTransfer: (targetTableId: string, orderId: number) => Promise<void>;
   isTransferring: boolean;
 }
+
+type Step = 'select-order' | 'select-table';
 
 export function TransferTableModal({ 
   currentTable, 
@@ -30,19 +33,51 @@ export function TransferTableModal({
   onTransfer,
   isTransferring
 }: TransferTableModalProps) {
+  const [selectedOrder, setSelectedOrder] = useState<number | null>(null);
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
-  const { tables, isLoading } = useTables();
+  const [step, setStep] = useState<Step>('select-order');
+  
+  const { tables, isLoading: isLoadingTables } = useTables();
+  const { orders: openOrders, isLoading: isLoadingOrders } = useOpenTableOrdersByTableId(currentTable.id);
+
+  // Reset state when modal opens/closes
+  useEffect(() => {
+    if (open) {
+      // If only one order, skip to table selection
+      if (openOrders.length <= 1) {
+        setSelectedOrder(orderId);
+        setStep('select-table');
+      } else {
+        setSelectedOrder(null);
+        setStep('select-order');
+      }
+      setSelectedTable(null);
+    }
+  }, [open, openOrders.length, orderId]);
 
   const availableTables = tables.filter(
     t => t.id !== currentTable.id && t.status === 'available'
   );
 
+  const handleOrderSelect = (id: number) => {
+    setSelectedOrder(id);
+    setStep('select-table');
+  };
+
+  const handleBackToOrders = () => {
+    setStep('select-order');
+    setSelectedTable(null);
+  };
+
   const handleTransfer = async () => {
-    if (!selectedTable) return;
-    await onTransfer(selectedTable);
+    if (!selectedTable || !selectedOrder) return;
+    await onTransfer(selectedTable, selectedOrder);
+    setSelectedOrder(null);
     setSelectedTable(null);
     onOpenChange(false);
   };
+
+  const isLoading = isLoadingTables || isLoadingOrders;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -58,6 +93,52 @@ export function TransferTableModal({
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
+        ) : step === 'select-order' && openOrders.length > 1 ? (
+          <>
+            <p className="text-sm text-muted-foreground">
+              Selecione o pedido que deseja transferir:
+            </p>
+            <ScrollArea className="max-h-60">
+              <div className="space-y-2">
+                {openOrders.map((order) => (
+                  <button
+                    key={order.id}
+                    onClick={() => handleOrderSelect(order.id)}
+                    className={cn(
+                      "w-full p-4 rounded-xl border-2 transition-all text-left flex items-center gap-3",
+                      selectedOrder === order.id
+                        ? "border-primary bg-primary/10"
+                        : "border-border hover:border-primary/50 bg-muted/50"
+                    )}
+                  >
+                    <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center">
+                      <FileText className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-bold">Pedido #{order.id}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {order.waiter_name ? `Atendente: ${order.waiter_name}` : 'Sem atendente'}
+                        {order.customer_count > 1 && ` • ${order.customer_count} pessoas`}
+                      </p>
+                      {order.customer_names && order.customer_names.length > 0 && (
+                        <p className="text-xs text-primary mt-0.5">
+                          {order.customer_names.join(', ')}
+                        </p>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      <p className="font-medium text-primary">
+                        {new Intl.NumberFormat('pt-BR', {
+                          style: 'currency',
+                          currency: 'BRL',
+                        }).format(Number(order.subtotal) || 0)}
+                      </p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </ScrollArea>
+          </>
         ) : availableTables.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <p>Não há mesas disponíveis para transferência.</p>
@@ -65,6 +146,16 @@ export function TransferTableModal({
           </div>
         ) : (
           <>
+            {openOrders.length > 1 && (
+              <div className="flex items-center gap-2 mb-2">
+                <Button variant="ghost" size="sm" onClick={handleBackToOrders}>
+                  ← Voltar
+                </Button>
+                <span className="text-sm text-muted-foreground">
+                  Transferindo Pedido #{selectedOrder}
+                </span>
+              </div>
+            )}
             <p className="text-sm text-muted-foreground">
               Selecione a mesa de destino:
             </p>
@@ -78,14 +169,14 @@ export function TransferTableModal({
                       "p-4 rounded-xl border-2 transition-all text-center",
                       selectedTable === table.id
                         ? "border-primary bg-primary/10"
-                        : "border-border hover:border-primary/50 bg-green-50"
+                        : "border-border hover:border-primary/50 bg-secondary/50"
                     )}
                   >
                     <p className="font-bold text-lg">Mesa {table.number}</p>
                     {table.name && (
                       <p className="text-xs text-muted-foreground">{table.name}</p>
                     )}
-                    <p className="text-xs text-green-600 mt-1">Livre</p>
+                    <p className="text-xs text-primary mt-1">Livre</p>
                   </button>
                 ))}
               </div>
@@ -97,22 +188,24 @@ export function TransferTableModal({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>
-          <Button 
-            onClick={handleTransfer} 
-            disabled={!selectedTable || isTransferring}
-          >
-            {isTransferring ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Transferindo...
-              </>
-            ) : (
-              <>
-                <ArrowRightLeft className="h-4 w-4 mr-2" />
-                Transferir
-              </>
-            )}
-          </Button>
+          {step === 'select-table' && (
+            <Button 
+              onClick={handleTransfer} 
+              disabled={!selectedTable || isTransferring}
+            >
+              {isTransferring ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Transferindo...
+                </>
+              ) : (
+                <>
+                  <ArrowRightLeft className="h-4 w-4 mr-2" />
+                  Transferir
+                </>
+              )}
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
