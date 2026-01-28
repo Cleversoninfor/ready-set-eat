@@ -459,16 +459,36 @@ export function useTableOrderMutations() {
         if (fromTableError) throw fromTableError;
       }
 
-      // Occupy the new table
-      const { error: toTableError } = await supabase
-        .from('tables')
-        .update({ 
-          status: 'occupied', 
-          current_order_id: data.orderId 
-        })
-        .eq('id', data.toTableId);
+      // Check if destination table already has orders (is occupied)
+      const { data: destTableOrders, error: destOrdersError } = await supabase
+        .from('table_orders')
+        .select('id')
+        .eq('table_id', data.toTableId)
+        .in('status', ['open', 'requesting_bill']);
 
-      if (toTableError) throw toTableError;
+      if (destOrdersError) throw destOrdersError;
+
+      // If destination table has no orders, update current_order_id to the transferred order
+      // If it already has orders, just keep its current_order_id (the order will still be linked via table_id)
+      if (!destTableOrders || destTableOrders.length === 0) {
+        const { error: toTableError } = await supabase
+          .from('tables')
+          .update({ 
+            status: 'occupied', 
+            current_order_id: data.orderId 
+          })
+          .eq('id', data.toTableId);
+
+        if (toTableError) throw toTableError;
+      } else {
+        // Just ensure the table is marked as occupied (it already should be)
+        const { error: toTableError } = await supabase
+          .from('tables')
+          .update({ status: 'occupied' })
+          .eq('id', data.toTableId);
+
+        if (toTableError) throw toTableError;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tables'] });
