@@ -118,8 +118,10 @@ export function useKitchenItemMutations() {
   return { updateItemStatus };
 }
 
-// Hook for waiter to see ready items
+// Hook for waiter to see ready items (includes table, delivery, and pickup orders)
 export function useWaiterReadyItems(waiterId?: string) {
+  const queryClient = useQueryClient();
+  
   const { data: items = [], isLoading, error } = useQuery({
     queryKey: ['waiter-ready-items', waiterId],
     queryFn: async (): Promise<KitchenItem[]> => {
@@ -133,9 +135,8 @@ export function useWaiterReadyItems(waiterId?: string) {
         throw error;
       }
 
-      // Filter only table items for waiters
+      // Include all ready items (table, delivery, pickup)
       return (data || [])
-        .filter((item: any) => item.order_type === 'table')
         .map((item: any) => ({
           id: item.id,
           table_order_id: item.table_order_id,
@@ -151,12 +152,46 @@ export function useWaiterReadyItems(waiterId?: string) {
           table_number: item.table_number,
           table_name: item.table_name,
           waiter_name: item.waiter_name,
-          order_type: 'table' as const,
+          order_type: item.order_type as 'table' | 'delivery',
+          customer_name: item.customer_name,
         }));
     },
     enabled: true,
     refetchInterval: 5000,
   });
 
-  return { items, isLoading, error };
+  // Mutation to finalize items (mark as delivered or update order status)
+  const finalizeItem = async (item: KitchenItem) => {
+    if (item.order_type === 'table') {
+      // For table orders, mark individual item as delivered
+      const { error } = await supabase
+        .from('table_order_items')
+        .update({ 
+          status: 'delivered',
+          delivered_at: new Date().toISOString()
+        })
+        .eq('id', item.id);
+
+      if (error) throw error;
+    } else {
+      // For delivery/pickup orders, advance to next status
+      // ready -> delivery (for delivery) or ready -> completed (for pickup)
+      if (item.order_id) {
+        const { error } = await supabase
+          .from('orders')
+          .update({ status: 'delivery' })
+          .eq('id', item.order_id);
+
+        if (error) throw error;
+      }
+    }
+
+    // Invalidate all relevant queries
+    queryClient.invalidateQueries({ queryKey: ['waiter-ready-items'] });
+    queryClient.invalidateQueries({ queryKey: ['kitchen-items'] });
+    queryClient.invalidateQueries({ queryKey: ['orders'] });
+    queryClient.invalidateQueries({ queryKey: ['all-orders'] });
+  };
+
+  return { items, isLoading, error, finalizeItem };
 }
