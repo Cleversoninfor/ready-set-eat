@@ -427,16 +427,37 @@ export function useTableOrderMutations() {
 
       if (orderError) throw orderError;
 
-      // Free the old table
-      const { error: fromTableError } = await supabase
-        .from('tables')
-        .update({ 
-          status: 'available', 
-          current_order_id: null 
-        })
-        .eq('id', data.fromTableId);
+      // Check if there are other open orders remaining on the original table
+      const { data: remainingOrders, error: remainingError } = await supabase
+        .from('table_orders')
+        .select('id')
+        .eq('table_id', data.fromTableId)
+        .in('status', ['open', 'requesting_bill']);
 
-      if (fromTableError) throw fromTableError;
+      if (remainingError) throw remainingError;
+
+      if (remainingOrders && remainingOrders.length > 0) {
+        // There are still orders on the original table, update current_order_id to the most recent one
+        const { error: fromTableError } = await supabase
+          .from('tables')
+          .update({ 
+            current_order_id: remainingOrders[0].id 
+          })
+          .eq('id', data.fromTableId);
+
+        if (fromTableError) throw fromTableError;
+      } else {
+        // No more orders on the original table, free it
+        const { error: fromTableError } = await supabase
+          .from('tables')
+          .update({ 
+            status: 'available', 
+            current_order_id: null 
+          })
+          .eq('id', data.fromTableId);
+
+        if (fromTableError) throw fromTableError;
+      }
 
       // Occupy the new table
       const { error: toTableError } = await supabase
@@ -452,6 +473,7 @@ export function useTableOrderMutations() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tables'] });
       queryClient.invalidateQueries({ queryKey: ['tables-with-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['table-orders-by-table'] });
       toast({ title: 'Mesa transferida com sucesso!' });
     },
     onError: (error: Error) => {
