@@ -4,14 +4,18 @@ import { Helmet } from 'react-helmet-async';
 import { 
   LogOut, 
   Bell, 
-  RefreshCw, 
   Filter,
   ChevronLeft,
   Loader2,
-  ArrowLeft
+  ArrowLeft,
+  ChefHat,
+  CheckCircle,
+  UtensilsCrossed
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { WaiterTableCard } from '@/components/waiter/WaiterTableCard';
@@ -19,13 +23,14 @@ import { TableOrderScreen } from '@/components/pdv/TableOrderScreen';
 import { TableCheckout } from '@/components/pdv/TableCheckout';
 import { OpenTableModal } from '@/components/pdv/OpenTableModal';
 import { useTablesWithOrders } from '@/hooks/useTables';
-import { useWaiterReadyItems, useKitchenItemMutations } from '@/hooks/useKitchenItems';
+import { useWaiterReadyItems, useKitchenItemMutations, KitchenItem } from '@/hooks/useKitchenItems';
 import { useStoreConfig } from '@/hooks/useStore';
 import { useTheme } from '@/hooks/useTheme';
 import { usePWAConfig } from '@/hooks/usePWAConfig';
 import { TableWithOrder, TableStatus } from '@/types/pdv';
 
 type StatusFilter = 'all' | 'available' | 'occupied' | 'requesting_bill';
+type MainTab = 'tables' | 'kitchen';
 type WaiterView = 'tables' | 'order' | 'checkout';
 
 export default function WaiterDashboard() {
@@ -36,11 +41,55 @@ export default function WaiterDashboard() {
   const { updateItemStatus } = useKitchenItemMutations();
   
   const [view, setView] = useState<WaiterView>('tables');
+  const [mainTab, setMainTab] = useState<MainTab>('tables');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [selectedTable, setSelectedTable] = useState<TableWithOrder | null>(null);
   const [openTableModal, setOpenTableModal] = useState(false);
   const [tableToOpen, setTableToOpen] = useState<TableWithOrder | null>(null);
   const [readyItemsOpen, setReadyItemsOpen] = useState(false);
+  const [finalizingItems, setFinalizingItems] = useState<Set<string>>(new Set());
+
+  // Group ready items by table_order_id for grouped display
+  const groupedReadyItems = readyItems.reduce((acc, item) => {
+    const key = item.table_order_id || item.table_number || 0;
+    if (!acc[key]) {
+      acc[key] = {
+        table_number: item.table_number,
+        table_name: item.table_name,
+        waiter_name: item.waiter_name,
+        items: [],
+      };
+    }
+    acc[key].items.push(item);
+    return acc;
+  }, {} as Record<number, { table_number: number | null; table_name: string | null; waiter_name: string | null; items: KitchenItem[] }>);
+
+  const handleFinalizeItem = async (itemId: string) => {
+    setFinalizingItems(prev => new Set(prev).add(itemId));
+    try {
+      await updateItemStatus(itemId, 'delivered');
+    } finally {
+      setFinalizingItems(prev => {
+        const next = new Set(prev);
+        next.delete(itemId);
+        return next;
+      });
+    }
+  };
+
+  const handleFinalizeAllFromTable = async (items: KitchenItem[]) => {
+    const ids = items.map(i => i.id);
+    ids.forEach(id => setFinalizingItems(prev => new Set(prev).add(id)));
+    try {
+      await Promise.all(items.map(item => updateItemStatus(item.id, 'delivered')));
+    } finally {
+      setFinalizingItems(prev => {
+        const next = new Set(prev);
+        ids.forEach(id => next.delete(id));
+        return next;
+      });
+    }
+  };
 
   useTheme();
   usePWAConfig();
@@ -84,9 +133,6 @@ export default function WaiterDashboard() {
     setSelectedTable(null);
   };
 
-  const handleMarkDelivered = async (itemId: string) => {
-    await updateItemStatus(itemId, 'delivered');
-  };
 
   // Filter tables
   const filteredTables = tables
@@ -210,9 +256,14 @@ export default function WaiterDashboard() {
                           </div>
                           <Button
                             size="sm"
-                            onClick={() => handleMarkDelivered(item.id)}
+                            onClick={() => handleFinalizeItem(item.id)}
+                            disabled={finalizingItems.has(item.id)}
                           >
-                            Entregue
+                            {finalizingItems.has(item.id) ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              'Entregue'
+                            )}
                           </Button>
                         </div>
                       ))
@@ -232,70 +283,178 @@ export default function WaiterDashboard() {
           </div>
         </header>
 
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-2 p-4">
-          <div className="bg-green-100 rounded-xl p-3 text-center">
-            <p className="text-2xl font-bold text-green-700">{available}</p>
-            <p className="text-xs text-green-600">Livres</p>
-          </div>
-          <div className="bg-amber-100 rounded-xl p-3 text-center">
-            <p className="text-2xl font-bold text-amber-700">{occupied}</p>
-            <p className="text-xs text-amber-600">Ocupadas</p>
-          </div>
-          <div className="bg-red-100 rounded-xl p-3 text-center">
-            <p className="text-2xl font-bold text-red-700">{requestingBill}</p>
-            <p className="text-xs text-red-600">Conta</p>
-          </div>
-        </div>
+        {/* Main Tabs */}
+        <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as MainTab)} className="flex-1">
+          <TabsList className="grid w-full grid-cols-2 mx-4 mt-3" style={{ width: 'calc(100% - 2rem)' }}>
+            <TabsTrigger value="tables" className="flex items-center gap-2">
+              <UtensilsCrossed className="h-4 w-4" />
+              Mesas
+            </TabsTrigger>
+            <TabsTrigger value="kitchen" className="flex items-center gap-2 relative">
+              <ChefHat className="h-4 w-4" />
+              Pedidos na Cozinha
+              {readyItems.length > 0 && (
+                <Badge className="ml-1 h-5 min-w-[20px] px-1 flex items-center justify-center bg-green-600 text-white text-xs">
+                  {readyItems.length}
+                </Badge>
+              )}
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Filters */}
-        <div className="px-4 pb-4">
-          <div className="flex items-center gap-2 overflow-x-auto pb-2">
-            <Filter className="h-4 w-4 text-muted-foreground shrink-0" />
-            <ToggleGroup 
-              type="single" 
-              value={statusFilter} 
-              onValueChange={(v) => v && setStatusFilter(v as StatusFilter)}
-            >
-              <ToggleGroupItem value="all" className="text-xs px-3">
-                Todas
-              </ToggleGroupItem>
-              <ToggleGroupItem value="available" className="text-xs px-3 data-[state=on]:bg-green-100 data-[state=on]:text-green-700">
-                Livres
-              </ToggleGroupItem>
-              <ToggleGroupItem value="occupied" className="text-xs px-3 data-[state=on]:bg-amber-100 data-[state=on]:text-amber-700">
-                Ocupadas
-              </ToggleGroupItem>
-              <ToggleGroupItem value="requesting_bill" className="text-xs px-3 data-[state=on]:bg-red-100 data-[state=on]:text-red-700">
-                Conta
-              </ToggleGroupItem>
-            </ToggleGroup>
-          </div>
-        </div>
+          {/* Tables Tab */}
+          <TabsContent value="tables" className="mt-0">
+            {/* Stats */}
+            <div className="grid grid-cols-3 gap-2 p-4">
+              <div className="bg-green-100 rounded-xl p-3 text-center">
+                <p className="text-2xl font-bold text-green-700">{available}</p>
+                <p className="text-xs text-green-600">Livres</p>
+              </div>
+              <div className="bg-amber-100 rounded-xl p-3 text-center">
+                <p className="text-2xl font-bold text-amber-700">{occupied}</p>
+                <p className="text-xs text-amber-600">Ocupadas</p>
+              </div>
+              <div className="bg-red-100 rounded-xl p-3 text-center">
+                <p className="text-2xl font-bold text-red-700">{requestingBill}</p>
+                <p className="text-xs text-red-600">Conta</p>
+              </div>
+            </div>
 
-        {/* Tables Grid */}
-        <div className="px-4 pb-6">
-          {isLoading ? (
-            <div className="flex justify-center py-16">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            {/* Filters */}
+            <div className="px-4 pb-4">
+              <div className="flex items-center gap-2 overflow-x-auto pb-2">
+                <Filter className="h-4 w-4 text-muted-foreground shrink-0" />
+                <ToggleGroup 
+                  type="single" 
+                  value={statusFilter} 
+                  onValueChange={(v) => v && setStatusFilter(v as StatusFilter)}
+                >
+                  <ToggleGroupItem value="all" className="text-xs px-3">
+                    Todas
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="available" className="text-xs px-3 data-[state=on]:bg-green-100 data-[state=on]:text-green-700">
+                    Livres
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="occupied" className="text-xs px-3 data-[state=on]:bg-amber-100 data-[state=on]:text-amber-700">
+                    Ocupadas
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="requesting_bill" className="text-xs px-3 data-[state=on]:bg-red-100 data-[state=on]:text-red-700">
+                    Conta
+                  </ToggleGroupItem>
+                </ToggleGroup>
+              </div>
             </div>
-          ) : filteredTables.length === 0 ? (
-            <div className="text-center py-16 text-muted-foreground">
-              Nenhuma mesa encontrada
+
+            {/* Tables Grid */}
+            <div className="px-4 pb-6">
+              {isLoading ? (
+                <div className="flex justify-center py-16">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : filteredTables.length === 0 ? (
+                <div className="text-center py-16 text-muted-foreground">
+                  Nenhuma mesa encontrada
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                  {filteredTables.map((table) => (
+                    <WaiterTableCard
+                      key={table.id}
+                      table={table}
+                      onClick={() => handleTableClick(table)}
+                      readyItemsCount={readyItemsByTable[table.number] || 0}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-              {filteredTables.map((table) => (
-                <WaiterTableCard
-                  key={table.id}
-                  table={table}
-                  onClick={() => handleTableClick(table)}
-                  readyItemsCount={readyItemsByTable[table.number] || 0}
-                />
-              ))}
-            </div>
-          )}
-        </div>
+          </TabsContent>
+
+          {/* Kitchen Orders Tab */}
+          <TabsContent value="kitchen" className="mt-0 p-4">
+            {Object.keys(groupedReadyItems).length === 0 ? (
+              <div className="text-center py-16">
+                <div className="mx-auto mb-4 h-20 w-20 rounded-full bg-muted flex items-center justify-center">
+                  <CheckCircle className="h-10 w-10 text-muted-foreground" />
+                </div>
+                <p className="text-xl text-muted-foreground">Nenhum pedido pronto</p>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Quando a cozinha marcar itens como prontos, eles aparecerão aqui
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {Object.entries(groupedReadyItems).map(([key, group]) => (
+                  <Card key={key} className="border-2 border-green-300 bg-green-50">
+                    <CardContent className="p-4 space-y-3">
+                      {/* Header */}
+                      <div className="flex items-center justify-between">
+                        <Badge variant="outline" className="text-lg font-bold px-3 py-1 border-green-500 text-green-700">
+                          <UtensilsCrossed className="h-4 w-4 mr-1" />
+                          Mesa {group.table_number}
+                        </Badge>
+                        <Badge className="bg-green-600 text-white">
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          Pronto
+                        </Badge>
+                      </div>
+
+                      {/* Items */}
+                      <div className="space-y-2">
+                        {group.items.map((item, index) => (
+                          <div key={item.id} className="space-y-1">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xl font-bold text-foreground">{item.quantity}x</span>
+                                <span className="text-lg font-semibold text-foreground">{item.product_name}</span>
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="border-green-500 text-green-700 hover:bg-green-100"
+                                onClick={() => handleFinalizeItem(item.id)}
+                                disabled={finalizingItems.has(item.id)}
+                              >
+                                {finalizingItems.has(item.id) ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  'Finalizar'
+                                )}
+                              </Button>
+                            </div>
+                            {item.observation && (
+                              <p className="text-sm text-muted-foreground bg-white p-2 rounded-lg">
+                                📝 {item.observation}
+                              </p>
+                            )}
+                            {index < group.items.length - 1 && (
+                              <div className="border-b border-green-200 my-2" />
+                            )}
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Finalize all button */}
+                      {group.items.length > 1 && (
+                        <Button
+                          className="w-full bg-green-600 hover:bg-green-700 text-white"
+                          onClick={() => handleFinalizeAllFromTable(group.items)}
+                          disabled={group.items.some(i => finalizingItems.has(i.id))}
+                        >
+                          {group.items.some(i => finalizingItems.has(i.id)) ? (
+                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          ) : (
+                            <CheckCircle className="h-4 w-4 mr-2" />
+                          )}
+                          Finalizar Todos ({group.items.length} itens)
+                        </Button>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Open Table Modal */}
