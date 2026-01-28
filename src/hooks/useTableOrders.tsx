@@ -459,42 +459,25 @@ export function useTableOrderMutations() {
         if (fromTableError) throw fromTableError;
       }
 
-      // Ensure destination table reflects the transferred order.
-      // NOTE: The PDV UI ties a table's "current" order to tables.current_order_id.
-      // If we transfer to an empty table and don't set current_order_id, it will look like the table is empty.
-      const { data: destTable, error: destTableError } = await supabase
-        .from('tables')
-        .select('current_order_id')
-        .eq('id', data.toTableId)
-        .maybeSingle();
+      // Recompute destination table occupancy based on its open orders.
+      // This avoids ending up with status=occupied but current_order_id=NULL (which makes the table "not open" in the UI).
+      const { data: destOpenOrders, error: destOpenOrdersError } = await supabase
+        .from('table_orders')
+        .select('id, opened_at')
+        .eq('table_id', data.toTableId)
+        .in('status', ['open', 'requesting_bill'])
+        .order('opened_at', { ascending: false });
 
-      if (destTableError) throw destTableError;
+      if (destOpenOrdersError) throw destOpenOrdersError;
 
-      const destUpdate: Record<string, unknown> = { status: 'occupied' };
-
-      // If destination table has no current order OR its current order is not open anymore
-      // (e.g. stale pointer to a paid/cancelled order), point it to the transferred order.
-      let shouldSetDestinationCurrent = !destTable?.current_order_id;
-
-      if (!shouldSetDestinationCurrent && destTable?.current_order_id) {
-        const { data: currentIsOpen, error: currentIsOpenError } = await supabase
-          .from('table_orders')
-          .select('id')
-          .eq('id', destTable.current_order_id)
-          .in('status', ['open', 'requesting_bill'])
-          .maybeSingle();
-
-        if (currentIsOpenError) throw currentIsOpenError;
-        shouldSetDestinationCurrent = !currentIsOpen;
-      }
-
-      if (shouldSetDestinationCurrent) {
-        destUpdate.current_order_id = data.orderId;
-      }
+      const destCurrentOrderId = destOpenOrders?.[0]?.id ?? data.orderId;
 
       const { error: toTableError } = await supabase
         .from('tables')
-        .update(destUpdate)
+        .update({
+          status: 'occupied',
+          current_order_id: destCurrentOrderId,
+        })
         .eq('id', data.toTableId);
 
       if (toTableError) throw toTableError;
