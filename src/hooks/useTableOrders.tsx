@@ -459,36 +459,29 @@ export function useTableOrderMutations() {
         if (fromTableError) throw fromTableError;
       }
 
-      // Check if destination table already has orders (is occupied)
-      const { data: destTableOrders, error: destOrdersError } = await supabase
-        .from('table_orders')
-        .select('id')
-        .eq('table_id', data.toTableId)
-        .in('status', ['open', 'requesting_bill']);
+      // Ensure destination table reflects the transferred order.
+      // NOTE: The PDV UI ties a table's "current" order to tables.current_order_id.
+      // If we transfer to an empty table and don't set current_order_id, it will look like the table is empty.
+      const { data: destTable, error: destTableError } = await supabase
+        .from('tables')
+        .select('current_order_id')
+        .eq('id', data.toTableId)
+        .maybeSingle();
 
-      if (destOrdersError) throw destOrdersError;
+      if (destTableError) throw destTableError;
 
-      // If destination table has no orders, update current_order_id to the transferred order
-      // If it already has orders, just keep its current_order_id (the order will still be linked via table_id)
-      if (!destTableOrders || destTableOrders.length === 0) {
-        const { error: toTableError } = await supabase
-          .from('tables')
-          .update({ 
-            status: 'occupied', 
-            current_order_id: data.orderId 
-          })
-          .eq('id', data.toTableId);
-
-        if (toTableError) throw toTableError;
-      } else {
-        // Just ensure the table is marked as occupied (it already should be)
-        const { error: toTableError } = await supabase
-          .from('tables')
-          .update({ status: 'occupied' })
-          .eq('id', data.toTableId);
-
-        if (toTableError) throw toTableError;
+      const destUpdate: Record<string, unknown> = { status: 'occupied' };
+      // If destination table doesn't have a current order yet, point it to the transferred order.
+      if (!destTable?.current_order_id) {
+        destUpdate.current_order_id = data.orderId;
       }
+
+      const { error: toTableError } = await supabase
+        .from('tables')
+        .update(destUpdate)
+        .eq('id', data.toTableId);
+
+      if (toTableError) throw toTableError;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tables'] });
