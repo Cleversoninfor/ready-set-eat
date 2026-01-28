@@ -471,8 +471,24 @@ export function useTableOrderMutations() {
       if (destTableError) throw destTableError;
 
       const destUpdate: Record<string, unknown> = { status: 'occupied' };
-      // If destination table doesn't have a current order yet, point it to the transferred order.
-      if (!destTable?.current_order_id) {
+
+      // If destination table has no current order OR its current order is not open anymore
+      // (e.g. stale pointer to a paid/cancelled order), point it to the transferred order.
+      let shouldSetDestinationCurrent = !destTable?.current_order_id;
+
+      if (!shouldSetDestinationCurrent && destTable?.current_order_id) {
+        const { data: currentIsOpen, error: currentIsOpenError } = await supabase
+          .from('table_orders')
+          .select('id')
+          .eq('id', destTable.current_order_id)
+          .in('status', ['open', 'requesting_bill'])
+          .maybeSingle();
+
+        if (currentIsOpenError) throw currentIsOpenError;
+        shouldSetDestinationCurrent = !currentIsOpen;
+      }
+
+      if (shouldSetDestinationCurrent) {
         destUpdate.current_order_id = data.orderId;
       }
 
