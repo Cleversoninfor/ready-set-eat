@@ -55,8 +55,9 @@ export function TransferTableModal({
     }
   }, [open, openOrders.length, orderId]);
 
-  const availableTables = tables.filter(
-    t => t.id !== currentTable.id && t.status === 'available'
+  // Show all tables except the current one (both available and occupied)
+  const transferableTables = tables.filter(
+    t => t.id !== currentTable.id && (t.status === 'available' || t.status === 'occupied')
   );
 
   const handleOrderSelect = (id: number) => {
@@ -139,10 +140,10 @@ export function TransferTableModal({
               </div>
             </ScrollArea>
           </>
-        ) : availableTables.length === 0 ? (
+        ) : transferableTables.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <p>Não há mesas disponíveis para transferência.</p>
-            <p className="text-sm mt-1">Libere uma mesa antes de transferir.</p>
+            <p className="text-sm mt-1">Crie uma nova mesa primeiro.</p>
           </div>
         ) : (
           <>
@@ -161,7 +162,7 @@ export function TransferTableModal({
             </p>
             <ScrollArea className="max-h-60">
               <div className="grid grid-cols-3 gap-2">
-                {availableTables.map((table) => (
+                {transferableTables.map((table) => (
                   <button
                     key={table.id}
                     onClick={() => setSelectedTable(table.id)}
@@ -169,14 +170,21 @@ export function TransferTableModal({
                       "p-4 rounded-xl border-2 transition-all text-center",
                       selectedTable === table.id
                         ? "border-primary bg-primary/10"
-                        : "border-border hover:border-primary/50 bg-secondary/50"
+                        : table.status === 'occupied'
+                          ? "border-destructive/30 hover:border-primary/50 bg-destructive/10"
+                          : "border-border hover:border-primary/50 bg-secondary/50"
                     )}
                   >
                     <p className="font-bold text-lg">Mesa {table.number}</p>
                     {table.name && (
                       <p className="text-xs text-muted-foreground">{table.name}</p>
                     )}
-                    <p className="text-xs text-primary mt-1">Livre</p>
+                    <p className={cn(
+                      "text-xs mt-1",
+                      table.status === 'occupied' ? "text-destructive" : "text-primary"
+                    )}>
+                      {table.status === 'occupied' ? 'Ocupada' : 'Livre'}
+                    </p>
                   </button>
                 ))}
               </div>
