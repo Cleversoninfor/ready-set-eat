@@ -10,7 +10,8 @@ import {
   ArrowLeft,
   ChefHat,
   CheckCircle,
-  UtensilsCrossed
+  UtensilsCrossed,
+  Truck
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -23,7 +24,7 @@ import { TableOrderScreen } from '@/components/pdv/TableOrderScreen';
 import { TableCheckout } from '@/components/pdv/TableCheckout';
 import { OpenTableModal } from '@/components/pdv/OpenTableModal';
 import { useTablesWithOrders } from '@/hooks/useTables';
-import { useWaiterReadyItems, useKitchenItemMutations, KitchenItem } from '@/hooks/useKitchenItems';
+import { useWaiterReadyItems, KitchenItem } from '@/hooks/useKitchenItems';
 import { useStoreConfig } from '@/hooks/useStore';
 import { useTheme } from '@/hooks/useTheme';
 import { usePWAConfig } from '@/hooks/usePWAConfig';
@@ -37,8 +38,7 @@ export default function WaiterDashboard() {
   const navigate = useNavigate();
   const { data: store } = useStoreConfig();
   const { tables, isLoading } = useTablesWithOrders();
-  const { items: readyItems } = useWaiterReadyItems();
-  const { updateItemStatus } = useKitchenItemMutations();
+  const { items: readyItems, finalizeItem } = useWaiterReadyItems();
   
   const [view, setView] = useState<WaiterView>('tables');
   const [mainTab, setMainTab] = useState<MainTab>('tables');
@@ -49,39 +49,57 @@ export default function WaiterDashboard() {
   const [readyItemsOpen, setReadyItemsOpen] = useState(false);
   const [finalizingItems, setFinalizingItems] = useState<Set<string>>(new Set());
 
-  // Group ready items by table_order_id for grouped display
+  // Group ready items by table/order for grouped display
   const groupedReadyItems = readyItems.reduce((acc, item) => {
-    const key = item.table_order_id || item.table_number || 0;
+    // Use different keys for table vs delivery orders
+    const key = item.order_type === 'table' 
+      ? `table-${item.table_order_id || item.table_number || 0}`
+      : `delivery-${item.order_id || 0}`;
+    
     if (!acc[key]) {
       acc[key] = {
+        order_type: item.order_type,
         table_number: item.table_number,
         table_name: item.table_name,
         waiter_name: item.waiter_name,
+        customer_name: item.customer_name,
+        order_id: item.order_id,
         items: [],
       };
     }
     acc[key].items.push(item);
     return acc;
-  }, {} as Record<number, { table_number: number | null; table_name: string | null; waiter_name: string | null; items: KitchenItem[] }>);
+  }, {} as Record<string, { 
+    order_type: 'table' | 'delivery'; 
+    table_number: number | null; 
+    table_name: string | null; 
+    waiter_name: string | null; 
+    customer_name?: string;
+    order_id: number | null;
+    items: KitchenItem[] 
+  }>);
 
-  const handleFinalizeItem = async (itemId: string) => {
-    setFinalizingItems(prev => new Set(prev).add(itemId));
+  const handleFinalizeItem = async (item: KitchenItem) => {
+    setFinalizingItems(prev => new Set(prev).add(item.id));
     try {
-      await updateItemStatus(itemId, 'delivered');
+      await finalizeItem(item);
     } finally {
       setFinalizingItems(prev => {
         const next = new Set(prev);
-        next.delete(itemId);
+        next.delete(item.id);
         return next;
       });
     }
   };
 
-  const handleFinalizeAllFromTable = async (items: KitchenItem[]) => {
+  const handleFinalizeAllFromGroup = async (items: KitchenItem[]) => {
     const ids = items.map(i => i.id);
     ids.forEach(id => setFinalizingItems(prev => new Set(prev).add(id)));
     try {
-      await Promise.all(items.map(item => updateItemStatus(item.id, 'delivered')));
+      // Finalize items sequentially to ensure order status updates correctly
+      for (const item of items) {
+        await finalizeItem(item);
+      }
     } finally {
       setFinalizingItems(prev => {
         const next = new Set(prev);
@@ -239,11 +257,13 @@ export default function WaiterDashboard() {
                       readyItems.map((item) => (
                         <div 
                           key={item.id}
-                          className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200"
+                          className="flex items-center justify-between p-3 bg-accent rounded-lg border border-border"
                         >
                           <div>
                             <Badge variant="outline" className="mb-1">
-                              Mesa {item.table_number}
+                              {item.order_type === 'table' 
+                                ? `Mesa ${item.table_number}`
+                                : `Pedido #${item.order_id}`}
                             </Badge>
                             <p className="font-medium">
                               {item.quantity}x {item.product_name}
@@ -256,7 +276,7 @@ export default function WaiterDashboard() {
                           </div>
                           <Button
                             size="sm"
-                            onClick={() => handleFinalizeItem(item.id)}
+                            onClick={() => handleFinalizeItem(item)}
                             disabled={finalizingItems.has(item.id)}
                           >
                             {finalizingItems.has(item.id) ? (
@@ -384,19 +404,35 @@ export default function WaiterDashboard() {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {Object.entries(groupedReadyItems).map(([key, group]) => (
-                  <Card key={key} className="border-2 border-green-300 bg-green-50">
+                  <Card key={key} className="border-2 border-primary/30 bg-accent">
                     <CardContent className="p-4 space-y-3">
                       {/* Header */}
                       <div className="flex items-center justify-between">
-                        <Badge variant="outline" className="text-lg font-bold px-3 py-1 border-green-500 text-green-700">
-                          <UtensilsCrossed className="h-4 w-4 mr-1" />
-                          Mesa {group.table_number}
+                        <Badge variant="outline" className="text-lg font-bold px-3 py-1 border-primary text-primary">
+                          {group.order_type === 'table' ? (
+                            <>
+                              <UtensilsCrossed className="h-4 w-4 mr-1" />
+                              Mesa {group.table_number}
+                            </>
+                          ) : (
+                            <>
+                              <Truck className="h-4 w-4 mr-1" />
+                              Pedido #{group.order_id}
+                            </>
+                          )}
                         </Badge>
-                        <Badge className="bg-green-600 text-white">
+                        <Badge className="bg-primary text-primary-foreground">
                           <CheckCircle className="h-3 w-3 mr-1" />
                           Pronto
                         </Badge>
                       </div>
+
+                      {/* Customer info for delivery */}
+                      {group.order_type === 'delivery' && group.customer_name && (
+                        <p className="text-sm text-muted-foreground">
+                          👤 {group.customer_name}
+                        </p>
+                      )}
 
                       {/* Items */}
                       <div className="space-y-2">
@@ -407,37 +443,39 @@ export default function WaiterDashboard() {
                                 <span className="text-xl font-bold text-foreground">{item.quantity}x</span>
                                 <span className="text-lg font-semibold text-foreground">{item.product_name}</span>
                               </div>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="border-green-500 text-green-700 hover:bg-green-100"
-                                onClick={() => handleFinalizeItem(item.id)}
-                                disabled={finalizingItems.has(item.id)}
-                              >
-                                {finalizingItems.has(item.id) ? (
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  'Finalizar'
-                                )}
-                              </Button>
+                              {group.order_type === 'table' && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="border-primary text-primary hover:bg-primary/10"
+                                  onClick={() => handleFinalizeItem(item)}
+                                  disabled={finalizingItems.has(item.id)}
+                                >
+                                  {finalizingItems.has(item.id) ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    'Finalizar'
+                                  )}
+                                </Button>
+                              )}
                             </div>
                             {item.observation && (
-                              <p className="text-sm text-muted-foreground bg-white p-2 rounded-lg">
+                              <p className="text-sm text-muted-foreground bg-background p-2 rounded-lg">
                                 📝 {item.observation}
                               </p>
                             )}
                             {index < group.items.length - 1 && (
-                              <div className="border-b border-green-200 my-2" />
+                              <div className="border-b border-border my-2" />
                             )}
                           </div>
                         ))}
                       </div>
 
                       {/* Finalize all button */}
-                      {group.items.length > 1 && (
+                      {(group.items.length > 1 || group.order_type === 'delivery') && (
                         <Button
-                          className="w-full bg-green-600 hover:bg-green-700 text-white"
-                          onClick={() => handleFinalizeAllFromTable(group.items)}
+                          className="w-full"
+                          onClick={() => handleFinalizeAllFromGroup(group.items)}
                           disabled={group.items.some(i => finalizingItems.has(i.id))}
                         >
                           {group.items.some(i => finalizingItems.has(i.id)) ? (
@@ -445,7 +483,9 @@ export default function WaiterDashboard() {
                           ) : (
                             <CheckCircle className="h-4 w-4 mr-2" />
                           )}
-                          Finalizar Todos ({group.items.length} itens)
+                          {group.order_type === 'delivery' 
+                            ? 'Saiu para Entrega' 
+                            : `Finalizar Todos (${group.items.length} itens)`}
                         </Button>
                       )}
                     </CardContent>
