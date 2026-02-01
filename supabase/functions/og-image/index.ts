@@ -28,18 +28,39 @@ serve(async (req) => {
     const { data, error } = await supabase.rpc("get_public_store_config");
 
     const logoUrl = !error && data?.[0]?.logo_url ? String(data[0].logo_url) : null;
-    const redirectTo = logoUrl || new URL("/icon-512.png", req.url).toString();
+    if (!logoUrl) {
+      // If no logo is configured, return 204 (no content) to avoid broken image.
+      return new Response(null, {
+        status: 204,
+        headers: { "Cache-Control": "no-store" },
+      });
+    }
 
-    // Most social crawlers follow redirects for og:image.
-    return new Response(null, {
-      status: 302,
+    // IMPORTANT: Some crawlers (including WhatsApp) can be picky with redirects.
+    // To maximize compatibility, fetch the logo and return the image bytes directly.
+    const imgRes = await fetch(logoUrl);
+    if (!imgRes.ok) {
+      return new Response(null, {
+        status: 502,
+        headers: { "Cache-Control": "no-store" },
+      });
+    }
+
+    const contentType = imgRes.headers.get("content-type") || "image/png";
+    const body = await imgRes.arrayBuffer();
+
+    return new Response(body, {
+      status: 200,
       headers: {
-        Location: redirectTo,
-        // Encourage fast refresh while still allowing crawler caching behavior.
-        "Cache-Control": "no-store, max-age=0",
+        "Content-Type": contentType,
+        // Allow caching a bit to reduce repeated fetches by crawlers.
+        "Cache-Control": "public, max-age=3600",
       },
     });
   } catch (_e) {
-    return Response.redirect(new URL("/icon-512.png", req.url), 302);
+    return new Response(null, {
+      status: 500,
+      headers: { "Cache-Control": "no-store" },
+    });
   }
 });
