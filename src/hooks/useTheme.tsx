@@ -155,6 +155,17 @@ export function useTheme() {
         favicon.href = store.logo_url;
         document.head.appendChild(favicon);
       }
+
+      // Update Open Graph image meta tag to show store logo in link previews
+      const ogImageMeta = document.querySelector('meta[property="og:image"]');
+      if (ogImageMeta) {
+        ogImageMeta.setAttribute('content', store.logo_url);
+      }
+
+      const twitterImageMeta = document.querySelector('meta[name="twitter:image"]');
+      if (twitterImageMeta) {
+        twitterImageMeta.setAttribute('content', store.logo_url);
+      }
     }
 
   }, [store]);
