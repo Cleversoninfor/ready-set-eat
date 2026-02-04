@@ -95,18 +95,45 @@ export function getDayName(day: number): string {
   return days[day] || '';
 }
 
+// Helper to get Brazil time (America/Sao_Paulo)
+function getBrazilTime(): { day: number; time: string } {
+  const now = new Date();
+  
+  // Format to Brazil timezone
+  const brazilFormatter = new Intl.DateTimeFormat('pt-BR', {
+    timeZone: 'America/Sao_Paulo',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
+  
+  const dayFormatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Sao_Paulo',
+    weekday: 'short',
+  });
+  
+  const dayName = dayFormatter.format(now);
+  const dayMap: Record<string, number> = {
+    'Sun': 0, 'Mon': 1, 'Tue': 2, 'Wed': 3, 'Thu': 4, 'Fri': 5, 'Sat': 6
+  };
+  
+  return {
+    day: dayMap[dayName] ?? now.getDay(),
+    time: brazilFormatter.format(now),
+  };
+}
+
 // Helper to check if store is currently open
 export function isStoreCurrentlyOpen(hours: BusinessHour[]): boolean {
-  const now = new Date();
-  const currentDay = now.getDay();
-  const currentTime = now.toTimeString().slice(0, 5);
+  const { day: currentDay, time: currentTime } = getBrazilTime();
   
   const todayHours = hours.find(h => h.day_of_week === currentDay);
   
   if (!todayHours || !todayHours.is_active) return false;
   
-  const openTime = todayHours.open_time;
-  const closeTime = todayHours.close_time;
+  // Normalize time format (remove seconds if present)
+  const openTime = todayHours.open_time.slice(0, 5);
+  const closeTime = todayHours.close_time.slice(0, 5);
   
   // Handle midnight (00:00) as end of day - treat it as 24:00 for comparison
   if (closeTime === '00:00') {
