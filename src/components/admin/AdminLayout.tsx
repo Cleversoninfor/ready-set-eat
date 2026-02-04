@@ -31,6 +31,7 @@ import { PWAInstallButton } from '@/components/pwa/PWAInstallButton';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useStoreConfig } from '@/hooks/useStore';
+import { useStoreStatus } from '@/hooks/useStoreStatus';
 import { useTheme } from '@/hooks/useTheme';
 import { usePWAConfig } from '@/hooks/usePWAConfig';
 import { cn } from '@/lib/utils';
@@ -89,6 +90,7 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
   const { user, isLoading, isAdmin, refreshRole, signOut } = useAuth();
   const { toast } = useToast();
   const { data: store } = useStoreConfig();
+  const storeStatus = useStoreStatus();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Apply dynamic theme and PWA config based on store colors
@@ -205,8 +207,8 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
                 </div>
                 <div>
                   <p className="font-bold text-foreground text-sm">{store?.name || 'Admin'}</p>
-                  <Badge variant={store?.is_open ? 'open' : 'closed'} className="text-xs">
-                    {store?.is_open ? 'Aberto' : 'Fechado'}
+                  <Badge variant={storeStatus.isOpen ? 'open' : 'closed'} className="text-xs">
+                    {storeStatus.isOpen ? 'Aberto' : 'Fechado'}
                   </Badge>
                 </div>
               </div>
