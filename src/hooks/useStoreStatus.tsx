@@ -3,21 +3,21 @@ import { useBusinessHours, isStoreCurrentlyOpen } from './useBusinessHours';
 
 export interface StoreStatus {
   isOpen: boolean;
-  reason: 'open' | 'forced_open' | 'manual_closed' | 'hours_closed';
+  reason: 'open' | 'manual_closed' | 'hours_closed';
   message: string;
 }
 
 /**
  * Hook que combina o status manual da loja (is_open) com os horários de funcionamento.
  * 
- * REGRAS:
- * 1. Se is_open = FALSE -> Loja FECHADA (fechamento manual tem prioridade máxima)
- * 2. Se is_open = TRUE e dentro do horário -> Loja ABERTA (operação normal)
- * 3. Se is_open = TRUE e fora do horário -> Loja ABERTA (forçando abertura)
+ * REGRAS (NOVA LÓGICA - Horários são prioridade):
+ * 1. Se fora do horário de funcionamento -> Loja FECHADA (automaticamente)
+ * 2. Se dentro do horário e is_open = TRUE -> Loja ABERTA (operação normal)
+ * 3. Se dentro do horário e is_open = FALSE -> Loja FECHADA (fechamento manual)
  * 
- * O botão is_open funciona como um "master switch":
- * - Quando ATIVADO: mantém a loja aberta (força abertura se fora do horário)
- * - Quando DESATIVADO: fecha a loja independente do horário
+ * O botão is_open funciona como "fechamento manual":
+ * - Quando ATIVADO: loja segue os horários de funcionamento
+ * - Quando DESATIVADO: fecha a loja manualmente (mesmo dentro do horário)
  */
 export function useStoreStatus(): StoreStatus {
   const { data: store } = useStoreConfig();
@@ -32,7 +32,22 @@ export function useStoreStatus(): StoreStatus {
     };
   }
 
-  // Verificar status manual primeiro (prioridade máxima para FECHAR)
+  // Verificar horário de funcionamento PRIMEIRO (prioridade)
+  const hasBusinessHours = businessHours && businessHours.length > 0;
+  const isWithinBusinessHours = hasBusinessHours 
+    ? isStoreCurrentlyOpen(businessHours) 
+    : true; // Se não tem horários configurados, considera aberto
+
+  // Se fora do horário -> FECHADA automaticamente
+  if (!isWithinBusinessHours) {
+    return {
+      isOpen: false,
+      reason: 'hours_closed',
+      message: 'Fora do horário de funcionamento',
+    };
+  }
+
+  // Dentro do horário - verificar fechamento manual
   if (!store.is_open) {
     return {
       isOpen: false,
@@ -41,26 +56,11 @@ export function useStoreStatus(): StoreStatus {
     };
   }
 
-  // Se is_open = TRUE, a loja está ABERTA
-  // Verificar se está dentro ou fora do horário para definir a razão
-  const isWithinBusinessHours = businessHours 
-    ? isStoreCurrentlyOpen(businessHours) 
-    : true;
-
-  if (isWithinBusinessHours) {
-    // Operação normal dentro do horário
-    return {
-      isOpen: true,
-      reason: 'open',
-      message: 'Recebendo pedidos',
-    };
-  }
-
-  // Fora do horário mas is_open = TRUE -> Forçando abertura
+  // Dentro do horário e is_open = true -> ABERTA
   return {
     isOpen: true,
-    reason: 'forced_open',
-    message: 'Forçando abertura',
+    reason: 'open',
+    message: 'Recebendo pedidos',
   };
 }
 
