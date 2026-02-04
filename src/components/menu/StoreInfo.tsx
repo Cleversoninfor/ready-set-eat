@@ -35,9 +35,6 @@ export function StoreInfo({ store }: StoreInfoProps) {
 
   const currentDay = new Date().getDay();
   
-  // Check if forced opening (is_open=true but outside business hours)
-  const isForcedOpen = storeStatus.reason === 'forced_open';
-  
   // Get today's hours for display
   const todayHours = businessHours?.find(h => h.day_of_week === currentDay);
   const todaySchedule = todayHours?.is_active 
@@ -58,25 +55,20 @@ export function StoreInfo({ store }: StoreInfoProps) {
                 {storeStatus.isOpen ? 'Aberto' : 'Fechado'}
               </p>
               <p className="text-xs text-muted-foreground">
-                {isForcedOpen 
-                  ? 'Recebendo pedidos' 
-                  : storeStatus.isOpen && todaySchedule
-                    ? `Horário: ${todaySchedule}`
-                    : storeStatus.message
+                {storeStatus.isOpen && todaySchedule
+                  ? `Horário: ${todaySchedule}`
+                  : storeStatus.message
                 }
               </p>
             </div>
           </div>
-          {/* Hide "Ver Horários" button when forced open */}
-          {!isForcedOpen && (
-            <button 
-              onClick={() => setHoursModalOpen(true)}
-              className="flex flex-col sm:flex-row items-center gap-0 sm:gap-1 text-xs sm:text-sm font-semibold uppercase text-primary hover:text-primary/80 transition-colors leading-tight"
-            >
-              <span>Ver</span>
-              <span>Horários</span>
-            </button>
-          )}
+          <button 
+            onClick={() => setHoursModalOpen(true)}
+            className="flex flex-col sm:flex-row items-center gap-0 sm:gap-1 text-xs sm:text-sm font-semibold uppercase text-primary hover:text-primary/80 transition-colors leading-tight"
+          >
+            <span>Ver</span>
+            <span>Horários</span>
+          </button>
         </div>
 
         {/* Phone */}
