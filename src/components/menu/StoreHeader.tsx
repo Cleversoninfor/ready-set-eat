@@ -1,12 +1,15 @@
 import { MapPin } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { StoreConfig } from '@/hooks/useStore';
+import { useStoreStatus } from '@/hooks/useStoreStatus';
 
 interface StoreHeaderProps {
   store: StoreConfig;
 }
 
 export function StoreHeader({ store }: StoreHeaderProps) {
+  const storeStatus = useStoreStatus();
+
   return (
     <header className="sticky top-0 z-40 bg-card shadow-card">
       <div className="px-4 py-4">
@@ -25,8 +28,8 @@ export function StoreHeader({ store }: StoreHeaderProps) {
           <div className="flex-1">
             <div className="flex items-center gap-2">
               <h1 className="text-lg font-bold text-foreground">{store.name}</h1>
-              <Badge variant={store.is_open ? 'open' : 'closed'}>
-                {store.is_open ? 'Aberto' : 'Fechado'}
+              <Badge variant={storeStatus.isOpen ? 'open' : 'closed'}>
+                {storeStatus.isOpen ? 'Aberto' : 'Fechado'}
               </Badge>
             </div>
             <div className="flex items-center gap-1 text-sm text-muted-foreground">
