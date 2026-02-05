@@ -28,10 +28,6 @@ export function MenuProductCard({ product, onSelect }: MenuProductCardProps) {
 
   const isOutOfStock = product.isReadyProduct && product.quantity_available === 0;
   const isLowStock = product.isReadyProduct && product.quantity_available && product.quantity_available <= 5;
-  const formattedPrice = Number(product.price).toLocaleString('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  });
 
   return (
     <div
