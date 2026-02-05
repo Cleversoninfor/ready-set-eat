@@ -84,6 +84,7 @@ const Checkout = () => {
   const createOrder = useCreateOrder();
   const createDineInOrder = useCreateDineInOrder();
   const validateCoupon = useValidateCoupon();
+  const decrementReadyProduct = useDecrementReadyProductQuantity();
 
   const savedData = loadCheckoutFromStorage();
 
