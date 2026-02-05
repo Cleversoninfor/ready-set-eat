@@ -127,8 +127,6 @@ export function ProductModal({
         price: unitPrice, // Price with add-ons
         image_url: product.image_url || '',
         is_available: product.is_available,
-        isReadyProduct: (product as any).isReadyProduct || false,
-        quantity_available: (product as any).quantity_available,
       },
       quantity,
       observation.trim() ? observation.trim() : undefined,

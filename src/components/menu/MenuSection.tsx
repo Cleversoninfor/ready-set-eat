@@ -1,24 +1,13 @@
 import { forwardRef } from 'react';
 import { Category } from '@/hooks/useCategories';
+import { Product } from '@/hooks/useProducts';
 import { MenuProductCard } from './MenuProductCard';
-
-// Extended product type that includes ready product fields
-export interface DisplayProduct {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  image_url: string;
-  is_available: boolean;
-  category_id: string;
-  isReadyProduct?: boolean;
-  quantity_available?: number;
-}
+import { Beef, Layers, Coffee, IceCream } from 'lucide-react';
 
 interface MenuSectionProps {
   category: Category;
-  products: DisplayProduct[];
-  onProductSelect: (product: DisplayProduct) => void;
+  products: Product[];
+  onProductSelect: (product: Product) => void;
 }
 
 const categoryEmojis: Record<string, string> = {

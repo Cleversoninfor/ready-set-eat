@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { HeroHeader } from '@/components/menu/HeroHeader';
@@ -11,21 +11,12 @@ import { FloatingOrderButton, getLastOrderId } from '@/components/order/Floating
 import { InstallPrompt } from '@/components/pwa/InstallPrompt';
 import { InfornexaBanner } from '@/components/menu/InfornexaBanner';
 import { useStoreConfig } from '@/hooks/useStore';
-import { useCategories, Category } from '@/hooks/useCategories';
+import { useCategories } from '@/hooks/useCategories';
 import { useProducts, Product } from '@/hooks/useProducts';
-import { useReadyCategories } from '@/hooks/useReadyCategories';
-import { useAvailableReadyProducts, ReadyProduct } from '@/hooks/useReadyProducts';
 import { useTheme } from '@/hooks/useTheme';
 import { useStoreStatus } from '@/hooks/useStoreStatus';
 import { Loader2, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-
-// Combined product type for unified handling
-export interface DisplayProduct extends Omit<Product, 'category_id'> {
-  category_id: string;
-  isReadyProduct?: boolean;
-  quantity_available?: number;
-}
 
 interface EditingProduct {
   product: Product;
@@ -46,47 +37,12 @@ const Index = () => {
   const { data: store, isLoading: storeLoading } = useStoreConfig();
   const { data: categories, isLoading: categoriesLoading } = useCategories();
   const { data: products, isLoading: productsLoading } = useProducts();
-  const { data: readyCategories, isLoading: readyCategoriesLoading } = useReadyCategories();
-  const { data: readyProducts, isLoading: readyProductsLoading } = useAvailableReadyProducts();
   const storeStatus = useStoreStatus();
 
   // Apply dynamic theme based on store colors
   useTheme();
 
-  const isLoading = storeLoading || categoriesLoading || productsLoading || readyCategoriesLoading || readyProductsLoading;
-
-  // Combine regular and ready categories
-  const allCategories = useMemo(() => {
-    const regularCats = categories || [];
-    const readyCats: Category[] = (readyCategories || []).map(rc => ({
-      id: `ready_${rc.id}`,
-      name: rc.name,
-      sort_order: rc.sort_order + 1000, // Put ready categories after regular ones
-      image_url: rc.image_url,
-    }));
-    return [...regularCats, ...readyCats];
-  }, [categories, readyCategories]);
-
-  // Combine regular and ready products
-  const allProducts = useMemo(() => {
-    const regularProds: DisplayProduct[] = (products || []).map(p => ({
-      ...p,
-      category_id: p.category_id || '',
-      isReadyProduct: false,
-    }));
-    const readyProds: DisplayProduct[] = (readyProducts || []).map(rp => ({
-      id: rp.id,
-      name: rp.name,
-      description: rp.description,
-      price: rp.price,
-      image_url: rp.image_url,
-      is_available: rp.is_available && rp.quantity_available > 0,
-      category_id: `ready_${rp.category_id}`,
-      isReadyProduct: true,
-      quantity_available: rp.quantity_available,
-    }));
-    return [...regularProds, ...readyProds];
-  }, [products, readyProducts]);
+  const isLoading = storeLoading || categoriesLoading || productsLoading;
 
   // Check for last order on mount
   useEffect(() => {
@@ -120,8 +76,8 @@ const Index = () => {
       return v;
     };
 
-    if (productId && allProducts.length > 0) {
-      const product = allProducts.find((p) => p.id === productId);
+    if (productId && products) {
+      const product = products.find((p) => p.id === productId);
       if (product) {
         let selectedAddons: Record<string, string[]> | undefined;
         if (addonsParam) {
@@ -132,19 +88,8 @@ const Index = () => {
           }
         }
 
-        // Convert DisplayProduct to Product for modal
-        const modalProduct: Product = {
-          id: product.id,
-          name: product.name,
-          description: product.description,
-          price: product.price,
-          image_url: product.image_url,
-          is_available: product.is_available,
-          category_id: product.category_id,
-        };
-
         setEditingProduct({
-          product: modalProduct,
+          product,
           quantity,
           observation: sanitizeObservation(rawObservation),
           returnTo,
@@ -154,7 +99,7 @@ const Index = () => {
         setSearchParams({}, { replace: true });
       }
     }
-  }, [searchParams, allProducts, setSearchParams]);
+  }, [searchParams, products, setSearchParams]);
 
   const scrollToCategory = (categoryId: string) => {
     const element = sectionRefs.current[categoryId];
@@ -203,35 +148,19 @@ const Index = () => {
   }
 
   // Filter products by search
-  const filteredProducts = allProducts.filter(product => 
-    product.is_available && (
-      searchQuery === '' || 
-      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (product.description?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false)
-    )
-  );
+  const filteredProducts = products?.filter(product => 
+    searchQuery === '' || 
+    product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (product.description?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false)
+  ) || [];
 
   // Group products by category
-  const productsByCategory = allCategories.map(category => ({
+  const productsByCategory = categories?.map(category => ({
     category,
     products: filteredProducts.filter(p => p.category_id === category.id)
-  })).filter(group => group.products.length > 0);
+  })).filter(group => group.products.length > 0) || [];
 
   const totalItems = filteredProducts.length;
-
-  // Handler to convert DisplayProduct to Product for modal
-  const handleProductSelect = (product: DisplayProduct) => {
-    const modalProduct: Product = {
-      id: product.id,
-      name: product.name,
-      description: product.description,
-      price: product.price,
-      image_url: product.image_url,
-      is_available: product.is_available,
-      category_id: product.category_id,
-    };
-    setSelectedProduct(modalProduct);
-  };
 
   // Determine which modal to show
   const modalProduct = editingProduct?.product || selectedProduct;
@@ -267,9 +196,9 @@ const Index = () => {
         </div>
 
         {/* Categories */}
-        {allCategories.length > 0 && (
+        {categories && categories.length > 0 && (
           <CategoryIcons 
-            categories={allCategories} 
+            categories={categories} 
             onCategorySelect={scrollToCategory}
           />
         )}
@@ -288,7 +217,7 @@ const Index = () => {
               ref={(el) => { sectionRefs.current[category.id] = el; }}
               category={category}
               products={products}
-              onProductSelect={handleProductSelect}
+              onProductSelect={setSelectedProduct}
             />
           ))}
 
