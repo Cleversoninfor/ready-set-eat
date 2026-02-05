@@ -1,10 +1,23 @@
 import { Plus } from 'lucide-react';
-import { Product } from '@/hooks/useProducts';
 import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
+
+// Extended product type that includes ready product fields
+export interface DisplayProduct {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  image_url: string;
+  is_available: boolean;
+  category_id: string;
+  isReadyProduct?: boolean;
+  quantity_available?: number;
+}
 
 interface MenuProductCardProps {
-  product: Product;
-  onSelect: (product: Product) => void;
+  product: DisplayProduct;
+  onSelect: (product: DisplayProduct) => void;
 }
 
 export function MenuProductCard({ product, onSelect }: MenuProductCardProps) {
