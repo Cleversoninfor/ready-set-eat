@@ -203,19 +203,35 @@ const Index = () => {
   }
 
   // Filter products by search
-  const filteredProducts = products?.filter(product => 
-    searchQuery === '' || 
-    product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (product.description?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false)
-  ) || [];
+  const filteredProducts = allProducts.filter(product => 
+    product.is_available && (
+      searchQuery === '' || 
+      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (product.description?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false)
+    )
+  );
 
   // Group products by category
-  const productsByCategory = categories?.map(category => ({
+  const productsByCategory = allCategories.map(category => ({
     category,
     products: filteredProducts.filter(p => p.category_id === category.id)
-  })).filter(group => group.products.length > 0) || [];
+  })).filter(group => group.products.length > 0);
 
   const totalItems = filteredProducts.length;
+
+  // Handler to convert DisplayProduct to Product for modal
+  const handleProductSelect = (product: DisplayProduct) => {
+    const modalProduct: Product = {
+      id: product.id,
+      name: product.name,
+      description: product.description,
+      price: product.price,
+      image_url: product.image_url,
+      is_available: product.is_available,
+      category_id: product.category_id,
+    };
+    setSelectedProduct(modalProduct);
+  };
 
   // Determine which modal to show
   const modalProduct = editingProduct?.product || selectedProduct;
