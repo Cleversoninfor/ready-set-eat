@@ -12,6 +12,8 @@ export interface Product {
   price: number;
   image_url: string;
   is_available: boolean;
+  isReadyProduct?: boolean;
+  quantity_available?: number;
 }
 
 export interface CartItem {

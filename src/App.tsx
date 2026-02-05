@@ -16,6 +16,8 @@ import Install from "./pages/Install";
 import AdminOrders from "./pages/admin/Orders";
 import AdminProducts from "./pages/admin/Products";
 import AdminCategories from "./pages/admin/Categories";
+import AdminReadyCategories from "./pages/admin/ReadyCategories";
+import AdminReadyProducts from "./pages/admin/ReadyProducts";
 import AdminCoupons from "./pages/admin/Coupons";
 import AdminHours from "./pages/admin/Hours";
 import AdminSettings from "./pages/admin/Settings";
@@ -60,6 +62,8 @@ const App = () => (
                 <Route path="/admin/orders" element={<AdminOrders />} />
                 <Route path="/admin/products" element={<AdminProducts />} />
                 <Route path="/admin/categories" element={<AdminCategories />} />
+                <Route path="/admin/ready-categories" element={<AdminReadyCategories />} />
+                <Route path="/admin/ready-products" element={<AdminReadyProducts />} />
                 <Route path="/admin/coupons" element={<AdminCoupons />} />
                 <Route path="/admin/hours" element={<AdminHours />} />
                 <Route path="/admin/delivery-zones" element={<AdminDeliveryZones />} />

@@ -15,6 +15,7 @@ import { useStoreStatus } from '@/hooks/useStoreStatus';
 import { AddressSelector } from '@/components/checkout/AddressSelector';
 import { TableSelector } from '@/components/checkout/TableSelector';
 import { useCreateDineInOrder } from '@/hooks/useDineInOrder';
+import { useDecrementReadyProductQuantity } from '@/hooks/useReadyProducts';
 import { PaymentMethod } from '@/types';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -83,6 +84,7 @@ const Checkout = () => {
   const createOrder = useCreateOrder();
   const createDineInOrder = useCreateDineInOrder();
   const validateCoupon = useValidateCoupon();
+  const decrementReadyProduct = useDecrementReadyProductQuantity();
 
   const savedData = loadCheckoutFromStorage();
 
@@ -332,6 +334,17 @@ const Checkout = () => {
       });
 
       console.log('[Checkout] Order created successfully:', order);
+
+      // Decrement ready product quantities (non-blocking)
+      try {
+        const readyProductItems = items.filter(item => item.product.isReadyProduct);
+        for (const item of readyProductItems) {
+          decrementReadyProduct.mutate({ id: item.product.id, quantity: item.quantity });
+        }
+      } catch (decrementError) {
+        console.error('[Checkout] Error decrementing ready products:', decrementError);
+        // Don't block checkout flow
+      }
 
       toast({
         title: '🎉 Pedido enviado!',

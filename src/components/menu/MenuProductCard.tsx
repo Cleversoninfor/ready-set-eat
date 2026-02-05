@@ -1,10 +1,23 @@
 import { Plus } from 'lucide-react';
-import { Product } from '@/hooks/useProducts';
 import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
+
+// Extended product type that includes ready product fields
+export interface DisplayProduct {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  image_url: string;
+  is_available: boolean;
+  category_id: string;
+  isReadyProduct?: boolean;
+  quantity_available?: number;
+}
 
 interface MenuProductCardProps {
-  product: Product;
-  onSelect: (product: Product) => void;
+  product: DisplayProduct;
+  onSelect: (product: DisplayProduct) => void;
 }
 
 export function MenuProductCard({ product, onSelect }: MenuProductCardProps) {
@@ -13,15 +26,18 @@ export function MenuProductCard({ product, onSelect }: MenuProductCardProps) {
     currency: 'BRL',
   });
 
+  const isOutOfStock = product.isReadyProduct && product.quantity_available === 0;
+  const isLowStock = product.isReadyProduct && product.quantity_available && product.quantity_available <= 5;
+
   return (
     <div
       className={cn(
         "group flex gap-3 rounded-2xl bg-card p-3 shadow-sm transition-all duration-200",
-        product.is_available 
+        product.is_available && !isOutOfStock
           ? "cursor-pointer hover:shadow-md active:scale-[0.99]" 
           : "opacity-60"
       )}
-      onClick={() => product.is_available && onSelect(product)}
+      onClick={() => product.is_available && !isOutOfStock && onSelect(product)}
     >
       {/* Image - Small with 540:280 ratio */}
       {product.image_url && (
@@ -32,7 +48,7 @@ export function MenuProductCard({ product, onSelect }: MenuProductCardProps) {
             loading="lazy"
             className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
           />
-          {!product.is_available && (
+          {(!product.is_available || isOutOfStock) && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/60">
               <span className="text-[10px] font-bold uppercase text-white">Esgotado</span>
             </div>
@@ -43,7 +59,17 @@ export function MenuProductCard({ product, onSelect }: MenuProductCardProps) {
       {/* Content */}
       <div className="flex flex-1 flex-col justify-between py-0.5">
         <div>
-          <h4 className="font-semibold text-foreground leading-tight">{product.name}</h4>
+          <div className="flex items-center gap-2">
+            <h4 className="font-semibold text-foreground leading-tight">{product.name}</h4>
+            {product.isReadyProduct && product.quantity_available !== undefined && product.quantity_available > 0 && (
+              <Badge 
+                variant={isLowStock ? 'warning' : 'open'} 
+                className="text-[10px] px-1.5 py-0"
+              >
+                {product.quantity_available} {product.quantity_available === 1 ? 'un' : 'un'}
+              </Badge>
+            )}
+          </div>
           <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">
             {product.description}
           </p>
@@ -54,7 +80,7 @@ export function MenuProductCard({ product, onSelect }: MenuProductCardProps) {
       </div>
 
       {/* Add Button */}
-      {product.is_available && (
+      {product.is_available && !isOutOfStock && (
         <div className="flex items-end">
           <button
             onClick={(e) => {

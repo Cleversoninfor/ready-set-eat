@@ -61,6 +61,8 @@ const navGroups = [
       { id: 'orders', label: 'Pedidos', icon: ClipboardList, path: '/admin/orders' },
       { id: 'products', label: 'Produtos', icon: ShoppingBag, path: '/admin/products' },
       { id: 'categories', label: 'Categorias', icon: Tag, path: '/admin/categories' },
+      { id: 'ready-categories', label: '↳ Categorias Prontos', icon: Tag, path: '/admin/ready-categories', isSubmenu: true },
+      { id: 'ready-products', label: '↳ Produtos Prontos', icon: ShoppingBag, path: '/admin/ready-products', isSubmenu: true },
       { id: 'addons', label: 'Acréscimos', icon: PlusCircle, path: '/admin/addons' },
       { id: 'coupons', label: 'Cupons', icon: Ticket, path: '/admin/coupons' },
       { id: 'reports', label: 'Relatórios', icon: BarChart3, path: '/admin/reports' },
