@@ -120,8 +120,8 @@ const Index = () => {
       return v;
     };
 
-    if (productId && products) {
-      const product = products.find((p) => p.id === productId);
+    if (productId && allProducts.length > 0) {
+      const product = allProducts.find((p) => p.id === productId);
       if (product) {
         let selectedAddons: Record<string, string[]> | undefined;
         if (addonsParam) {
@@ -132,8 +132,19 @@ const Index = () => {
           }
         }
 
+        // Convert DisplayProduct to Product for modal
+        const modalProduct: Product = {
+          id: product.id,
+          name: product.name,
+          description: product.description,
+          price: product.price,
+          image_url: product.image_url,
+          is_available: product.is_available,
+          category_id: product.category_id,
+        };
+
         setEditingProduct({
-          product,
+          product: modalProduct,
           quantity,
           observation: sanitizeObservation(rawObservation),
           returnTo,
@@ -143,7 +154,7 @@ const Index = () => {
         setSearchParams({}, { replace: true });
       }
     }
-  }, [searchParams, products, setSearchParams]);
+  }, [searchParams, allProducts, setSearchParams]);
 
   const scrollToCategory = (categoryId: string) => {
     const element = sectionRefs.current[categoryId];
