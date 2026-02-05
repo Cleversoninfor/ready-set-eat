@@ -46,12 +46,47 @@ const Index = () => {
   const { data: store, isLoading: storeLoading } = useStoreConfig();
   const { data: categories, isLoading: categoriesLoading } = useCategories();
   const { data: products, isLoading: productsLoading } = useProducts();
+  const { data: readyCategories, isLoading: readyCategoriesLoading } = useReadyCategories();
+  const { data: readyProducts, isLoading: readyProductsLoading } = useAvailableReadyProducts();
   const storeStatus = useStoreStatus();
 
   // Apply dynamic theme based on store colors
   useTheme();
 
-  const isLoading = storeLoading || categoriesLoading || productsLoading;
+  const isLoading = storeLoading || categoriesLoading || productsLoading || readyCategoriesLoading || readyProductsLoading;
+
+  // Combine regular and ready categories
+  const allCategories = useMemo(() => {
+    const regularCats = categories || [];
+    const readyCats: Category[] = (readyCategories || []).map(rc => ({
+      id: `ready_${rc.id}`,
+      name: rc.name,
+      sort_order: rc.sort_order + 1000, // Put ready categories after regular ones
+      image_url: rc.image_url,
+    }));
+    return [...regularCats, ...readyCats];
+  }, [categories, readyCategories]);
+
+  // Combine regular and ready products
+  const allProducts = useMemo(() => {
+    const regularProds: DisplayProduct[] = (products || []).map(p => ({
+      ...p,
+      category_id: p.category_id || '',
+      isReadyProduct: false,
+    }));
+    const readyProds: DisplayProduct[] = (readyProducts || []).map(rp => ({
+      id: rp.id,
+      name: rp.name,
+      description: rp.description,
+      price: rp.price,
+      image_url: rp.image_url,
+      is_available: rp.is_available && rp.quantity_available > 0,
+      category_id: `ready_${rp.category_id}`,
+      isReadyProduct: true,
+      quantity_available: rp.quantity_available,
+    }));
+    return [...regularProds, ...readyProds];
+  }, [products, readyProducts]);
 
   // Check for last order on mount
   useEffect(() => {
