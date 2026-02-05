@@ -16,6 +16,8 @@ import Install from "./pages/Install";
 import AdminOrders from "./pages/admin/Orders";
 import AdminProducts from "./pages/admin/Products";
 import AdminCategories from "./pages/admin/Categories";
+import AdminReadyCategories from "./pages/admin/ReadyCategories";
+import AdminReadyProducts from "./pages/admin/ReadyProducts";
 import AdminCoupons from "./pages/admin/Coupons";
 import AdminHours from "./pages/admin/Hours";
 import AdminSettings from "./pages/admin/Settings";
