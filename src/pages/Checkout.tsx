@@ -337,9 +337,7 @@ const Checkout = () => {
 
       // Decrement ready product quantities (non-blocking)
       try {
-        const readyProductItems = items.filter(item => 
-          item.product.id && (item.product as any).isReadyProduct
-        );
+        const readyProductItems = items.filter(item => item.product.isReadyProduct);
         for (const item of readyProductItems) {
           decrementReadyProduct.mutate({ id: item.product.id, quantity: item.quantity });
         }
