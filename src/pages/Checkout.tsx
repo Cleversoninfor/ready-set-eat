@@ -335,6 +335,19 @@ const Checkout = () => {
 
       console.log('[Checkout] Order created successfully:', order);
 
+      // Decrement ready product quantities (non-blocking)
+      try {
+        const readyProductItems = items.filter(item => 
+          item.product.id && (item.product as any).isReadyProduct
+        );
+        for (const item of readyProductItems) {
+          decrementReadyProduct.mutate({ id: item.product.id, quantity: item.quantity });
+        }
+      } catch (decrementError) {
+        console.error('[Checkout] Error decrementing ready products:', decrementError);
+        // Don't block checkout flow
+      }
+
       toast({
         title: '🎉 Pedido enviado!',
         description: `Pedido #${order.id} recebido com sucesso.`,
