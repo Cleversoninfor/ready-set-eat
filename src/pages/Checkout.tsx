@@ -15,6 +15,7 @@ import { useStoreStatus } from '@/hooks/useStoreStatus';
 import { AddressSelector } from '@/components/checkout/AddressSelector';
 import { TableSelector } from '@/components/checkout/TableSelector';
 import { useCreateDineInOrder } from '@/hooks/useDineInOrder';
+import { useDecrementReadyProductQuantity } from '@/hooks/useReadyProducts';
 import { PaymentMethod } from '@/types';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
