@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { HeroHeader } from '@/components/menu/HeroHeader';
@@ -11,12 +11,21 @@ import { FloatingOrderButton, getLastOrderId } from '@/components/order/Floating
 import { InstallPrompt } from '@/components/pwa/InstallPrompt';
 import { InfornexaBanner } from '@/components/menu/InfornexaBanner';
 import { useStoreConfig } from '@/hooks/useStore';
-import { useCategories } from '@/hooks/useCategories';
+import { useCategories, Category } from '@/hooks/useCategories';
 import { useProducts, Product } from '@/hooks/useProducts';
+import { useReadyCategories } from '@/hooks/useReadyCategories';
+import { useAvailableReadyProducts, ReadyProduct } from '@/hooks/useReadyProducts';
 import { useTheme } from '@/hooks/useTheme';
 import { useStoreStatus } from '@/hooks/useStoreStatus';
 import { Loader2, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+
+// Combined product type for unified handling
+export interface DisplayProduct extends Omit<Product, 'category_id'> {
+  category_id: string;
+  isReadyProduct?: boolean;
+  quantity_available?: number;
+}
 
 interface EditingProduct {
   product: Product;
