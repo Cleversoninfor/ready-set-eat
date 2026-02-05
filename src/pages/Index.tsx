@@ -267,9 +267,9 @@ const Index = () => {
         </div>
 
         {/* Categories */}
-        {categories && categories.length > 0 && (
+        {allCategories.length > 0 && (
           <CategoryIcons 
-            categories={categories} 
+            categories={allCategories} 
             onCategorySelect={scrollToCategory}
           />
         )}
