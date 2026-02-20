@@ -12,6 +12,7 @@ import { BrandSettings } from '@/components/admin/BrandSettings';
 import { BannerSettings } from '@/components/admin/BannerSettings';
 import { SubdomainSettings } from '@/components/admin/SubdomainSettings';
 import { OperationModes } from '@/components/admin/OperationModes';
+import { MenuLayoutSettings } from '@/components/admin/MenuLayoutSettings';
 import { useStoreConfig, useUpdateStoreConfig } from '@/hooks/useStore';
 import { useBusinessHours, useUpdateBusinessHour, getDayName, BusinessHour, isStoreCurrentlyOpen } from '@/hooks/useBusinessHours';
 import { useStoreStatus } from '@/hooks/useStoreStatus';
@@ -234,6 +235,9 @@ const AdminSettings = () => {
 
         {/* Operation Modes */}
         <OperationModes />
+
+        {/* Menu Layout */}
+        <MenuLayoutSettings />
 
         {/* Brand Customization */}
         <BrandSettings />

@@ -40,6 +40,7 @@ export interface StoreConfig {
   mode_delivery_enabled: boolean | null;
   mode_pickup_enabled: boolean | null;
   mode_dine_in_enabled: boolean | null;
+  menu_layout: string;
 }
 
 export function useStoreConfig() {
@@ -94,6 +95,7 @@ export function useStoreConfig() {
           mode_delivery_enabled: true,
           mode_pickup_enabled: true,
           mode_dine_in_enabled: true,
+          menu_layout: 'list',
         } as StoreConfig;
       }
       
