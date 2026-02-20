@@ -50,13 +50,30 @@ export function usePushNotifications() {
     }
   }, [isSupported]);
 
-  const sendNotification = useCallback((title: string, options?: NotificationOptions) => {
+  const sendNotification = useCallback(async (title: string, options?: NotificationOptions) => {
     if (!isSupported || permission !== 'granted') {
       console.log('Notifications not available or not permitted');
       return null;
     }
 
     try {
+      // Use Service Worker notification for better background/locked screen support
+      if ('serviceWorker' in navigator) {
+        const registration = await navigator.serviceWorker.ready;
+        await registration.showNotification(title, {
+          icon: '/icon-192.png',
+          badge: '/icon-192.png',
+          requireInteraction: true,
+          renotify: true,
+          tag: options?.tag || 'default',
+          vibrate: [300, 100, 300, 100, 300, 100, 300],
+          silent: false,
+          ...options,
+        } as NotificationOptions);
+        return null;
+      }
+
+      // Fallback to regular Notification API
       const notification = new Notification(title, {
         icon: '/icon-192.png',
         badge: '/icon-192.png',
@@ -67,7 +84,6 @@ export function usePushNotifications() {
       notification.onclick = () => {
         window.focus();
         notification.close();
-        // Navigate to orders page
         if (window.location.pathname !== '/admin/orders') {
           window.location.href = '/admin/orders';
         }
