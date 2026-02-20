@@ -4,7 +4,9 @@ import { Helmet } from 'react-helmet-async';
 import { HeroHeader } from '@/components/menu/HeroHeader';
 import { StoreInfo } from '@/components/menu/StoreInfo';
 import { CategoryIcons } from '@/components/menu/CategoryIcons';
+import { CategoryGrid } from '@/components/menu/CategoryGrid';
 import { MenuSection } from '@/components/menu/MenuSection';
+import { MenuProductCard } from '@/components/menu/MenuProductCard';
 import { ProductModal } from '@/components/menu/ProductModal';
 import { CartButton } from '@/components/cart/CartButton';
 import { FloatingOrderButton, getLastOrderId } from '@/components/order/FloatingOrderButton';
@@ -161,7 +163,8 @@ const Index = () => {
   })).filter(group => group.products.length > 0) || [];
 
   const totalItems = filteredProducts.length;
-
+  const menuLayout = store?.menu_layout || 'list';
+  const isCategoryMode = menuLayout === 'category';
   // Determine which modal to show
   const modalProduct = editingProduct?.product || selectedProduct;
   const isEditing = !!editingProduct;
@@ -195,48 +198,111 @@ const Index = () => {
           </div>
         </div>
 
-        {/* Categories */}
-        {categories && categories.length > 0 && (
-          <CategoryIcons 
-            categories={categories} 
-            onCategorySelect={scrollToCategory}
-          />
-        )}
+        {/* Categories & Products - Conditional Layout */}
+        {isCategoryMode ? (
+          <>
+            {/* Search Bar */}
+            <div className="px-4 mt-4">
+              <div className="relative">
+                <Input
+                  type="text"
+                  placeholder="Procurar..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="h-12 w-full rounded-xl border border-border bg-card pl-4 pr-12 shadow-sm placeholder:text-muted-foreground focus:ring-2 focus:ring-primary"
+                />
+                <Search className="absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+              </div>
+            </div>
 
-        {/* Cardápio Header */}
-        <div className="px-4 pt-2 pb-3 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-foreground">Cardápio</h2>
-          <span className="text-sm text-muted-foreground">{totalItems} itens</span>
-        </div>
-
-        {/* Menu Sections */}
-        <div className="px-4 space-y-6">
-          {productsByCategory.map(({ category, products }) => (
-            <MenuSection
-              key={category.id}
-              ref={(el) => { sectionRefs.current[category.id] = el; }}
-              category={category}
-              products={products}
-              onProductSelect={setSelectedProduct}
-            />
-          ))}
-
-          {productsByCategory.length === 0 && (
-            <div className="py-12 text-center">
-              <p className="text-muted-foreground mb-4">
-                {searchQuery ? 'Nenhum produto encontrado' : 'Nenhum produto cadastrado ainda'}
-              </p>
-              {!searchQuery && store.name === 'Meu Restaurante' && (
-                <a 
-                  href="/admin" 
-                  className="inline-flex items-center justify-center rounded-xl bg-primary px-6 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
-                >
-                  Acessar Painel Admin
-                </a>
+            <div className="pt-4">
+              {searchQuery ? (
+                /* When searching, show products in list mode */
+                <div className="px-4 pb-32 space-y-3">
+                  <h2 className="text-lg font-bold text-foreground mb-3">Resultados</h2>
+                  {filteredProducts.length > 0 ? (
+                    filteredProducts.map((product) => (
+                      <MenuProductCard
+                        key={product.id}
+                        product={product}
+                        onSelect={setSelectedProduct}
+                      />
+                    ))
+                  ) : (
+                    <div className="py-12 text-center">
+                      <p className="text-muted-foreground">Nenhum produto encontrado</p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <CategoryGrid
+                  categories={categories || []}
+                  products={products || []}
+                  onProductSelect={setSelectedProduct}
+                />
               )}
             </div>
-          )}
-        </div>
+          </>
+        ) : (
+          <>
+            {/* Search Bar */}
+            <div className="px-4 mt-4">
+              <div className="relative">
+                <Input
+                  type="text"
+                  placeholder="Procurar..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="h-12 w-full rounded-xl border border-border bg-card pl-4 pr-12 shadow-sm placeholder:text-muted-foreground focus:ring-2 focus:ring-primary"
+                />
+                <Search className="absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+              </div>
+            </div>
+
+            {/* Categories */}
+            {categories && categories.length > 0 && (
+              <CategoryIcons 
+                categories={categories} 
+                onCategorySelect={scrollToCategory}
+              />
+            )}
+
+            {/* Cardápio Header */}
+            <div className="px-4 pt-2 pb-3 flex items-center justify-between">
+              <h2 className="text-lg font-bold text-foreground">Cardápio</h2>
+              <span className="text-sm text-muted-foreground">{totalItems} itens</span>
+            </div>
+
+            {/* Menu Sections */}
+            <div className="px-4 space-y-6">
+              {productsByCategory.map(({ category, products }) => (
+                <MenuSection
+                  key={category.id}
+                  ref={(el) => { sectionRefs.current[category.id] = el; }}
+                  category={category}
+                  products={products}
+                  onProductSelect={setSelectedProduct}
+                />
+              ))}
+
+              {productsByCategory.length === 0 && (
+                <div className="py-12 text-center">
+                  <p className="text-muted-foreground mb-4">
+                    {searchQuery ? 'Nenhum produto encontrado' : 'Nenhum produto cadastrado ainda'}
+                  </p>
+                  {!searchQuery && store.name === 'Meu Restaurante' && (
+                    <a 
+                      href="/admin" 
+                      className="inline-flex items-center justify-center rounded-xl bg-primary px-6 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+                    >
+                      Acessar Painel Admin
+                    </a>
+                  )}
+                </div>
+              )}
+            </div>
+          </>
+        )}
 
         {/* Infornexa Advertisement Banner */}
         <InfornexaBanner />

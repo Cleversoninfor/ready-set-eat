@@ -515,6 +515,7 @@ export type Database = {
           id: string
           is_open: boolean
           logo_url: string | null
+          menu_layout: string
           min_order_value: number
           mode_delivery_enabled: boolean | null
           mode_dine_in_enabled: boolean | null
@@ -557,6 +558,7 @@ export type Database = {
           id?: string
           is_open?: boolean
           logo_url?: string | null
+          menu_layout?: string
           min_order_value?: number
           mode_delivery_enabled?: boolean | null
           mode_dine_in_enabled?: boolean | null
@@ -599,6 +601,7 @@ export type Database = {
           id?: string
           is_open?: boolean
           logo_url?: string | null
+          menu_layout?: string
           min_order_value?: number
           mode_delivery_enabled?: boolean | null
           mode_dine_in_enabled?: boolean | null
