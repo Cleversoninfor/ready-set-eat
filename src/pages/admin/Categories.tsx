@@ -11,6 +11,7 @@ import {
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { useCategories, useCreateCategory, useUpdateCategory, useDeleteCategory, useReorderCategories, Category } from '@/hooks/useCategories';
 import { useToast } from '@/hooks/use-toast';
+import { ImageUpload } from '@/components/admin/ImageUpload';
 import {
   DndContext,
   closestCenter,
