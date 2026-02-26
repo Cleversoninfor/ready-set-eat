@@ -5,6 +5,7 @@ export interface StoreStatus {
   isOpen: boolean;
   reason: 'open' | 'manual_closed' | 'hours_closed';
   message: string;
+  isForcedOpen: boolean;
 }
 
 /**
