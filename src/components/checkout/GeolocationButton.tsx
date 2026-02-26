@@ -84,7 +84,7 @@ export function GeolocationButton({ onAddressFound }: GeolocationButtonProps) {
       doubleClickZoom: false,
       boxZoom: false,
       keyboard: false,
-      tap: false,
+      
       touchZoom: false,
       attributionControl: false,
     }).setView([coords.lat, coords.lng], 16);
