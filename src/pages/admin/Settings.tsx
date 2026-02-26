@@ -226,9 +226,9 @@ const AdminSettings = () => {
             )}
             
             <p className="text-xs text-muted-foreground leading-relaxed">
-              <strong>Como funciona:</strong> O status da loja muda automaticamente conforme os horários configurados. 
-              Dentro do horário, a loja abre automaticamente. Fora do horário, ela fecha automaticamente. 
-              Use o toggle acima para <strong>fechar manualmente</strong> durante o horário de funcionamento (ex: emergência ou feriado).
+              <strong>Como funciona:</strong> Fora do horário de funcionamento, a loja fecha automaticamente. 
+              Use o toggle acima para <strong>forçar a abertura</strong> mesmo fora do horário (ex: evento especial) 
+              ou para <strong>fechar manualmente</strong> durante o horário de funcionamento (ex: emergência ou feriado).
             </p>
           </div>
         </div>

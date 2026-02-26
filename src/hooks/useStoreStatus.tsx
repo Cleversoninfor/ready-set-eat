@@ -32,13 +32,22 @@ export function useStoreStatus(): StoreStatus {
     };
   }
 
-  // Verificar horário de funcionamento PRIMEIRO (prioridade)
+  // Verificar horário de funcionamento
   const hasBusinessHours = businessHours && businessHours.length > 0;
   const isWithinBusinessHours = hasBusinessHours 
     ? isStoreCurrentlyOpen(businessHours) 
     : true; // Se não tem horários configurados, considera aberto
 
-  // Se fora do horário -> FECHADA automaticamente
+  // Se is_open está ATIVADO -> loja ABERTA (permite forçar abertura fora do horário)
+  if (store.is_open) {
+    return {
+      isOpen: true,
+      reason: 'open',
+      message: isWithinBusinessHours ? 'Recebendo pedidos' : 'Aberta manualmente (fora do horário)',
+    };
+  }
+
+  // is_open está DESATIVADO
   if (!isWithinBusinessHours) {
     return {
       isOpen: false,
@@ -47,20 +56,11 @@ export function useStoreStatus(): StoreStatus {
     };
   }
 
-  // Dentro do horário - verificar fechamento manual
-  if (!store.is_open) {
-    return {
-      isOpen: false,
-      reason: 'manual_closed',
-      message: 'Loja fechada temporariamente',
-    };
-  }
-
-  // Dentro do horário e is_open = true -> ABERTA
+  // Dentro do horário mas fechada manualmente
   return {
-    isOpen: true,
-    reason: 'open',
-    message: 'Recebendo pedidos',
+    isOpen: false,
+    reason: 'manual_closed',
+    message: 'Loja fechada temporariamente',
   };
 }
 
