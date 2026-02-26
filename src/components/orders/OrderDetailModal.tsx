@@ -180,6 +180,30 @@ export function OrderDetailModal({ order, open, onOpenChange }: OrderDetailModal
                     )}
                   </div>
                 </div>
+
+                {/* Coordinates + Google Maps */}
+                {order.latitude && order.longitude && (
+                  <div className="space-y-2 mt-2">
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                      <span>Lat: {order.latitude.toFixed(6)}</span>
+                      <span>Lng: {order.longitude.toFixed(6)}</span>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full gap-2"
+                      onClick={() =>
+                        window.open(
+                          `https://www.google.com/maps?q=${order.latitude},${order.longitude}`,
+                          '_blank'
+                        )
+                      }
+                    >
+                      <Navigation className="h-4 w-4" />
+                      Abrir no Google Maps
+                    </Button>
+                  </div>
+                )}
               </div>
             </>
           )}
