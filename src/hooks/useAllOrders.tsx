@@ -19,6 +19,9 @@ export interface UnifiedOrder {
   change_for: number | null;
   created_at: string;
   updated_at: string;
+  // Geolocation
+  latitude?: number | null;
+  longitude?: number | null;
   // Table order specific
   table_id?: string | null;
   table_number?: number | null;
