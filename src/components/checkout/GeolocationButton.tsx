@@ -8,6 +8,8 @@ interface GeoAddress {
   street: string;
   number: string;
   neighborhood: string;
+  latitude: number;
+  longitude: number;
 }
 
 interface GeolocationButtonProps {
