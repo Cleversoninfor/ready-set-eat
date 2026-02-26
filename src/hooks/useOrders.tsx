@@ -38,6 +38,8 @@ export interface CreateOrderData {
   total_amount: number;
   payment_method: 'money' | 'card' | 'pix' | 'credit' | 'debit';
   change_for?: number | null;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 export interface CreateOrderItemData {
