@@ -148,6 +148,7 @@ const AdminCategories = () => {
           id: editingCategory.id,
           name: formData.name,
           sort_order: formData.sort_order,
+          image_url: formData.image_url,
         });
         toast({ title: 'Categoria atualizada!' });
       } else {
