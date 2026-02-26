@@ -509,14 +509,15 @@ const Checkout = () => {
               
               {/* Geolocation Button */}
               <GeolocationButton
-                onAddressFound={(addr) =>
+                onAddressFound={(addr) => {
                   setDeliveryData((prev) => ({
                     ...prev,
                     street: addr.street || prev.street,
                     number: addr.number || prev.number,
                     neighborhood: addr.neighborhood || prev.neighborhood,
-                  }))
-                }
+                  }));
+                  setGeoCoords({ lat: addr.latitude, lng: addr.longitude });
+                }}
               />
 
               <div className="my-3 border-t border-border" />
