@@ -324,6 +324,8 @@ const Checkout = () => {
           total_amount: finalTotal,
           payment_method: paymentMethod,
           change_for: changeForValue,
+          latitude: deliveryType === 'delivery' ? geoCoords?.lat ?? null : null,
+          longitude: deliveryType === 'delivery' ? geoCoords?.lng ?? null : null,
         },
         items: items.map((item) => ({
           product_name: item.product.name,
