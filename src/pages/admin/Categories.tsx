@@ -100,6 +100,7 @@ const AdminCategories = () => {
   const [formData, setFormData] = useState({
     name: '',
     sort_order: 0,
+    image_url: null as string | null,
   });
 
   const sensors = useSensors(
