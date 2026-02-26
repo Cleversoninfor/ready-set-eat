@@ -35,8 +35,8 @@ export function CategoryIcons({ categories, onCategorySelect }: CategoryIconsPro
               key={category.id}
               onClick={() => handleSelect(category.id)}
               className={cn(
-                "rounded-full px-2 py-1.5 text-xs font-medium transition-all duration-200 whitespace-nowrap",
-                "w-[calc(25%-4.5px)] md:w-auto text-center",
+                "rounded-full px-2 py-1.5 text-xs font-medium transition-all duration-200",
+                "md:w-auto md:whitespace-nowrap text-center",
                 isSelected
                   ? "bg-primary text-primary-foreground shadow-card"
                   : "bg-muted text-muted-foreground hover:text-foreground"

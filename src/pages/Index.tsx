@@ -184,20 +184,6 @@ const Index = () => {
         {/* Store Info */}
         <StoreInfo store={store} />
 
-        {/* Search Bar - Above Categories */}
-        <div className="px-4 mt-4">
-          <div className="relative">
-            <Input
-              type="text"
-              placeholder="Procurar..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-12 w-full rounded-xl border border-border bg-card pl-4 pr-12 shadow-sm placeholder:text-muted-foreground focus:ring-2 focus:ring-primary"
-            />
-            <Search className="absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
-          </div>
-        </div>
-
         {/* Categories & Products - Conditional Layout */}
         {isCategoryMode ? (
           <>
