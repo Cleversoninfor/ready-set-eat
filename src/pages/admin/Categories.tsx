@@ -273,6 +273,20 @@ const AdminCategories = () => {
               />
             </div>
 
+            <div>
+              <label className="text-sm text-muted-foreground">Imagem da categoria</label>
+              <ImageUpload
+                bucket="store-assets"
+                currentUrl={formData.image_url}
+                onUpload={(url) => setFormData({ ...formData, image_url: url })}
+                onRemove={() => setFormData({ ...formData, image_url: null })}
+                className="mt-1"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Opcional — sem imagem será usado um gradiente colorido
+              </p>
+            </div>
+
             <div className="flex justify-end gap-2 pt-4">
               <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>
                 Cancelar
