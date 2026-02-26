@@ -114,6 +114,7 @@ const Checkout = () => {
     neighborhood: savedData?.neighborhood || '',
     complement: (savedData as any)?.complement || '',
   });
+  const [geoCoords, setGeoCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [selectedPayment, setSelectedPayment] = useState<DisplayPaymentMethod | null>(savedData?.selectedPayment || null);
   const [selectedTable, setSelectedTable] = useState<SelectedTable | null>(savedData?.selectedTable || null);
   const [changeFor, setChangeFor] = useState('');
