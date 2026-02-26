@@ -19,6 +19,9 @@ export interface UnifiedOrder {
   change_for: number | null;
   created_at: string;
   updated_at: string;
+  // Geolocation
+  latitude?: number | null;
+  longitude?: number | null;
   // Table order specific
   table_id?: string | null;
   table_number?: number | null;
@@ -97,6 +100,8 @@ export function useAllOrders() {
         change_for: order.change_for,
         created_at: order.created_at,
         updated_at: order.updated_at,
+        latitude: order.latitude ?? null,
+        longitude: order.longitude ?? null,
       }));
 
       // Transform table orders - only include orders that have items

@@ -114,6 +114,7 @@ const Checkout = () => {
     neighborhood: savedData?.neighborhood || '',
     complement: (savedData as any)?.complement || '',
   });
+  const [geoCoords, setGeoCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [selectedPayment, setSelectedPayment] = useState<DisplayPaymentMethod | null>(savedData?.selectedPayment || null);
   const [selectedTable, setSelectedTable] = useState<SelectedTable | null>(savedData?.selectedTable || null);
   const [changeFor, setChangeFor] = useState('');
@@ -323,6 +324,8 @@ const Checkout = () => {
           total_amount: finalTotal,
           payment_method: paymentMethod,
           change_for: changeForValue,
+          latitude: deliveryType === 'delivery' ? geoCoords?.lat ?? null : null,
+          longitude: deliveryType === 'delivery' ? geoCoords?.lng ?? null : null,
         },
         items: items.map((item) => ({
           product_name: item.product.name,
@@ -508,14 +511,15 @@ const Checkout = () => {
               
               {/* Geolocation Button */}
               <GeolocationButton
-                onAddressFound={(addr) =>
+                onAddressFound={(addr) => {
                   setDeliveryData((prev) => ({
                     ...prev,
                     street: addr.street || prev.street,
                     number: addr.number || prev.number,
                     neighborhood: addr.neighborhood || prev.neighborhood,
-                  }))
-                }
+                  }));
+                  setGeoCoords({ lat: addr.latitude, lng: addr.longitude });
+                }}
               />
 
               <div className="my-3 border-t border-border" />
