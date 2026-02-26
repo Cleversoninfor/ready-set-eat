@@ -5,6 +5,7 @@ export interface StoreStatus {
   isOpen: boolean;
   reason: 'open' | 'manual_closed' | 'hours_closed';
   message: string;
+  isForcedOpen: boolean;
 }
 
 /**
@@ -29,6 +30,7 @@ export function useStoreStatus(): StoreStatus {
       isOpen: false,
       reason: 'manual_closed',
       message: 'Loja não configurada',
+      isForcedOpen: false,
     };
   }
 
@@ -38,12 +40,15 @@ export function useStoreStatus(): StoreStatus {
     ? isStoreCurrentlyOpen(businessHours) 
     : true; // Se não tem horários configurados, considera aberto
 
+  const isForcedOpen = store.is_open && !isWithinBusinessHours;
+
   // Se is_open está ATIVADO -> loja ABERTA (permite forçar abertura fora do horário)
   if (store.is_open) {
     return {
       isOpen: true,
       reason: 'open',
       message: isWithinBusinessHours ? 'Recebendo pedidos' : 'Aberta manualmente (fora do horário)',
+      isForcedOpen,
     };
   }
 
@@ -53,6 +58,7 @@ export function useStoreStatus(): StoreStatus {
       isOpen: false,
       reason: 'hours_closed',
       message: 'Fora do horário de funcionamento',
+      isForcedOpen: false,
     };
   }
 
@@ -61,6 +67,7 @@ export function useStoreStatus(): StoreStatus {
     isOpen: false,
     reason: 'manual_closed',
     message: 'Loja fechada temporariamente',
+    isForcedOpen: false,
   };
 }
 
