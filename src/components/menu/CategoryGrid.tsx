@@ -119,7 +119,7 @@ export function CategoryGrid({ categories, products, onProductSelect }: Category
 
               {/* Content - centered */}
               <div className="relative z-10 flex flex-col items-center justify-center h-full p-2 text-white">
-                <h3 className="text-sm font-bold text-center leading-tight drop-shadow-md w-full">
+                <h3 className="text-base font-extrabold text-center leading-tight drop-shadow-md w-full">
                   {category.name}
                 </h3>
                 <span className="text-xs opacity-80 text-center mt-1">{productCount} itens</span>
