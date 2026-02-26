@@ -11,6 +11,7 @@ import {
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { useCategories, useCreateCategory, useUpdateCategory, useDeleteCategory, useReorderCategories, Category } from '@/hooks/useCategories';
 import { useToast } from '@/hooks/use-toast';
+import { ImageUpload } from '@/components/admin/ImageUpload';
 import {
   DndContext,
   closestCenter,
@@ -99,6 +100,7 @@ const AdminCategories = () => {
   const [formData, setFormData] = useState({
     name: '',
     sort_order: 0,
+    image_url: null as string | null,
   });
 
   const sensors = useSensors(
@@ -117,6 +119,7 @@ const AdminCategories = () => {
     setFormData({
       name: '',
       sort_order: (categories?.length || 0) + 1,
+      image_url: null,
     });
     setIsModalOpen(true);
   };
@@ -126,6 +129,7 @@ const AdminCategories = () => {
     setFormData({
       name: category.name,
       sort_order: category.sort_order,
+      image_url: category.image_url || null,
     });
     setIsModalOpen(true);
   };
@@ -144,12 +148,14 @@ const AdminCategories = () => {
           id: editingCategory.id,
           name: formData.name,
           sort_order: formData.sort_order,
+          image_url: formData.image_url,
         });
         toast({ title: 'Categoria atualizada!' });
       } else {
         await createCategory.mutateAsync({
           name: formData.name,
           sort_order: formData.sort_order,
+          image_url: formData.image_url,
         });
         toast({ title: 'Categoria criada!' });
       }
@@ -265,6 +271,20 @@ const AdminCategories = () => {
                 placeholder="Nome da categoria"
                 className="mt-1"
               />
+            </div>
+
+            <div>
+              <label className="text-sm text-muted-foreground">Imagem da categoria</label>
+              <ImageUpload
+                bucket="store-assets"
+                currentUrl={formData.image_url}
+                onUpload={(url) => setFormData({ ...formData, image_url: url })}
+                onRemove={() => setFormData({ ...formData, image_url: null })}
+                className="mt-1"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Opcional — sem imagem será usado um gradiente colorido
+              </p>
             </div>
 
             <div className="flex justify-end gap-2 pt-4">
