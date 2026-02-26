@@ -30,6 +30,7 @@ export function useStoreStatus(): StoreStatus {
       isOpen: false,
       reason: 'manual_closed',
       message: 'Loja não configurada',
+      isForcedOpen: false,
     };
   }
 
