@@ -90,7 +90,7 @@ export function CategoryGrid({ categories, products, onProductSelect }: Category
         <span className="text-sm text-muted-foreground">{categories.length} categorias</span>
       </div>
 
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 gap-3 justify-items-center">
         {categories.map((category, index) => {
           const gradient = categoryGradients[index % categoryGradients.length];
           const emoji = categoryEmojis[category.name] || '📦';
@@ -100,7 +100,8 @@ export function CategoryGrid({ categories, products, onProductSelect }: Category
             <button
               key={category.id}
               onClick={() => setSelectedCategory(category)}
-              className="group relative overflow-hidden rounded-xl aspect-[3/4] transition-transform active:scale-95"
+              className="group relative overflow-hidden rounded-xl transition-transform active:scale-95"
+              style={{ width: '332px', height: '224px', maxWidth: '100%' }}
             >
               {/* Background: image or gradient */}
               {category.image_url ? (
@@ -116,12 +117,12 @@ export function CategoryGrid({ categories, products, onProductSelect }: Category
                 <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-90`} />
               )}
 
-              {/* Content */}
-              <div className="relative z-10 flex flex-col items-end justify-end h-full p-2 text-white">
-                <h3 className="text-xs font-bold text-center leading-tight drop-shadow-md w-full">
+              {/* Content - centered */}
+              <div className="relative z-10 flex flex-col items-center justify-center h-full p-2 text-white">
+                <h3 className="text-sm font-bold text-center leading-tight drop-shadow-md w-full">
                   {category.name}
                 </h3>
-                <span className="text-[10px] opacity-80 w-full text-center">{productCount} itens</span>
+                <span className="text-xs opacity-80 text-center mt-1">{productCount} itens</span>
               </div>
 
               {/* Shine effect on hover */}
