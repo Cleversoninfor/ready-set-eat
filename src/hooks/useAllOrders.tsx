@@ -100,6 +100,8 @@ export function useAllOrders() {
         change_for: order.change_for,
         created_at: order.created_at,
         updated_at: order.updated_at,
+        latitude: order.latitude ?? null,
+        longitude: order.longitude ?? null,
       }));
 
       // Transform table orders - only include orders that have items

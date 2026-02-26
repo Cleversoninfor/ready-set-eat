@@ -186,6 +186,8 @@ export function useCreateOrder() {
         _address_complement: order.address_complement || null,
         _address_reference: order.address_reference || null,
         _change_for: order.change_for ?? null,
+        _latitude: order.latitude ?? null,
+        _longitude: order.longitude ?? null,
       });
 
       if (error) {

@@ -50,6 +50,8 @@ export function GeolocationButton({ onAddressFound }: GeolocationButtonProps) {
             number: addr.house_number || '',
             neighborhood:
               addr.suburb || addr.neighbourhood || addr.city_district || addr.town || '',
+            latitude,
+            longitude,
           });
         } catch {
           setError('Não foi possível obter o endereço. Preencha manualmente.');
