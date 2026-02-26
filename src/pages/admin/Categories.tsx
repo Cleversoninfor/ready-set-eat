@@ -129,6 +129,7 @@ const AdminCategories = () => {
     setFormData({
       name: category.name,
       sort_order: category.sort_order,
+      image_url: category.image_url || null,
     });
     setIsModalOpen(true);
   };
