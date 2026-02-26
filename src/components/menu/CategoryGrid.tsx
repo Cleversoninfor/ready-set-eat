@@ -90,7 +90,7 @@ export function CategoryGrid({ categories, products, onProductSelect }: Category
         <span className="text-sm text-muted-foreground">{categories.length} categorias</span>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 justify-items-center">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 justify-items-center">
         {categories.map((category, index) => {
           const gradient = categoryGradients[index % categoryGradients.length];
           const emoji = categoryEmojis[category.name] || '📦';
@@ -119,7 +119,7 @@ export function CategoryGrid({ categories, products, onProductSelect }: Category
 
               {/* Content - centered */}
               <div className="relative z-10 flex flex-col items-center justify-center h-full p-2 text-white">
-                <h3 className="text-sm font-bold text-center leading-tight drop-shadow-md w-full">
+                <h3 className="text-base font-extrabold text-center leading-tight drop-shadow-md w-full">
                   {category.name}
                 </h3>
                 <span className="text-xs opacity-80 text-center mt-1">{productCount} itens</span>
