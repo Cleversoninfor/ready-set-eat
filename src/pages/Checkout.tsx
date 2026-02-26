@@ -506,6 +506,20 @@ const Checkout = () => {
             <section className="bg-card rounded-2xl p-4 shadow-card">
               <h3 className="font-semibold text-foreground mb-4">Endereço para entrega</h3>
               
+              {/* Geolocation Button */}
+              <GeolocationButton
+                onAddressFound={(addr) =>
+                  setDeliveryData((prev) => ({
+                    ...prev,
+                    street: addr.street || prev.street,
+                    number: addr.number || prev.number,
+                    neighborhood: addr.neighborhood || prev.neighborhood,
+                  }))
+                }
+              />
+
+              <div className="my-3 border-t border-border" />
+
               {/* Address Selector - shows when phone is filled */}
               <AddressSelector
                 phone={deliveryData.phone}
