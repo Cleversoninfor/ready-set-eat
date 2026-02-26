@@ -40,7 +40,8 @@ export function useStoreStatus(): StoreStatus {
     ? isStoreCurrentlyOpen(businessHours) 
     : true; // Se não tem horários configurados, considera aberto
 
-  const isForcedOpen = store.is_open && !isWithinBusinessHours;
+  // isForcedOpen = true quando o toggle manual está ativado (independente do horário)
+  const isForcedOpen = store.is_open;
 
   // Se is_open está ATIVADO -> loja ABERTA (permite forçar abertura fora do horário)
   if (store.is_open) {
