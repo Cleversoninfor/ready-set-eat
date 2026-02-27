@@ -68,6 +68,7 @@ const navGroups = [
       { id: 'coupons', label: 'Cupons', icon: Ticket, path: '/admin/coupons' },
       { id: 'reports', label: 'Relatórios', icon: BarChart3, path: '/admin/reports' },
       { id: 'driver-reports', label: 'Relatório Entregadores', icon: Truck, path: '/admin/driver-reports' },
+      { id: 'waiter-reports', label: 'Relatório Garçons', icon: Users, path: '/admin/waiter-reports' },
     ]
   },
   {
