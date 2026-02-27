@@ -28,6 +28,9 @@ export interface UnifiedOrder {
   table_name?: string | null;
   waiter_name?: string | null;
   customer_count?: number | null;
+  // Driver info
+  driver_id?: string | null;
+  driver_name?: string | null;
 }
 
 export interface UnifiedOrderItem {
@@ -102,6 +105,8 @@ export function useAllOrders() {
         updated_at: order.updated_at,
         latitude: order.latitude ?? null,
         longitude: order.longitude ?? null,
+        driver_id: order.driver_id ?? null,
+        driver_name: order.driver_name ?? null,
       }));
 
       // Transform table orders - only include orders that have items

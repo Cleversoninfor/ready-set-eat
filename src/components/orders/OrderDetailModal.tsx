@@ -20,6 +20,7 @@ interface OrderDetailModalProps {
 const statusConfig: Record<string, { label: string; color: string }> = {
   pending: { label: 'Pendente', color: 'bg-yellow-100 text-yellow-800' },
   preparing: { label: 'Em Preparo', color: 'bg-blue-100 text-blue-800' },
+  ready: { label: 'Pronto na Cozinha', color: 'bg-orange-100 text-orange-800' },
   delivery: { label: 'Saiu p/ Entrega', color: 'bg-purple-100 text-purple-800' },
   completed: { label: 'Finalizado', color: 'bg-green-100 text-green-800' },
 };

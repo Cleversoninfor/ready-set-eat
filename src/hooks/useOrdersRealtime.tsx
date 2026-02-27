@@ -19,6 +19,7 @@ export function useOrdersRealtime(enabled: boolean = true) {
         { event: "*", schema: "public", table: "orders" },
         () => {
           queryClient.invalidateQueries({ queryKey: ["all-orders"] });
+          queryClient.invalidateQueries({ queryKey: ["driver-orders"] });
         }
       )
       .on(
