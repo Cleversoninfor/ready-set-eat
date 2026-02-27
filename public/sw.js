@@ -3,18 +3,24 @@
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
 
-  // Focus or open the admin orders page
+  const tag = event.notification.tag || '';
+
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      // Determine target based on notification tag
+      const isDriver = tag.startsWith('driver-');
+      const targetPath = isDriver ? '/driver/dashboard' : '/admin/orders';
+      const searchPath = isDriver ? '/driver' : '/admin';
+
       // Try to focus an existing window
       for (const client of clientList) {
-        if (client.url.includes('/admin') && 'focus' in client) {
+        if (client.url.includes(searchPath) && 'focus' in client) {
           return client.focus();
         }
       }
       // Open a new window if none found
       if (clients.openWindow) {
-        return clients.openWindow('/admin/orders');
+        return clients.openWindow(targetPath);
       }
     })
   );

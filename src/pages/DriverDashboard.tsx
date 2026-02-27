@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { LogOut, Loader2, Truck, MapPin, Phone, User, CreditCard, Navigation, Play, CheckCircle, FileText } from 'lucide-react';
+import { LogOut, Loader2, Truck, MapPin, Phone, User, CreditCard, Navigation, Play, CheckCircle, FileText, Bell, BellOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -9,10 +9,11 @@ import { useStoreConfig } from '@/hooks/useStore';
 import { useTheme } from '@/hooks/useTheme';
 import { usePWAConfig } from '@/hooks/usePWAConfig';
 import { useDriverOrders, useDriverOrderItems } from '@/hooks/useDrivers';
+import { useDriverNotifications } from '@/hooks/useDriverNotifications';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-function DriverOrderCard({ order }: { order: any }) {
+function DriverOrderCard({ order, isNew, onAcknowledge }: { order: any; isNew: boolean; onAcknowledge: (id: number) => void }) {
   const { data: items } = useDriverOrderItems(order.id);
   const [isUpdating, setIsUpdating] = useState(false);
 
@@ -35,6 +36,7 @@ function DriverOrderCard({ order }: { order: any }) {
         .update({ status: 'delivery' })
         .eq('id', order.id);
       if (error) throw error;
+      onAcknowledge(order.id);
       toast.success('Entrega iniciada!');
     } catch {
       toast.error('Erro ao iniciar entrega');
@@ -60,11 +62,16 @@ function DriverOrderCard({ order }: { order: any }) {
   };
 
   return (
-    <Card className="border-2 border-border">
+    <Card className={`border-2 ${isNew ? 'border-primary ring-2 ring-primary/30 animate-pulse' : 'border-border'}`}>
       <CardContent className="p-4 space-y-3">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <span className="font-bold text-lg text-foreground">Pedido #{order.id}</span>
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-lg text-foreground">Pedido #{order.id}</span>
+            {isNew && (
+              <Badge className="bg-primary text-primary-foreground text-xs">NOVO</Badge>
+            )}
+          </div>
           <Badge variant={order.status === 'ready' ? 'secondary' : 'default'} className={order.status === 'delivery' ? 'bg-purple-600 text-white' : ''}>
             {order.status === 'ready' ? '🍳 Pronto' : '🛵 Em Entrega'}
           </Badge>
@@ -177,6 +184,7 @@ export default function DriverDashboard() {
   const driverName = localStorage.getItem('driver_name');
 
   const { data: orders, isLoading } = useDriverOrders(driverId);
+  const { newOrderIds, acknowledgeOrder, permissionGranted, requestPermission } = useDriverNotifications(orders);
 
   useEffect(() => {
     if (!driverId || !driverName) {
@@ -199,6 +207,7 @@ export default function DriverDashboard() {
   const handleLogout = () => {
     localStorage.removeItem('driver_id');
     localStorage.removeItem('driver_name');
+    localStorage.removeItem('driver_seen_order_ids');
     navigate('/driver');
   };
 
@@ -219,9 +228,19 @@ export default function DriverDashboard() {
               <h1 className="font-bold text-foreground">Olá, {driverName}!</h1>
               <p className="text-sm text-muted-foreground">{store?.name}</p>
             </div>
-            <Button variant="outline" size="icon" onClick={handleLogout}>
-              <LogOut className="h-5 w-5" />
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant={permissionGranted ? 'default' : 'outline'}
+                size="icon"
+                onClick={requestPermission}
+                title={permissionGranted ? 'Notificações ativas' : 'Ativar notificações'}
+              >
+                {permissionGranted ? <Bell className="h-5 w-5" /> : <BellOff className="h-5 w-5" />}
+              </Button>
+              <Button variant="outline" size="icon" onClick={handleLogout}>
+                <LogOut className="h-5 w-5" />
+              </Button>
+            </div>
           </div>
         </header>
 
@@ -260,7 +279,7 @@ export default function DriverDashboard() {
                   </h2>
                   <div className="space-y-3">
                     {deliveryOrders.map((order: any) => (
-                      <DriverOrderCard key={order.id} order={order} />
+                      <DriverOrderCard key={order.id} order={order} isNew={false} onAcknowledge={acknowledgeOrder} />
                     ))}
                   </div>
                 </div>
@@ -272,7 +291,7 @@ export default function DriverDashboard() {
                   </h2>
                   <div className="space-y-3">
                     {readyOrders.map((order: any) => (
-                      <DriverOrderCard key={order.id} order={order} />
+                      <DriverOrderCard key={order.id} order={order} isNew={newOrderIds.has(order.id)} onAcknowledge={acknowledgeOrder} />
                     ))}
                   </div>
                 </div>
