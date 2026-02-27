@@ -192,12 +192,14 @@ export function OrderDetailModal({ order, open, onOpenChange }: OrderDetailModal
                       variant="outline"
                       size="sm"
                       className="w-full gap-2"
-                      onClick={() =>
+                      onClick={() => {
+                        const lat = Number(order.latitude);
+                        const lng = Number(order.longitude);
                         window.open(
-                          `https://www.google.com/maps?q=${order.latitude},${order.longitude}`,
+                          `https://www.google.com/maps?q=${lat},${lng}`,
                           '_blank'
-                        )
-                      }
+                        );
+                      }}
                     >
                       <Navigation className="h-4 w-4" />
                       Abrir no Google Maps
