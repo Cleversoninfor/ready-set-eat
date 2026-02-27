@@ -37,6 +37,7 @@ import DriverAccess from "./pages/DriverAccess";
 import DriverDashboard from "./pages/DriverDashboard";
 import AdminDrivers from "./pages/admin/Drivers";
 import AdminDriverReports from "./pages/admin/DriverReports";
+import AdminWaiterReports from "./pages/admin/WaiterReports";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
