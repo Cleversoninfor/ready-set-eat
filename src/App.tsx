@@ -80,6 +80,7 @@ const App = () => (
                 <Route path="/waiter/dashboard" element={<WaiterDashboard />} />
                 <Route path="/admin/drivers" element={<AdminDrivers />} />
                 <Route path="/admin/driver-reports" element={<AdminDriverReports />} />
+                <Route path="/admin/waiter-reports" element={<AdminWaiterReports />} />
                 <Route path="/driver" element={<DriverAccess />} />
                 <Route path="/driver/dashboard" element={<DriverDashboard />} />
                 <Route path="/kitchen" element={<Kitchen />} />
