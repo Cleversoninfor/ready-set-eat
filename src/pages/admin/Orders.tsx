@@ -141,16 +141,15 @@ function OrderCardContent({ order, store, onOpenDetails, dragListeners }: { orde
       const tableFlow: Record<string, UnifiedOrder['status']> = {
         pending: 'preparing',
         preparing: 'ready',
-        ready: 'completed', // Table orders don't go to delivery
+        ready: 'completed',
       };
       return tableFlow[status] || null;
     }
 
+    // For delivery orders: ready and delivery are handled by driver
     const flow: Record<string, UnifiedOrder['status']> = {
       pending: 'preparing',
       preparing: 'ready',
-      ready: 'delivery',
-      delivery: 'completed',
     };
     return flow[status] || null;
   };
@@ -168,8 +167,6 @@ function OrderCardContent({ order, store, onOpenDetails, dragListeners }: { orde
     const labels: Record<string, string> = {
       pending: 'Aceitar',
       preparing: 'Pronto',
-      ready: 'Saiu p/ Entrega',
-      delivery: 'Finalizar',
     };
     return labels[status];
   };
@@ -178,8 +175,18 @@ function OrderCardContent({ order, store, onOpenDetails, dragListeners }: { orde
     e.stopPropagation();
     const next = getNextStatus(order.status);
     if (next) {
-      updateStatus.mutate({ orderId: order.id, status: next, orderType: order.type });
+      updateStatusMutation.mutate({ orderId: order.id, status: next, orderType: order.type });
     }
+  };
+
+  const handleAssignDriver = (driverId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const driver = activeDrivers?.find((d) => d.id === driverId);
+    if (!driver) return;
+    assignDriver.mutate(
+      { orderId: order.id, driverId: driver.id, driverName: driver.name },
+      { onSuccess: () => toast.success(`Pedido atribuído a ${driver.name}`) }
+    );
   };
 
   const isCompleted = order.status === 'completed';
