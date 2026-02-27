@@ -36,6 +36,7 @@ import DineInOrderStatus from "./pages/DineInOrderStatus";
 import DriverAccess from "./pages/DriverAccess";
 import DriverDashboard from "./pages/DriverDashboard";
 import AdminDrivers from "./pages/admin/Drivers";
+import AdminDriverReports from "./pages/admin/DriverReports";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
