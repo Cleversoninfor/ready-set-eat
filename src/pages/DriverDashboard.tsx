@@ -62,11 +62,16 @@ function DriverOrderCard({ order, isNew, onAcknowledge }: { order: any; isNew: b
   };
 
   return (
-    <Card className="border-2 border-border">
+    <Card className={`border-2 ${isNew ? 'border-primary ring-2 ring-primary/30 animate-pulse' : 'border-border'}`}>
       <CardContent className="p-4 space-y-3">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <span className="font-bold text-lg text-foreground">Pedido #{order.id}</span>
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-lg text-foreground">Pedido #{order.id}</span>
+            {isNew && (
+              <Badge className="bg-primary text-primary-foreground text-xs">NOVO</Badge>
+            )}
+          </div>
           <Badge variant={order.status === 'ready' ? 'secondary' : 'default'} className={order.status === 'delivery' ? 'bg-purple-600 text-white' : ''}>
             {order.status === 'ready' ? '🍳 Pronto' : '🛵 Em Entrega'}
           </Badge>
