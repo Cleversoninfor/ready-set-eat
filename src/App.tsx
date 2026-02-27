@@ -33,6 +33,9 @@ import WaiterDashboard from "./pages/WaiterDashboard";
 import Kitchen from "./pages/Kitchen";
 import DineInSuccess from "./pages/DineInSuccess";
 import DineInOrderStatus from "./pages/DineInOrderStatus";
+import DriverAccess from "./pages/DriverAccess";
+import DriverDashboard from "./pages/DriverDashboard";
+import AdminDrivers from "./pages/admin/Drivers";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
