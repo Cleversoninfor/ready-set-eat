@@ -291,7 +291,7 @@ export default function DriverDashboard() {
                   </h2>
                   <div className="space-y-3">
                     {readyOrders.map((order: any) => (
-                      <DriverOrderCard key={order.id} order={order} />
+                      <DriverOrderCard key={order.id} order={order} isNew={newOrderIds.has(order.id)} onAcknowledge={acknowledgeOrder} />
                     ))}
                   </div>
                 </div>
