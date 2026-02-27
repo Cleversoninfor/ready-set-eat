@@ -93,7 +93,7 @@ function OrderCardContent({ order, store, onOpenDetails, dragListeners }: { orde
   const updateStatus = useUpdateUnifiedOrderStatus();
   const { data: activeDrivers } = useActiveDrivers();
   const assignDriver = useAssignDriver();
-  const updateStatus = useUpdateUnifiedOrderStatus();
+  const updateStatusMutation = useUpdateUnifiedOrderStatus();
 
   const formatCurrency = (value: number) => Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
