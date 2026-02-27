@@ -184,6 +184,7 @@ export default function DriverDashboard() {
   const driverName = localStorage.getItem('driver_name');
 
   const { data: orders, isLoading } = useDriverOrders(driverId);
+  const { newOrderIds, acknowledgeOrder, permissionGranted, requestPermission } = useDriverNotifications(orders);
 
   useEffect(() => {
     if (!driverId || !driverName) {
@@ -206,6 +207,7 @@ export default function DriverDashboard() {
   const handleLogout = () => {
     localStorage.removeItem('driver_id');
     localStorage.removeItem('driver_name');
+    localStorage.removeItem('driver_seen_order_ids');
     navigate('/driver');
   };
 
