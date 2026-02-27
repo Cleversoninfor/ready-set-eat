@@ -13,7 +13,7 @@ import { useDriverNotifications } from '@/hooks/useDriverNotifications';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-function DriverOrderCard({ order }: { order: any }) {
+function DriverOrderCard({ order, isNew, onAcknowledge }: { order: any; isNew: boolean; onAcknowledge: (id: number) => void }) {
   const { data: items } = useDriverOrderItems(order.id);
   const [isUpdating, setIsUpdating] = useState(false);
 
