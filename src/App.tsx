@@ -36,6 +36,7 @@ import DineInOrderStatus from "./pages/DineInOrderStatus";
 import DriverAccess from "./pages/DriverAccess";
 import DriverDashboard from "./pages/DriverDashboard";
 import AdminDrivers from "./pages/admin/Drivers";
+import AdminDriverReports from "./pages/admin/DriverReports";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -77,6 +78,7 @@ const App = () => (
                 <Route path="/waiter" element={<WaiterAccess />} />
                 <Route path="/waiter/dashboard" element={<WaiterDashboard />} />
                 <Route path="/admin/drivers" element={<AdminDrivers />} />
+                <Route path="/admin/driver-reports" element={<AdminDriverReports />} />
                 <Route path="/driver" element={<DriverAccess />} />
                 <Route path="/driver/dashboard" element={<DriverDashboard />} />
                 <Route path="/kitchen" element={<Kitchen />} />
