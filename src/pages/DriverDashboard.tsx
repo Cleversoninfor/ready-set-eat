@@ -36,6 +36,7 @@ function DriverOrderCard({ order, isNew, onAcknowledge }: { order: any; isNew: b
         .update({ status: 'delivery' })
         .eq('id', order.id);
       if (error) throw error;
+      onAcknowledge(order.id);
       toast.success('Entrega iniciada!');
     } catch {
       toast.error('Erro ao iniciar entrega');
