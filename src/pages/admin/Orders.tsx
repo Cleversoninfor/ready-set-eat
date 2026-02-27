@@ -90,7 +90,6 @@ function DroppableColumn({ id, children, color, label, count }: { id: string; ch
 // Order Card Content
 function OrderCardContent({ order, store, onOpenDetails, dragListeners }: { order: UnifiedOrder; store: any; onOpenDetails: (order: UnifiedOrder) => void; dragListeners?: any }) {
   const { data: items } = useUnifiedOrderItems(order.id, order.type);
-  const updateStatus = useUpdateUnifiedOrderStatus();
   const { data: activeDrivers } = useActiveDrivers();
   const assignDriver = useAssignDriver();
   const updateStatusMutation = useUpdateUnifiedOrderStatus();
