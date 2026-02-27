@@ -243,16 +243,58 @@ function OrderCardContent({ order, store, onOpenDetails, dragListeners }: { orde
         </div>
 
         {!isCompleted && (
-          <div className="flex gap-2">
-            {order.type === 'delivery' && order.payment_method === 'pix' && order.status === 'pending' && (
-              <Button variant="whatsapp" size="sm" className="flex-1" onClick={sendPixCharge}>
-                Cobrar PIX
-              </Button>
+          <div className="space-y-2">
+            <div className="flex gap-2">
+              {order.type === 'delivery' && order.payment_method === 'pix' && order.status === 'pending' && (
+                <Button variant="whatsapp" size="sm" className="flex-1" onClick={sendPixCharge}>
+                  Cobrar PIX
+                </Button>
+              )}
+              {getNextStatus(order.status) && (
+                <Button size="sm" className="flex-1" onClick={handleStatusUpdate} disabled={updateStatusMutation.isPending}>
+                  {updateStatusMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : getNextStatusLabel(order.status)}
+                </Button>
+              )}
+            </div>
+
+            {/* Driver selector for delivery orders with status "ready" */}
+            {order.type === 'delivery' && order.status === 'ready' && !(order as any).driver_id && (
+              <div onClick={(e) => e.stopPropagation()}>
+                <Select
+                  onValueChange={(value) => {
+                    const driver = activeDrivers?.find((d) => d.id === value);
+                    if (driver) {
+                      assignDriver.mutate(
+                        { orderId: order.id, driverId: driver.id, driverName: driver.name },
+                        { onSuccess: () => toast.success(`Pedido atribuído a ${driver.name}`) }
+                      );
+                    }
+                  }}
+                >
+                  <SelectTrigger className="h-8 text-xs">
+                    <Truck className="h-3 w-3 mr-1" />
+                    <SelectValue placeholder="Selecionar entregador" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {activeDrivers?.map((d) => (
+                      <SelectItem key={d.id} value={d.id}>
+                        {d.name}
+                      </SelectItem>
+                    ))}
+                    {(!activeDrivers || activeDrivers.length === 0) && (
+                      <SelectItem value="__none" disabled>Nenhum entregador ativo</SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
             )}
-            {getNextStatus(order.status) && (
-              <Button size="sm" className="flex-1" onClick={handleStatusUpdate} disabled={updateStatus.isPending}>
-                {updateStatus.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : getNextStatusLabel(order.status)}
-              </Button>
+
+            {/* Show assigned driver name */}
+            {order.type === 'delivery' && (order as any).driver_name && (
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Truck className="h-3 w-3" />
+                <span>{(order as any).driver_name}</span>
+              </div>
             )}
           </div>
         )}
