@@ -105,6 +105,8 @@ export function useAllOrders() {
         updated_at: order.updated_at,
         latitude: order.latitude ?? null,
         longitude: order.longitude ?? null,
+        driver_id: order.driver_id ?? null,
+        driver_name: order.driver_name ?? null,
       }));
 
       // Transform table orders - only include orders that have items
