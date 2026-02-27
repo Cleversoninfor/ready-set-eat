@@ -228,9 +228,19 @@ export default function DriverDashboard() {
               <h1 className="font-bold text-foreground">Olá, {driverName}!</h1>
               <p className="text-sm text-muted-foreground">{store?.name}</p>
             </div>
-            <Button variant="outline" size="icon" onClick={handleLogout}>
-              <LogOut className="h-5 w-5" />
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant={permissionGranted ? 'default' : 'outline'}
+                size="icon"
+                onClick={requestPermission}
+                title={permissionGranted ? 'Notificações ativas' : 'Ativar notificações'}
+              >
+                {permissionGranted ? <Bell className="h-5 w-5" /> : <BellOff className="h-5 w-5" />}
+              </Button>
+              <Button variant="outline" size="icon" onClick={handleLogout}>
+                <LogOut className="h-5 w-5" />
+              </Button>
+            </div>
           </div>
         </header>
 
