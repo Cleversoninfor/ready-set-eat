@@ -76,6 +76,9 @@ const App = () => (
                 <Route path="/admin/qrcodes" element={<AdminQRCodes />} />
                 <Route path="/waiter" element={<WaiterAccess />} />
                 <Route path="/waiter/dashboard" element={<WaiterDashboard />} />
+                <Route path="/admin/drivers" element={<AdminDrivers />} />
+                <Route path="/driver" element={<DriverAccess />} />
+                <Route path="/driver/dashboard" element={<DriverDashboard />} />
                 <Route path="/kitchen" element={<Kitchen />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
