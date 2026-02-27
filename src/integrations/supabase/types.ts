@@ -250,6 +250,33 @@ export type Database = {
         }
         Relationships: []
       }
+      drivers: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       order_items: {
         Row: {
           created_at: string
@@ -299,6 +326,8 @@ export type Database = {
           created_at: string
           customer_name: string
           customer_phone: string
+          driver_id: string | null
+          driver_name: string | null
           id: number
           latitude: number | null
           longitude: number | null
@@ -317,6 +346,8 @@ export type Database = {
           created_at?: string
           customer_name: string
           customer_phone: string
+          driver_id?: string | null
+          driver_name?: string | null
           id?: number
           latitude?: number | null
           longitude?: number | null
@@ -335,6 +366,8 @@ export type Database = {
           created_at?: string
           customer_name?: string
           customer_phone?: string
+          driver_id?: string | null
+          driver_name?: string | null
           id?: number
           latitude?: number | null
           longitude?: number | null
@@ -343,7 +376,15 @@ export type Database = {
           total_amount?: number
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "orders_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       product_addon_groups: {
         Row: {
