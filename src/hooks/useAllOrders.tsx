@@ -28,6 +28,9 @@ export interface UnifiedOrder {
   table_name?: string | null;
   waiter_name?: string | null;
   customer_count?: number | null;
+  // Driver info
+  driver_id?: string | null;
+  driver_name?: string | null;
 }
 
 export interface UnifiedOrderItem {
