@@ -257,7 +257,7 @@ function OrderCardContent({ order, store, onOpenDetails, dragListeners }: { orde
             </div>
 
             {/* Driver selector for delivery orders with status "ready" */}
-            {order.type === 'delivery' && order.status === 'ready' && !(order as any).driver_id && (
+            {order.type === 'delivery' && order.status === 'ready' && !order.driver_id && (
               <div onClick={(e) => e.stopPropagation()}>
                 <Select
                   onValueChange={(value) => {
@@ -289,10 +289,10 @@ function OrderCardContent({ order, store, onOpenDetails, dragListeners }: { orde
             )}
 
             {/* Show assigned driver name */}
-            {order.type === 'delivery' && (order as any).driver_name && (
+            {order.type === 'delivery' && order.driver_name && (
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <Truck className="h-3 w-3" />
-                <span>{(order as any).driver_name}</span>
+                <span>{order.driver_name}</span>
               </div>
             )}
           </div>
