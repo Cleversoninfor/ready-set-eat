@@ -82,14 +82,15 @@ export function useWebPush(userType: 'admin' | 'driver', userIdentifier?: string
 
       // Subscribe to push via PushManager
       const registration = await navigator.serviceWorker.ready;
+      const pm = (registration as any).pushManager;
 
       // Unsubscribe existing if any (to refresh)
-      const existingSub = await registration.pushManager.getSubscription();
+      const existingSub = await pm.getSubscription();
       if (existingSub) {
         await existingSub.unsubscribe();
       }
 
-      const subscription = await registration.pushManager.subscribe({
+      const subscription = await pm.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(publicKey),
       });
