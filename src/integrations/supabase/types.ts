@@ -919,6 +919,10 @@ export type Database = {
         }
         Returns: number
       }
+      driver_update_order_status: {
+        Args: { _driver_id: string; _new_status: string; _order_id: number }
+        Returns: boolean
+      }
       get_kitchen_items: {
         Args: { _status_filter?: string }
         Returns: {
