@@ -28,17 +28,21 @@ function DriverOrderCard({ order, isNew, onAcknowledge }: { order: any; isNew: b
     debit: '💳 Débito',
   };
 
+  const driverId = localStorage.getItem('driver_id');
+
   const handleStartDelivery = async () => {
     setIsUpdating(true);
     try {
-      const { error } = await supabase
-        .from('orders')
-        .update({ status: 'delivery' })
-        .eq('id', order.id);
+      const { error } = await supabase.rpc('driver_update_order_status', {
+        _order_id: order.id,
+        _driver_id: driverId,
+        _new_status: 'delivery',
+      });
       if (error) throw error;
       onAcknowledge(order.id);
       toast.success('Entrega iniciada!');
-    } catch {
+    } catch (err: any) {
+      console.error('Start delivery error:', err);
       toast.error('Erro ao iniciar entrega');
     } finally {
       setIsUpdating(false);
@@ -48,13 +52,15 @@ function DriverOrderCard({ order, isNew, onAcknowledge }: { order: any; isNew: b
   const handleFinishDelivery = async () => {
     setIsUpdating(true);
     try {
-      const { error } = await supabase
-        .from('orders')
-        .update({ status: 'completed' })
-        .eq('id', order.id);
+      const { error } = await supabase.rpc('driver_update_order_status', {
+        _order_id: order.id,
+        _driver_id: driverId,
+        _new_status: 'completed',
+      });
       if (error) throw error;
       toast.success('Entrega finalizada!');
-    } catch {
+    } catch (err: any) {
+      console.error('Finish delivery error:', err);
       toast.error('Erro ao finalizar entrega');
     } finally {
       setIsUpdating(false);
