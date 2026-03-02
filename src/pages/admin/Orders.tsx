@@ -144,10 +144,11 @@ function OrderCardContent({ order, store, onOpenDetails, dragListeners }: { orde
       return tableFlow[status] || null;
     }
 
-    // For delivery orders: ready and delivery are handled by driver
+    // For delivery orders
     const flow: Record<string, UnifiedOrder['status']> = {
       pending: 'preparing',
       preparing: 'ready',
+      delivery: 'completed',
     };
     return flow[status] || null;
   };
@@ -165,6 +166,7 @@ function OrderCardContent({ order, store, onOpenDetails, dragListeners }: { orde
     const labels: Record<string, string> = {
       pending: 'Aceitar',
       preparing: 'Pronto',
+      delivery: 'Finalizar',
     };
     return labels[status];
   };
