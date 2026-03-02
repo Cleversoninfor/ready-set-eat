@@ -236,14 +236,7 @@ export default function DriverDashboard() {
               <p className="text-sm text-muted-foreground">{store?.name}</p>
             </div>
             <div className="flex items-center gap-2">
-              <Button
-                variant={permissionGranted ? 'default' : 'outline'}
-                size="icon"
-                onClick={requestPermission}
-                title={permissionGranted ? 'Notificações ativas' : 'Ativar notificações'}
-              >
-                {permissionGranted ? <Bell className="h-5 w-5" /> : <BellOff className="h-5 w-5" />}
-              </Button>
+              <PushNotificationToggle variant="button" userType="driver" userIdentifier={driverId} />
               <Button variant="outline" size="icon" onClick={handleLogout}>
                 <LogOut className="h-5 w-5" />
               </Button>
