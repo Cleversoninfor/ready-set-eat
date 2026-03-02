@@ -1,45 +1,7 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
+import { useNotificationSound } from './useNotificationSound';
 
 const SEEN_ORDERS_KEY = 'driver_seen_order_ids';
-
-function getSeenOrderIds(): Set<number> {
-  try {
-    const raw = localStorage.getItem(SEEN_ORDERS_KEY);
-    if (!raw) return new Set();
-    return new Set(JSON.parse(raw) as number[]);
-  } catch {
-    return new Set();
-  }
-}
-
-function persistSeenOrderIds(ids: Set<number>) {
-  localStorage.setItem(SEEN_ORDERS_KEY, JSON.stringify([...ids]));
-}
-
-/** Play a short beep sound once */
-function playBeep() {
-  try {
-    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(880, ctx.currentTime);
-    gain.gain.setValueAtTime(0.4, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + 0.5);
-    // Clean up
-    setTimeout(() => {
-      osc.disconnect();
-      gain.disconnect();
-      ctx.close().catch(() => {});
-    }, 600);
-  } catch (e) {
-    console.warn('[DriverNotif] beep failed', e);
-  }
-}
 
 async function sendPushNotification(count: number) {
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
