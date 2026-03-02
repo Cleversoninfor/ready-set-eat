@@ -56,9 +56,20 @@ export function useWebPush(userType: 'admin' | 'driver', userIdentifier?: string
         return false;
       }
 
-      // Ensure service worker is registered
-      if (!navigator.serviceWorker.controller) {
-        await navigator.serviceWorker.register('/sw.js');
+      // Ensure service worker is registered and active
+      let registration = await navigator.serviceWorker.getRegistration('/sw.js');
+      if (!registration) {
+        registration = await navigator.serviceWorker.register('/sw.js');
+      }
+      // Wait until the SW is active
+      if (!registration.active) {
+        await new Promise<void>((resolve) => {
+          const sw = registration!.installing || registration!.waiting;
+          if (!sw) { resolve(); return; }
+          sw.addEventListener('statechange', () => {
+            if (sw.state === 'activated') resolve();
+          });
+        });
       }
 
       // Get VAPID public key from edge function
@@ -81,8 +92,8 @@ export function useWebPush(userType: 'admin' | 'driver', userIdentifier?: string
       if (!publicKey) throw new Error('Chave VAPID não disponível');
 
       // Subscribe to push via PushManager
-      const registration = await navigator.serviceWorker.ready;
-      const pm = (registration as any).pushManager;
+      const readyReg = await navigator.serviceWorker.ready;
+      const pm = (readyReg as any).pushManager;
 
       // Unsubscribe existing if any (to refresh)
       const existingSub = await pm.getSubscription();
