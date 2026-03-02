@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { LogOut, Loader2, Truck, MapPin, Phone, User, CreditCard, Navigation, Play, CheckCircle, FileText, Bell, BellOff } from 'lucide-react';
+import { LogOut, Loader2, Truck, MapPin, Phone, User, CreditCard, Navigation, Play, CheckCircle, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import { PushNotificationToggle } from '@/components/admin/PushNotificationToggle';
 import { useStoreConfig } from '@/hooks/useStore';
 import { useTheme } from '@/hooks/useTheme';
 import { usePWAConfig } from '@/hooks/usePWAConfig';
