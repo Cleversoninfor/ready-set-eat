@@ -167,6 +167,7 @@ function OrderCardContent({ order, store, onOpenDetails, dragListeners }: { orde
     const labels: Record<string, string> = {
       pending: 'Aceitar',
       preparing: 'Pronto',
+      ready: 'Enviar p/ Entrega',
       delivery: 'Finalizar',
     };
     return labels[status];
