@@ -56,9 +56,20 @@ export function useWebPush(userType: 'admin' | 'driver', userIdentifier?: string
         return false;
       }
 
-      // Ensure service worker is registered
-      if (!navigator.serviceWorker.controller) {
-        await navigator.serviceWorker.register('/sw.js');
+      // Ensure service worker is registered and active
+      let registration = await navigator.serviceWorker.getRegistration('/sw.js');
+      if (!registration) {
+        registration = await navigator.serviceWorker.register('/sw.js');
+      }
+      // Wait until the SW is active
+      if (!registration.active) {
+        await new Promise<void>((resolve) => {
+          const sw = registration!.installing || registration!.waiting;
+          if (!sw) { resolve(); return; }
+          sw.addEventListener('statechange', () => {
+            if (sw.state === 'activated') resolve();
+          });
+        });
       }
 
       // Get VAPID public key from edge function
