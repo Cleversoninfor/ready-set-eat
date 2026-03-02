@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
+import { useNotificationSound } from './useNotificationSound';
 
 const SEEN_ORDERS_KEY = 'driver_seen_order_ids';
 
@@ -16,31 +17,6 @@ function persistSeenOrderIds(ids: Set<number>) {
   localStorage.setItem(SEEN_ORDERS_KEY, JSON.stringify([...ids]));
 }
 
-/** Play a short beep sound once */
-function playBeep() {
-  try {
-    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(880, ctx.currentTime);
-    gain.gain.setValueAtTime(0.4, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + 0.5);
-    // Clean up
-    setTimeout(() => {
-      osc.disconnect();
-      gain.disconnect();
-      ctx.close().catch(() => {});
-    }, 600);
-  } catch (e) {
-    console.warn('[DriverNotif] beep failed', e);
-  }
-}
-
 async function sendPushNotification(count: number) {
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
   try {
@@ -55,7 +31,7 @@ async function sendPushNotification(count: number) {
         tag: 'driver-new-order',
         renotify: true,
         requireInteraction: true,
-        vibrate: [200, 100, 200],
+        vibrate: [300, 100, 300, 100, 300, 100, 300],
       } as NotificationOptions);
     } else {
       new Notification('🚚 Novo Pedido de Entrega', {
@@ -75,6 +51,8 @@ export function useDriverNotifications(orders: any[] | undefined) {
   const [permissionGranted, setPermissionGranted] = useState(
     typeof Notification !== 'undefined' && Notification.permission === 'granted'
   );
+
+  const { startAlarm, stopAlarm } = useNotificationSound();
 
   // Request notification permission
   const requestPermission = useCallback(async () => {
@@ -114,10 +92,8 @@ export function useDriverNotifications(orders: any[] | undefined) {
     // First load: mark all current orders as seen (don't alert on refresh)
     if (!initializedRef.current) {
       initializedRef.current = true;
-      // Merge current orders into seen set
       currentIds.forEach((id) => seenRef.current.add(id));
       persistSeenOrderIds(seenRef.current);
-      // But mark "ready" orders (not yet started) as visually new
       const readyIds = new Set(
         orders.filter((o: any) => o.status === 'ready').map((o: any) => o.id as number)
       );
@@ -137,10 +113,8 @@ export function useDriverNotifications(orders: any[] | undefined) {
     if (brandNew.length > 0) {
       persistSeenOrderIds(seenRef.current);
 
-      // Play one beep per new order, staggered
-      brandNew.forEach((_, i) => {
-        setTimeout(() => playBeep(), i * 600);
-      });
+      // Start the same alarm sound used in admin orders
+      startAlarm();
 
       // Send push notification
       sendPushNotification(brandNew.length);
@@ -162,16 +136,20 @@ export function useDriverNotifications(orders: any[] | undefined) {
       toRemove.forEach((id) => seenRef.current.delete(id));
       persistSeenOrderIds(seenRef.current);
     }
-  }, [orders]);
+  }, [orders, startAlarm]);
 
-  // Mark order as acknowledged (when driver clicks "Iniciar Entrega")
+  // Mark order as acknowledged (when driver clicks "Iniciar Entrega") and stop alarm
   const acknowledgeOrder = useCallback((orderId: number) => {
     setNewOrderIds((prev) => {
       const next = new Set(prev);
       next.delete(orderId);
+      // Stop alarm when all new orders are acknowledged
+      if (next.size === 0) {
+        stopAlarm();
+      }
       return next;
     });
-  }, []);
+  }, [stopAlarm]);
 
   return {
     newOrderIds,
