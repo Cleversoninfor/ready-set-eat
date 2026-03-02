@@ -148,6 +148,7 @@ function OrderCardContent({ order, store, onOpenDetails, dragListeners }: { orde
     const flow: Record<string, UnifiedOrder['status']> = {
       pending: 'preparing',
       preparing: 'ready',
+      ready: 'delivery',
       delivery: 'completed',
     };
     return flow[status] || null;
