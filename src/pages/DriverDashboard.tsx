@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { LogOut, Loader2, Truck, MapPin, Phone, User, CreditCard, Navigation, Play, CheckCircle, FileText, Bell, BellOff } from 'lucide-react';
+import { LogOut, Loader2, Truck, MapPin, Phone, User, CreditCard, Navigation, Play, CheckCircle, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import { PushNotificationToggle } from '@/components/admin/PushNotificationToggle';
 import { useStoreConfig } from '@/hooks/useStore';
 import { useTheme } from '@/hooks/useTheme';
 import { usePWAConfig } from '@/hooks/usePWAConfig';
@@ -235,14 +236,7 @@ export default function DriverDashboard() {
               <p className="text-sm text-muted-foreground">{store?.name}</p>
             </div>
             <div className="flex items-center gap-2">
-              <Button
-                variant={permissionGranted ? 'default' : 'outline'}
-                size="icon"
-                onClick={requestPermission}
-                title={permissionGranted ? 'Notificações ativas' : 'Ativar notificações'}
-              >
-                {permissionGranted ? <Bell className="h-5 w-5" /> : <BellOff className="h-5 w-5" />}
-              </Button>
+              <PushNotificationToggle variant="button" userType="driver" userIdentifier={driverId} />
               <Button variant="outline" size="icon" onClick={handleLogout}>
                 <LogOut className="h-5 w-5" />
               </Button>
