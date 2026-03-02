@@ -92,8 +92,8 @@ export function useWebPush(userType: 'admin' | 'driver', userIdentifier?: string
       if (!publicKey) throw new Error('Chave VAPID não disponível');
 
       // Subscribe to push via PushManager
-      const registration = await navigator.serviceWorker.ready;
-      const pm = (registration as any).pushManager;
+      const readyReg = await navigator.serviceWorker.ready;
+      const pm = (readyReg as any).pushManager;
 
       // Unsubscribe existing if any (to refresh)
       const existingSub = await pm.getSubscription();
