@@ -127,7 +127,11 @@ export function useWebPush(userType: 'admin' | 'driver', userIdentifier?: string
       // Unsubscribe existing if any (to refresh)
       const existingSub = await pm.getSubscription();
       if (existingSub) {
+        const existingEndpoint = existingSub.toJSON()?.endpoint || existingSub.endpoint;
         await existingSub.unsubscribe();
+        if (existingEndpoint) {
+          await (supabase as any).from('push_subscriptions').delete().eq('endpoint', existingEndpoint);
+        }
       }
 
       const subscription = await pm.subscribe({
@@ -136,17 +140,19 @@ export function useWebPush(userType: 'admin' | 'driver', userIdentifier?: string
       });
 
       const subJson = subscription.toJSON();
+      if (!subJson.endpoint || !subJson.keys?.p256dh || !subJson.keys?.auth) {
+        throw new Error('Assinatura push inválida');
+      }
 
       // Save subscription to database
-      const { error } = await (supabase as any).from('push_subscriptions').upsert(
+      const { error } = await (supabase as any).from('push_subscriptions').insert(
         {
           endpoint: subJson.endpoint,
-          p256dh: subJson.keys!.p256dh,
-          auth: subJson.keys!.auth,
+          p256dh: subJson.keys.p256dh,
+          auth: subJson.keys.auth,
           user_type: userType,
           user_identifier: userIdentifier || null,
-        },
-        { onConflict: 'endpoint' }
+        }
       );
 
       if (error) {
