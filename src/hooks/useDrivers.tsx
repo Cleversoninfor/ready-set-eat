@@ -46,7 +46,7 @@ export function useCreateDriver() {
     mutationFn: async (data: { name: string; phone?: string }) => {
       const { data: driver, error } = await supabase
         .from('drivers')
-        .insert({ name: data.name, phone: data.phone || null, is_active: true })
+        .insert({ name: data.name, phone: data.phone || null, is_active: true, commission_percentage: data.commission_percentage ?? 5 })
         .select()
         .single();
       if (error) throw error;
