@@ -16,7 +16,7 @@ import { Plus, Pencil, Trash2, Truck, Phone, Loader2 } from 'lucide-react';
 export default function Drivers() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingDriver, setEditingDriver] = useState<Driver | null>(null);
-  const [formData, setFormData] = useState({ name: '', phone: '' });
+  const [formData, setFormData] = useState({ name: '', phone: '', commission_percentage: '5' });
 
   const { toast } = useToast();
   const { data: drivers = [], isLoading } = useDrivers();
@@ -30,23 +30,23 @@ export default function Drivers() {
 
     if (editingDriver) {
       updateMutation.mutate(
-        { id: editingDriver.id, data: formData },
+        { id: editingDriver.id, data: { name: formData.name, phone: formData.phone || null, commission_percentage: parseFloat(formData.commission_percentage) || 5 } },
         {
           onSuccess: () => {
             toast({ title: 'Entregador atualizado!' });
             setIsDialogOpen(false);
             setEditingDriver(null);
-            setFormData({ name: '', phone: '' });
+            setFormData({ name: '', phone: '', commission_percentage: '5' });
           },
           onError: () => toast({ title: 'Erro ao atualizar', variant: 'destructive' }),
         }
       );
     } else {
-      createMutation.mutate(formData, {
+      createMutation.mutate({ name: formData.name, phone: formData.phone, commission_percentage: parseFloat(formData.commission_percentage) || 5 }, {
         onSuccess: () => {
           toast({ title: 'Entregador cadastrado com sucesso!' });
           setIsDialogOpen(false);
-          setFormData({ name: '', phone: '' });
+          setFormData({ name: '', phone: '', commission_percentage: '5' });
         },
         onError: () => toast({ title: 'Erro ao cadastrar', variant: 'destructive' }),
       });
@@ -55,7 +55,7 @@ export default function Drivers() {
 
   const openEditDialog = (driver: Driver) => {
     setEditingDriver(driver);
-    setFormData({ name: driver.name, phone: driver.phone || '' });
+    setFormData({ name: driver.name, phone: driver.phone || '', commission_percentage: String(driver.commission_percentage ?? 5) });
     setIsDialogOpen(true);
   };
 
@@ -81,7 +81,7 @@ export default function Drivers() {
               setIsDialogOpen(open);
               if (!open) {
                 setEditingDriver(null);
-                setFormData({ name: '', phone: '' });
+                setFormData({ name: '', phone: '', commission_percentage: '5' });
               }
             }}
           >
@@ -103,6 +103,10 @@ export default function Drivers() {
                 <div>
                   <Label htmlFor="phone">Telefone (opcional)</Label>
                   <Input id="phone" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: formatPhone(e.target.value) })} placeholder="(11) 99999-9999" className="mt-1.5" maxLength={15} />
+                </div>
+                <div>
+                  <Label htmlFor="commission">Comissão (%)</Label>
+                  <Input id="commission" type="number" min="0" max="100" step="0.5" value={formData.commission_percentage} onChange={(e) => setFormData({ ...formData, commission_percentage: e.target.value })} placeholder="5" className="mt-1.5" />
                 </div>
                 <Button type="submit" className="w-full" disabled={createMutation.isPending || updateMutation.isPending}>
                   {(createMutation.isPending || updateMutation.isPending) && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
@@ -158,6 +162,7 @@ export default function Drivers() {
                   <TableRow>
                     <TableHead>Nome</TableHead>
                     <TableHead>Telefone</TableHead>
+                    <TableHead>Comissão</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
@@ -175,6 +180,9 @@ export default function Drivers() {
                         ) : (
                           <span className="text-muted-foreground">-</span>
                         )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{driver.commission_percentage ?? 5}%</Badge>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">

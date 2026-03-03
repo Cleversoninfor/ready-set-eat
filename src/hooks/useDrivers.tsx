@@ -6,6 +6,7 @@ export interface Driver {
   name: string;
   phone: string | null;
   is_active: boolean;
+  commission_percentage: number;
   created_at: string;
   updated_at: string;
 }
@@ -42,10 +43,10 @@ export function useActiveDrivers() {
 export function useCreateDriver() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (data: { name: string; phone?: string }) => {
+    mutationFn: async (data: { name: string; phone?: string; commission_percentage?: number }) => {
       const { data: driver, error } = await supabase
         .from('drivers')
-        .insert({ name: data.name, phone: data.phone || null, is_active: true })
+        .insert({ name: data.name, phone: data.phone || null, is_active: true, commission_percentage: data.commission_percentage ?? 5 })
         .select()
         .single();
       if (error) throw error;
