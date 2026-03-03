@@ -159,7 +159,7 @@ export function GeolocationButton({ onAddressFound }: GeolocationButtonProps) {
             ref={mapRef}
             className="w-full h-48 rounded-xl overflow-hidden border border-border touch-none"
           />
-          <p className="text-xs text-muted-foreground text-center">
+          <p className="text-sm font-bold text-foreground text-center">
             Arraste o marcador para ajustar sua localização exata
           </p>
         </>
