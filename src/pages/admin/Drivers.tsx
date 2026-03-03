@@ -30,13 +30,13 @@ export default function Drivers() {
 
     if (editingDriver) {
       updateMutation.mutate(
-        { id: editingDriver.id, data: formData },
+        { id: editingDriver.id, data: { name: formData.name, phone: formData.phone || null, commission_percentage: parseFloat(formData.commission_percentage) || 5 } },
         {
           onSuccess: () => {
             toast({ title: 'Entregador atualizado!' });
             setIsDialogOpen(false);
             setEditingDriver(null);
-            setFormData({ name: '', phone: '' });
+            setFormData({ name: '', phone: '', commission_percentage: '5' });
           },
           onError: () => toast({ title: 'Erro ao atualizar', variant: 'destructive' }),
         }
