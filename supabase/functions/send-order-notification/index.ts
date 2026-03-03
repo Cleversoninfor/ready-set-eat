@@ -52,7 +52,8 @@ Deno.serve(async (req) => {
       targetId = record.driver_id;
       title = '🚚 Novo Pedido de Entrega';
       notifBody = `Pedido #${record.id} - ${record.customer_name}. Toque para visualizar.`;
-      tag = 'driver-new-order';
+      // Unique tag per order to force a fresh alert/sound on locked devices
+      tag = `driver-new-order-${record.id}`;
       url = '/driver/dashboard';
     } else if (type === 'new_order') {
       title = '🍔 Novo Pedido!';
@@ -88,7 +89,11 @@ Deno.serve(async (req) => {
             endpoint: sub.endpoint,
             keys: { p256dh: sub.p256dh, auth: sub.auth },
           },
-          JSON.stringify({ title, body: notifBody, tag, url })
+          JSON.stringify({ title, body: notifBody, tag, url }),
+          {
+            TTL: 120,
+            urgency: 'high',
+          }
         );
         sent++;
       } catch (err: any) {
