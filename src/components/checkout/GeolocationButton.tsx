@@ -92,7 +92,9 @@ export function GeolocationButton({ onAddressFound }: GeolocationButtonProps) {
       attributionControl: false,
     }).setView([coords.lat, coords.lng], 17);
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 19,
+    }).addTo(map);
 
     const icon = L.divIcon({
       html: '<div style="color:hsl(var(--primary));display:flex;align-items:center;justify-content:center"><svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="currentColor" stroke="white" stroke-width="1"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3" fill="white"/></svg></div>',
@@ -157,7 +159,7 @@ export function GeolocationButton({ onAddressFound }: GeolocationButtonProps) {
             ref={mapRef}
             className="w-full h-48 rounded-xl overflow-hidden border border-border touch-none"
           />
-          <p className="text-xs text-muted-foreground text-center">
+          <p className="text-sm font-bold text-foreground text-center">
             Arraste o marcador para ajustar sua localização exata
           </p>
         </>
