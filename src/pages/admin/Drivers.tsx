@@ -42,11 +42,11 @@ export default function Drivers() {
         }
       );
     } else {
-      createMutation.mutate(formData, {
+      createMutation.mutate({ name: formData.name, phone: formData.phone, commission_percentage: parseFloat(formData.commission_percentage) || 5 }, {
         onSuccess: () => {
           toast({ title: 'Entregador cadastrado com sucesso!' });
           setIsDialogOpen(false);
-          setFormData({ name: '', phone: '' });
+          setFormData({ name: '', phone: '', commission_percentage: '5' });
         },
         onError: () => toast({ title: 'Erro ao cadastrar', variant: 'destructive' }),
       });
