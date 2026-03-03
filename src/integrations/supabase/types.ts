@@ -252,6 +252,7 @@ export type Database = {
       }
       drivers: {
         Row: {
+          commission_percentage: number
           created_at: string
           id: string
           is_active: boolean
@@ -260,6 +261,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          commission_percentage?: number
           created_at?: string
           id?: string
           is_active?: boolean
@@ -268,6 +270,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          commission_percentage?: number
           created_at?: string
           id?: string
           is_active?: boolean
