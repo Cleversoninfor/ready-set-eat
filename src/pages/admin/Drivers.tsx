@@ -16,7 +16,7 @@ import { Plus, Pencil, Trash2, Truck, Phone, Loader2 } from 'lucide-react';
 export default function Drivers() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingDriver, setEditingDriver] = useState<Driver | null>(null);
-  const [formData, setFormData] = useState({ name: '', phone: '' });
+  const [formData, setFormData] = useState({ name: '', phone: '', commission_percentage: '5' });
 
   const { toast } = useToast();
   const { data: drivers = [], isLoading } = useDrivers();
