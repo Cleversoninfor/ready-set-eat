@@ -111,7 +111,7 @@ const AdminDriverReports = () => {
     return mins > 0 && mins < 300 ? `${mins} min` : '-';
   };
 
-  const getCommission = (d: DriverDelivery) => d.total_amount * COMMISSION_RATE;
+  const getCommission = (d: DriverDelivery) => d.total_amount * commissionRate;
 
   const setDateRange = (range: 'today' | 'week' | 'month' | 'lastMonth') => {
     const today = new Date();
