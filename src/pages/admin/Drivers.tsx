@@ -81,7 +81,7 @@ export default function Drivers() {
               setIsDialogOpen(open);
               if (!open) {
                 setEditingDriver(null);
-                setFormData({ name: '', phone: '' });
+                setFormData({ name: '', phone: '', commission_percentage: '5' });
               }
             }}
           >
