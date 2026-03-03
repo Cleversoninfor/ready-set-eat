@@ -55,7 +55,7 @@ export default function Drivers() {
 
   const openEditDialog = (driver: Driver) => {
     setEditingDriver(driver);
-    setFormData({ name: driver.name, phone: driver.phone || '' });
+    setFormData({ name: driver.name, phone: driver.phone || '', commission_percentage: String(driver.commission_percentage ?? 5) });
     setIsDialogOpen(true);
   };
 
