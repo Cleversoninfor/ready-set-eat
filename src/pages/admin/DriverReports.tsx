@@ -62,25 +62,31 @@ const AdminDriverReports = () => {
 
   const isLoading = isLoadingDrivers || isLoadingDeliveries;
 
+  const commissionRate = useMemo(() => {
+    if (selectedDriver?.commission_percentage != null) {
+      return selectedDriver.commission_percentage / 100;
+    }
+    return DEFAULT_COMMISSION_RATE;
+  }, [selectedDriver]);
+
   const stats = useMemo(() => {
     if (!deliveries || deliveries.length === 0) {
       return { totalDeliveries: 0, avgTime: 0, totalCommission: 0, totalReceived: 0 };
     }
 
-    const completed = deliveries.filter((d) => d.status === 'completed' || d.status === 'delivered');
-    const totalDeliveries = completed.length;
+    const totalDeliveries = deliveries.length;
+    const completed = deliveries.filter((d) => d.status === 'completed');
 
-    // Estimate delivery time from created_at to updated_at
-    const times = completed
+    const timeDiffs = completed
       .map((d) => differenceInMinutes(new Date(d.updated_at), new Date(d.created_at)))
-      .filter((t) => t > 0 && t < 300);
-    const avgTime = times.length > 0 ? Math.round(times.reduce((a, b) => a + b, 0) / times.length) : 0;
+      .filter((t) => t > 0);
+    const avgTime = timeDiffs.length > 0 ? Math.round(timeDiffs.reduce((a, b) => a + b, 0) / timeDiffs.length) : 0;
 
     const totalReceived = completed.reduce((sum, d) => sum + d.total_amount, 0);
-    const totalCommission = totalReceived * COMMISSION_RATE;
+    const totalCommission = totalReceived * commissionRate;
 
     return { totalDeliveries, avgTime, totalCommission, totalReceived };
-  }, [deliveries]);
+  }, [deliveries, commissionRate]);
 
   const formatCurrency = (value: number) =>
     value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
