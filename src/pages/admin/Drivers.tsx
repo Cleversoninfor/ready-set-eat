@@ -182,6 +182,9 @@ export default function Drivers() {
                         )}
                       </TableCell>
                       <TableCell>
+                        <Badge variant="outline">{driver.commission_percentage ?? 5}%</Badge>
+                      </TableCell>
+                      <TableCell>
                         <div className="flex items-center gap-2">
                           <Switch checked={driver.is_active} onCheckedChange={() => toggleActive(driver)} />
                           <Badge variant={driver.is_active ? 'default' : 'secondary'}>{driver.is_active ? 'Ativo' : 'Inativo'}</Badge>
