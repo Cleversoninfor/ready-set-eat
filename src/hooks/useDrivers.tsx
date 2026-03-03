@@ -6,6 +6,7 @@ export interface Driver {
   name: string;
   phone: string | null;
   is_active: boolean;
+  commission_percentage: number;
   created_at: string;
   updated_at: string;
 }
