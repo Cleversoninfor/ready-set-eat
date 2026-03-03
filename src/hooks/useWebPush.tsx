@@ -19,6 +19,45 @@ export function useWebPush(userType: 'admin' | 'driver', userIdentifier?: string
   const [permission, setPermission] = useState<NotificationPermission>('default');
   const [isLoading, setIsLoading] = useState(false);
 
+  const syncCurrentSubscription = useCallback(async (subscription: PushSubscription) => {
+    try {
+      const subJson = subscription.toJSON();
+      if (!subJson.endpoint || !subJson.keys?.p256dh || !subJson.keys?.auth) return;
+
+      // Keep endpoint ownership aligned with current app context (admin/driver)
+      await (supabase as any).from('push_subscriptions').delete().eq('endpoint', subJson.endpoint);
+
+      const { error } = await (supabase as any).from('push_subscriptions').insert({
+        endpoint: subJson.endpoint,
+        p256dh: subJson.keys.p256dh,
+        auth: subJson.keys.auth,
+        user_type: userType,
+        user_identifier: userIdentifier || null,
+      });
+
+      if (error) {
+        console.error('Failed to sync push subscription:', error);
+      }
+    } catch (error) {
+      console.error('Error syncing existing push subscription:', error);
+    }
+  }, [userType, userIdentifier]);
+
+  const checkExistingSubscription = useCallback(async () => {
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      const subscription = await (registration as any).pushManager.getSubscription();
+      const hasSubscription = !!subscription;
+      setIsSubscribed(hasSubscription);
+
+      if (subscription && Notification.permission === 'granted') {
+        await syncCurrentSubscription(subscription);
+      }
+    } catch {
+      setIsSubscribed(false);
+    }
+  }, [syncCurrentSubscription]);
+
   useEffect(() => {
     const supported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
     setIsSupported(supported);
@@ -26,17 +65,7 @@ export function useWebPush(userType: 'admin' | 'driver', userIdentifier?: string
       setPermission(Notification.permission);
       checkExistingSubscription();
     }
-  }, []);
-
-  const checkExistingSubscription = async () => {
-    try {
-      const registration = await navigator.serviceWorker.ready;
-      const subscription = await (registration as any).pushManager.getSubscription();
-      setIsSubscribed(!!subscription);
-    } catch {
-      setIsSubscribed(false);
-    }
-  };
+  }, [checkExistingSubscription]);
 
   const subscribe = useCallback(async () => {
     if (!isSupported) {
