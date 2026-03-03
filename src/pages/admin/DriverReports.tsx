@@ -29,7 +29,7 @@ interface DriverDelivery {
   driver_name: string | null;
 }
 
-const COMMISSION_RATE = 0.05; // 5% commission
+const DEFAULT_COMMISSION_RATE = 0.05; // 5% commission
 
 const AdminDriverReports = () => {
   const { toast } = useToast();
